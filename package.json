@@ -1,7 +1,7 @@
 {
   "name": "moleculer-apollo-server",
   "version": "0.1.0",
-  "description": "Apollo GraphQL server for Moleculer services",
+  "description": "Apollo GraphQL server for Moleculer API Gateway",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon examples/index.js",
