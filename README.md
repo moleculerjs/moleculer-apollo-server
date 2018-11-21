@@ -98,6 +98,17 @@ module.exports = {
 };
 ```
 
+**Generated schema**
+```gql
+type Mutation {
+  welcome(name: String!): String
+}
+
+type Query {
+  hello: String
+}
+```
+
 # Test
 ```
 $ npm test
