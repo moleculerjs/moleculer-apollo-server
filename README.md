@@ -68,6 +68,36 @@ module.exports = {
 Start your Moleculer project, open http://localhost:3000/graphql in your browser to run queries using [graphql-playground](https://github.com/prismagraphql/graphql-playground), or send GraphQL requests directly to the same URL.
 
 
+**Define queries & mutations in service action definitions**
+
+```js
+module.exports = {
+    name: "greeter", 
+
+    actions: {
+        hello: {
+            graphql: {
+                query: "hello: String"
+            },
+            handler(ctx) {
+                return "Hello Moleculer!"
+            }
+        },
+        welcome: {
+            params: {
+                name: "string"
+            },
+            graphql: {
+                mutation: "welcome(name: String!): String"
+            },
+            handler(ctx) {
+                return `Hello ${ctx.params.name}`;
+            }
+        }
+    }
+};
+```
+
 # Test
 ```
 $ npm test
