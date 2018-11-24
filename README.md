@@ -16,7 +16,7 @@
 
 ## Install
 ```
-npm install moleculer-apollo-server moleculer-web graphql --save
+npm i moleculer-apollo-server moleculer-web graphql
 ```
 
 ## Usage
