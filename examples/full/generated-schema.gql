@@ -1,5 +1,11 @@
 scalar Date
 
+type Mutation {
+  upvote(id: Int!, userID: Int!): Post
+  downvote(id: Int!, userID: Int!): Post
+}
+
+"""This type describes a post entity."""
 type Post {
   id: Int!
   title: String!
@@ -16,6 +22,7 @@ type Query {
 
 scalar Timestamp
 
+"""This type describes a user entity."""
 type User {
   id: Int!
   name: String!

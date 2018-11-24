@@ -1,6 +1,7 @@
 "use strict";
 
 const _ = require("lodash");
+const { MoleculerClientError } 	= require("moleculer").Errors;
 
 const posts = [
 	{ id: 1, title: "First post", author: 3, votes: 2, voters: [2,5], createdAt: new Date('2018-08-23T08:10:25') },
@@ -8,7 +9,6 @@ const posts = [
 	{ id: 3, title: "Third post", author: 2, votes: 1, voters: [5], createdAt:new Date('2018-02-23T22:24:28')  },
 	{ id: 4, title: "4th post", author: 3, votes: 3, voters: [4,1,2], createdAt: new Date('2018-10-23T10:33:00') },
 	{ id: 5, title: "5th post", author: 5, votes: 1, voters: [4], createdAt: new Date('2018-11-24T21:15:30') },
-
 ]
 
 module.exports = {
@@ -16,6 +16,9 @@ module.exports = {
 	settings: {
 		graphql: {
 			type: `
+				"""
+				This type describes a post entity.
+				"""			
 				type Post {
 					id: Int!,
 					title: String!,
@@ -50,7 +53,7 @@ module.exports = {
 				limit: { type: "number", optional: true }
 			},
 			graphql: {
-				query: "posts(limit: Int): [Post]"
+				query: `posts(limit: Int): [Post]`
 			},
 			handler(ctx) {
 				let result = _.cloneDeep(posts);
@@ -70,12 +73,60 @@ module.exports = {
 			handler(ctx) {
 				return _.cloneDeep(posts.filter(post => post.author == ctx.params.userID));
 			}
+		},
+
+		upvote: {
+			params: {
+				id: "number",
+				userID: "number"
+			},
+			graphql: {
+				mutation: "upvote(id: Int!, userID: Int!): Post"
+			},
+			handler(ctx) {
+				const post = this.findByID(ctx.params.id);
+				if (!post)
+					throw new MoleculerClientError("Post is not found");
+
+				const has = post.voters.find(voter => voter == ctx.params.userID);
+				if (has)
+					throw new MoleculerClientError("User has already voted this post");
+
+				post.voters.push(ctx.params.userID);
+				post.votes = post.voters.length;
+
+				return _.cloneDeep(post);
+			}
+		},
+
+		downvote: {
+			params: {
+				id: "number",
+				userID: "number"
+			},
+			graphql: {
+				mutation: "downvote(id: Int!, userID: Int!): Post"
+			},
+			handler(ctx) {
+				const post = this.findByID(ctx.params.id);
+				if (!post)
+					throw new MoleculerClientError("Post is not found");
+
+				const has = post.voters.find(voter => voter == ctx.params.userID);
+				if (!has)
+					throw new MoleculerClientError("User has not voted this post yet");
+
+				post.voters = post.voters.filter(voter => voter != ctx.params.userID);
+				post.votes = post.voters.length;
+
+				return _.cloneDeep(post);
+			}
 		}
 	},
 
 	methods: {
 		findByID(id) {
-			return _.cloneDeep(posts.find(post => post.id == id));
+			return posts.find(post => post.id == id);
 		}		
 	}
 };

@@ -15,6 +15,9 @@ module.exports = {
 	settings: {
 		graphql: {
 			type: `
+				"""
+				This type describes a user entity.
+				"""			
 				type User {
 					id: Int!,
 					name: String!,
@@ -63,9 +66,9 @@ module.exports = {
 			},
 			handler(ctx) {
 				if (Array.isArray(ctx.params.id)) {
-					return ctx.params.id.map(id => this.findByID(id));
+					return _.cloneDeep(ctx.params.id.map(id => this.findByID(id)));
 				} else {
-					return this.findByID(ctx.params.id);
+					return _.cloneDeep(this.findByID(ctx.params.id));
 				}
 			}
 		}
@@ -73,7 +76,7 @@ module.exports = {
 
 	methods: {
 		findByID(id) {
-			return _.cloneDeep(users.find(user => user.id == id));
+			return users.find(user => user.id == id);
 		}
 	}
 };
