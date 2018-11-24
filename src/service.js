@@ -251,8 +251,8 @@ module.exports = function(mixinOptions) {
 					});
 
 				} catch(err) {
-					this.logger.warn(err);
-					this.sendError(req, res, err);
+					this.logger.error(err);
+					throw err;
 				}
 			}
 		},
@@ -265,8 +265,12 @@ module.exports = function(mixinOptions) {
 				aliases: {
 
 					"/"(req, res) {
-						this.prepareGraphQLSchema();
-						return this.graphqlHandler(req, res);
+						try {
+							this.prepareGraphQLSchema();
+							return this.graphqlHandler(req, res);
+						} catch(err) {
+							this.sendError(req, res, err);
+						}
 					}
 				},
 

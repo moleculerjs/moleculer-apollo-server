@@ -17,12 +17,6 @@ broker.createService({
 		// GraphQL Apollo Server
 		ApolloService({
 
-			// Global GraphQL typeDefs
-			typeDefs: ``,
-
-			// Global resolvers
-			resolvers: {},
-
 			// API Gateway route options
 			routeOptions: {
 				path: "/graphql",
@@ -31,15 +25,15 @@ broker.createService({
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
-			serverOptions: {
-				tracing: false,
-
-				engine: {
-					apiKey: process.env.APOLLO_ENGINE_KEY
-				}
-			}
+			serverOptions: {}
 		})
-	]
+	],
+
+	events: {
+		"graphql.schema.updated"({ schema }) {
+			this.logger.info("Generated GraphQL schema:\n\n" + schema);
+		}
+	}	
 });
 
 broker.createService({
@@ -55,9 +49,6 @@ broker.createService({
 			}
 		},
 		welcome: {
-			params: {
-				name: "string"
-			},
 			graphql: {
 				mutation: "welcome(name: String!): String"
 			},
@@ -65,36 +56,24 @@ broker.createService({
 				return `Hello ${ctx.params.name}`;
 			}
 		}
-	},
-
-	events: {
-		"graphql.schema.updated"({ schema }) {
-			//fs.writeFileSync("./schema.gql", schema, "utf8");
-			this.logger.info("Generated GraphQL schema:\n\n" + schema);
-		}
 	}
 })
 
 broker.start()
-	.then(() => {
+	.then(async () => {
 		broker.repl();
 
-		// broker.call("api.graphql", {
-		// 	query: `query { hello }`
-		// })
-		broker.call("api.graphql", {
-			query: `mutation welcome($name: String!) {
-				welcome(name: $name)
-			}`,
-			variables: {
-				name: "Moleculer"
-			}
-		})
-			.then(res => {
-				if (res.errors && res.errors.length > 0)
-					return res.errors.forEach(broker.logger.error);
-					
-				broker.logger.info(res.data);
-			})
-			.catch(broker.logger.error)
+		const res = await broker.call("api.graphql", {
+			query: `query { hello }`
+		});
+
+		if (res.errors && res.errors.length > 0)
+			return res.errors.forEach(broker.logger.error);
+			
+		broker.logger.info(res.data);
+
+		broker.logger.info("----------------------------------------------------------");
+		broker.logger.info("Open the http://localhost:3000/graphql URL in your browser");
+		broker.logger.info("----------------------------------------------------------");
+
 	});
