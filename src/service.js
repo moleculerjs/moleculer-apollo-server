@@ -7,8 +7,6 @@
 "use strict";
 
 const _ 						= require("lodash");
-const fs						= require("fs");
-
 const { MoleculerServerError } 	= require("moleculer").Errors;
 const { ApolloServer } 			= require("./ApolloServer");
 const { makeExecutableSchema }	= require("graphql-tools");
@@ -54,7 +52,8 @@ module.exports = function(mixinOptions) {
 			},
 
 			/**
-			 * Create resolvers for actions
+			 * Create resolvers for actions.
+			 * 
 			 * @param {String} serviceName
 			 * @param {Object} resolvers
 			 */
@@ -62,11 +61,14 @@ module.exports = function(mixinOptions) {
 				const res = {};
 				_.forIn(resolvers, (r, name) => {
 					if (_.isString(r)) {
+						// If String, it is an action name
 						res[name] = this.createActionResolver(this.getResolverActionName(serviceName, r));
 					}
 					else if (_.isPlainObject(r)) {
+						// If Object, it is a remote action resolver
 						res[name] = this.createActionResolver(this.getResolverActionName(serviceName, r.action), r);
 					} else {
+						// Something else.
 						res[name] = r;
 					}
 				});

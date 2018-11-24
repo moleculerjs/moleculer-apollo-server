@@ -109,6 +109,153 @@ type Query {
 }
 ```
 
+### Resolvers between services
+
+**posts.service.js**
+```js
+module.exports = {
+    name: "posts",
+    settings: {
+        graphql: {
+            type: `
+                """
+                This type describes a post entity.
+                """			
+                type Post {
+                    id: Int!,
+                    title: String!,
+                    author: User!,
+                    votes: Int!,
+                    voters: [User],
+                    createdAt: Timestamp
+                }
+            `,
+            resolvers: {
+                Post: {
+                    author: {
+                        // Call the `users.resolve` action with `id` params
+                        action: "users.resolve",
+                        rootParams: {
+                            "author": "id"
+                        }
+                    },
+                    voters: {
+                        // Call the `users.resolve` action with `id` params
+                        action: "users.resolve",
+                        rootParams: {
+                            "voters": "id"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    actions: {
+        find: {
+            //cache: true,
+            params: {
+                limit: { type: "number", optional: true }
+            },
+            graphql: {
+                query: `posts(limit: Int): [Post]`
+            },
+            handler(ctx) {
+                let result = _.cloneDeep(posts);
+                if (ctx.params.limit)
+                    result = posts.slice(0, ctx.params.limit);
+                else
+                    result = posts;
+
+                return _.cloneDeep(result);
+            }
+        },
+
+        findByUser: {
+            params: {
+                userID: "number"
+            },
+            handler(ctx) {
+                return _.cloneDeep(posts.filter(post => post.author == ctx.params.userID));
+            }
+        },
+    }
+};
+```
+
+**users.service.js**
+```js
+module.exports = {
+    name: "users",
+    settings: {
+        graphql: {
+            type: `
+                """
+                This type describes a user entity.
+                """			
+                type User {
+                    id: Int!,
+                    name: String!,
+                    birthday: Date,
+                    posts(limit: Int): [Post]
+                }
+            `,
+            resolvers: {
+                User: {
+                    posts: {
+                        // Call the `posts.findByUser` action with `userID` param.
+                        action: "posts.findByUser",
+                        rootParams: {
+                            "id": "userID"
+                        }
+                    }
+                }
+            }			
+        }
+    },
+    actions: {
+        find: {
+            //cache: true,
+            params: {
+                limit: { type: "number", optional: true }
+            },
+            graphql: {
+                query: "users(limit: Int): [User]"
+            },
+            handler(ctx) {
+                let result = _.cloneDeep(users);
+                if (ctx.params.limit)
+                    result = users.slice(0, ctx.params.limit);
+                else
+                    result = users;
+
+                return _.cloneDeep(result);
+            }
+        },
+
+        resolve: {
+            params: {
+                id: [
+                    { type: "number" },
+                    { type: "array", items: "number" }
+                ]
+            },
+            handler(ctx) {
+                if (Array.isArray(ctx.params.id)) {
+                    return _.cloneDeep(ctx.params.id.map(id => this.findByID(id)));
+                } else {
+                    return _.cloneDeep(this.findByID(ctx.params.id));
+                }
+            }
+        }
+    }
+};
+```
+
+## Examples
+
+- [Simple](examples/simple/index.js)
+- [Full](examples/full/index.js)
+
 # Test
 ```
 $ npm test
