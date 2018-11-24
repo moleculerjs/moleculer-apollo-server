@@ -20,7 +20,7 @@ npm install moleculer-apollo-server moleculer-web graphql --save
 ```
 
 ## Usage
-This example demonstrates how to setup a Moleculer API Gateway with GraphQL mixin, that handles incoming GraphQL requests via the default `/graphql` endpoint.
+This example demonstrates how to setup a Moleculer API Gateway with GraphQL mixin in order to handle incoming GraphQL requests via the default `/graphql` endpoint.
 
 ```js
 "use strict";
