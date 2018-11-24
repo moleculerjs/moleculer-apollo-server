@@ -12,7 +12,7 @@ const fs						= require("fs");
 const { MoleculerServerError } 	= require("moleculer").Errors;
 const { ApolloServer } 			= require("./ApolloServer");
 const { makeExecutableSchema }	= require("graphql-tools");
-const { printSchema } 			= require("graphql");
+const GraphQL 					= require("graphql");
 
 module.exports = function(mixinOptions) {
 
@@ -21,12 +21,13 @@ module.exports = function(mixinOptions) {
 			path: "/graphql",
 		},
 		schema: null,
-		serverOptions: {}
+		serverOptions: {},
+		createAction: true
 	});
 
 	let shouldUpdateSchema = true;
 
-	return {
+	const serviceSchema = {
 		events: {
 			"$services.changed"() { this.invalidateGraphQLSchema(); },
 		},
@@ -214,6 +215,45 @@ module.exports = function(mixinOptions) {
 				} catch(err) {
 					throw new MoleculerServerError("Unable to compile GraphQL schema", 500, "UNABLE_COMPILE_GRAPHQL_SCHEMA", { err });
 				}
+			},
+
+			prepareGraphQLSchema() {
+				// Schema is up-to-date
+				if (!shouldUpdateSchema && this.graphqlHandler)
+					return;
+
+				// Create new server & regenerate GraphQL schema
+				this.logger.info("♻ Recreate Apollo GraphQL server and regenerate GraphQL schema...");
+
+				try {
+					const schema = this.generateGraphQLSchema();
+
+					this.logger.debug("Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema));
+
+					this.apolloServer = new ApolloServer(_.defaultsDeep(mixinOptions.serverOptions, {
+						schema,
+						context: ({ req }) => {
+							return {
+								ctx: req.$ctx,
+								service: req.$service,
+								params: req.$params,
+							};
+						}
+					}));
+
+					this.graphqlHandler = this.apolloServer.createHandler();
+					this.graphqlSchema = schema;
+
+					shouldUpdateSchema = false;
+
+					this.broker.broadcast("graphql.schema.updated", {
+						schema: GraphQL.printSchema(schema)
+					});
+
+				} catch(err) {
+					this.logger.warn(err);
+					this.sendError(req, res, err);
+				}
 			}
 		},
 
@@ -225,45 +265,8 @@ module.exports = function(mixinOptions) {
 				aliases: {
 
 					"/"(req, res) {
-						// Call the previously generated handler
-						if (!shouldUpdateSchema && this.graphqlHandler)
-							return this.graphqlHandler(req, res);
-
-						// Create new server & regenerate GraphQL schema
-						this.logger.info("♻ Recreate Apollo GraphQL server and regenerate GraphQL schema...");
-
-						try {
-							const schema = this.generateGraphQLSchema();
-
-							this.logger.debug("Generated GraphQL schema:", printSchema(schema));
-
-							if (process.env.NODE_ENV != "production")
-								fs.writeFileSync("./schema.gql", printSchema(schema), "utf8");
-
-
-							this.apolloServer = new ApolloServer(_.defaultsDeep(mixinOptions.serverOptions, {
-								schema,
-								context: ({ req }) => {
-									return {
-										ctx: req.$ctx,
-										service: req.$service,
-										params: req.$params,
-									};
-								}
-							}));
-
-							this.graphqlHandler = this.apolloServer.createHandler();
-							this.graphqlSchema = schema;
-
-							shouldUpdateSchema = false;
-
-							// Call the newly created handler
-							return this.graphqlHandler(req, res);
-
-						} catch(err) {
-							this.logger.warn(err);
-							this.sendError(req, res, err);
-						}
+						this.prepareGraphQLSchema();
+						return this.graphqlHandler(req, res);
 					}
 				},
 
@@ -283,4 +286,21 @@ module.exports = function(mixinOptions) {
 			this.logger.info(`🚀 GraphQL server is available at ${mixinOptions.routeOptions.path}`);
 		}
 	};
+
+	if (mixinOptions.createAction) {
+		serviceSchema.actions = {
+			graphql: {
+				params: {
+					query: { type: "string" },
+					variables: { type: "object", optional: true }
+				},
+				handler(ctx) {
+					this.prepareGraphQLSchema();
+					return GraphQL.graphql(this.graphqlSchema, ctx.params.query, null, { ctx }, ctx.params.variables);
+				}
+			}
+		}
+	}
+
+	return serviceSchema;
 };

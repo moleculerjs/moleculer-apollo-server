@@ -24,7 +24,7 @@ class ApolloServer extends ApolloServerBase {
 		return super.graphQLServerOptions({ req, res });
 	}
 
-	// Prepares and returns an async function that can be used by Micro to handle
+	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
 	createHandler({ path, disableHealthCheck, onHealthCheck, } = {}) {
 		const promiseWillStart = this.willStart();
@@ -59,7 +59,7 @@ class ApolloServer extends ApolloServerBase {
 
 	// This integration supports subscriptions.
 	supportsSubscriptions() {
-		return true;
+		return false;
 	}
 
 	// If health checking is enabled, trigger the `onHealthCheck`
@@ -106,13 +106,13 @@ class ApolloServer extends ApolloServerBase {
 	// Handle incoming GraphQL requests using Apollo Server.
 	async handleGraphqlRequestsWithServer({ req, res, }) {
 		let handled = false;
-		const url = req.originalUrl.split("?")[0];
-		if (url === this.graphqlPath) {
-			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
-			const responseData = await graphqlHandler(req, res);
-			send(res, 200, responseData);
-			handled = true;
-		}
+		//const url = req.originalUrl.split("?")[0];
+		//if (url === this.graphqlPath) {
+		const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
+		const responseData = await graphqlHandler(req, res);
+		send(res, 200, responseData);
+		handled = true;
+		//}
 		return handled;
 	}
 
