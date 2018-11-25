@@ -66,6 +66,18 @@ module.exports = {
 			}
 		},
 
+		count: {
+			params: {
+				query: { type: "object", optional: true }
+			},
+			handler(ctx) {
+				if (!ctx.params.query)
+					return posts.length;
+
+				return posts.filter(post => post.author == ctx.params.query.author).length;
+			}
+		},
+
 		findByUser: {
 			params: {
 				userID: "number"

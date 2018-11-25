@@ -28,4 +28,5 @@ type User {
   name: String!
   birthday: Date
   posts(limit: Int): [Post]
+  postCount: Int
 }

@@ -19,10 +19,11 @@ module.exports = {
 				This type describes a user entity.
 				"""			
 				type User {
-					id: Int!,
-					name: String!,
-					birthday: Date,
+					id: Int!
+					name: String!
+					birthday: Date
 					posts(limit: Int): [Post]
+					postCount: Int
 				}
 			`,
 			resolvers: {
@@ -32,7 +33,15 @@ module.exports = {
 						rootParams: {
 							"id": "userID"
 						}
-					}
+					},
+                    postCount: {
+                        // Call the "posts.count" action
+                        action: "posts.count",
+                        // Get `id` value from `root` and put it into `ctx.params.query.author`
+                        rootParams: {
+                            "id": "query.author"
+                        }
+                    }					
 				}
 			}			
 		}
