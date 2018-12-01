@@ -5,7 +5,7 @@ const { ServiceBroker } = require("moleculer");
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
-const broker = new ServiceBroker({ logLevel: "info" });
+const broker = new ServiceBroker({ logLevel: "info"/*, transporter: "NATS"*/ });
 
 broker.createService({
 	name: "api",

@@ -123,10 +123,16 @@ module.exports = function(mixinOptions) {
 					const types = [];
 					const mutations = [];
 
+					const processedServices = new Set();
+
 					const services = this.broker.registry.getServiceList({ withActions: true });
 					services.forEach(service => {
 						if (service.settings.graphql) {
 							const serviceName = service.version ? `v${service.version}.${service.name}` : service.name;
+
+							// Skip multiple instances of services
+							if (processedServices.has(serviceName)) return;
+							processedServices.add(serviceName);
 
 							// --- COMPILE SERVICE-LEVEL DEFINITIONS ---
 							if (_.isObject(service.settings.graphql)) {
