@@ -6,7 +6,7 @@ const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html
 const accept = require("accept");
 const moleculerApollo = require("./moleculerApollo");
 
-function send(res, statusCode, data, responseType = "application/json") {
+function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
 
 	const ctx = res.$ctx;
@@ -14,7 +14,7 @@ function send(res, statusCode, data, responseType = "application/json") {
 		ctx.meta.$responseType = responseType;
 
 	const service = res.$service;
-	service.sendResponse(res.$ctx, res.$route, null, res, data);
+	service.sendResponse(req, res, data);
 }
 
 class ApolloServer extends ApolloServerBase {
@@ -56,14 +56,14 @@ class ApolloServer extends ApolloServerBase {
 
 				if (prefersHTML) {
 					const middlewareOptions = Object.assign({ endpoint: this.graphqlPath, subscriptionEndpoint: this.subscriptionsPath }, this.playgroundOptions);
-					return send(res, 200, renderPlaygroundPage(middlewareOptions), "text/html");
+					return send(req, res, 200, renderPlaygroundPage(middlewareOptions), "text/html");
 				}
 			}
 
 			// Handle incoming GraphQL requests using Apollo Server.
 			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
 			const responseData = await graphqlHandler(req, res);
-			send(res, 200, responseData);
+			send(req, res, 200, responseData);
 
 		};
 	}
