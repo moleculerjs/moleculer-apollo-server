@@ -122,6 +122,10 @@ module.exports = function(mixinOptions) {
 					const queries = [];
 					const types = [];
 					const mutations = [];
+					const interfaces = [];
+					const unions = [];
+					const enums = [];
+					const inputs = [];
 
 					const processedServices = new Set();
 
@@ -148,6 +152,18 @@ module.exports = function(mixinOptions) {
 								if (globalDef.mutation) {
 									mutations.push(globalDef.mutation);
 								}
+
+								if (globalDef.interface)
+									interfaces.push(globalDef.interface);
+
+								if (globalDef.union)
+									unions.push(globalDef.union);
+
+								if (globalDef.enum)
+									enums.push(globalDef.enum);
+
+								if (globalDef.input)
+									inputs.push(globalDef.input);
 
 								if (globalDef.resolvers) {
 									_.forIn(globalDef.resolvers, (r, name) => {
@@ -182,6 +198,17 @@ module.exports = function(mixinOptions) {
 										resolver.Mutation[name] = this.createActionResolver(action.name);
 									}
 
+									if (def.interface)
+										interfaces.push(def.interface);
+
+									if (def.union)
+										unions.push(def.union);
+
+									if (def.enum)
+										enums.push(def.enum);
+
+									if (def.input)
+										inputs.push(def.input);
 								}
 							}
 						});
@@ -191,7 +218,13 @@ module.exports = function(mixinOptions) {
 
 					});
 
-					if (queries.length > 0 || types.length > 0 || mutations.length > 0) {
+					if (queries.length > 0
+					|| types.length > 0
+					|| mutations.length > 0
+					|| interfaces.length > 0
+					|| unions.length > 0
+					|| enums.length > 0
+					|| inputs.length > 0) {
 						let str = "";
 						if (queries.length > 0) {
 							str += `
@@ -212,6 +245,30 @@ module.exports = function(mixinOptions) {
 								type Mutation {
 									${mutations.join("\n")}
 								}
+							`;
+						}
+
+						if (interfaces.length > 0) {
+							str += `
+								${interfaces.join("\n")}
+							`;
+						}
+
+						if (unions.length > 0) {
+							str += `
+								${unions.join("\n")}
+							`;
+						}
+
+						if (enums.length > 0) {
+							str += `
+								${enums.join("\n")}
+							`;
+						}
+
+						if (inputs.length > 0) {
+							str += `
+								${inputs.join("\n")}
 							`;
 						}
 
