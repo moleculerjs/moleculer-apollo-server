@@ -16,7 +16,7 @@
 
 ## Install
 ```
-npm i moleculer-apollo-server moleculer-web graphql
+npm i moleculer-apollo-server moleculer-web@next graphql
 ```
 
 ## Usage
