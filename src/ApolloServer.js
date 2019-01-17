@@ -1,7 +1,7 @@
 "use strict";
 
 const { ApolloServerBase } = require("apollo-server-core");
-const { processRequest } = require("@apollographql/apollo-upload-server");
+const { processRequest } = require("graphql-upload");
 const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
 const accept = require("accept");
 const moleculerApollo = require("./moleculerApollo");
@@ -38,7 +38,7 @@ class ApolloServer extends ApolloServerBase {
 			if (this.uploadsConfig) {
 				const contentType = req.headers["content-type"];
 				if (contentType && contentType.startsWith("multipart/form-data")) {
-					req.filePayload = await processRequest(req, this.uploadsConfig);
+					req.filePayload = await processRequest(req, res, this.uploadsConfig);
 				}
 			}
 
