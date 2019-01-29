@@ -5,7 +5,7 @@ let { ServiceBroker } 	= require("moleculer");
 const ApiGateway 	= require("moleculer-web");
 const { ApolloService } = require("../../index");
 
-const broker = new ServiceBroker({ logLevel: "info" });
+const broker = new ServiceBroker({ logLevel: "info", hotReload: true });
 
 broker.createService({
 	name: "api",
@@ -42,18 +42,27 @@ broker.createService({
 	actions: {
 		hello: {
 			graphql: {
-				query: "hello: String"
+				query: "hello: String!"
 			},
-			handler(ctx) {
+			handler() {
 				return "Hello Moleculer!"
 			}
 		},
 		welcome: {
 			graphql: {
-				mutation: "welcome(name: String!): String"
+				mutation: "welcome(name: String!): String!"
 			},
 			handler(ctx) {
 				return `Hello ${ctx.params.name}`;
+			}
+		},
+		update: {
+			graphql: {
+				subscription: "update: String!",
+				tags: ["TEST"]
+			},
+			handler() {
+				// Does nothing
 			}
 		}
 	}
@@ -66,6 +75,8 @@ broker.start()
 		const res = await broker.call("api.graphql", {
 			query: `query { hello }`
 		});
+
+		setInterval(async () => broker.call("api.publish", { tag: "TEST", payload: "test" }), 5000);
 
 		if (res.errors && res.errors.length > 0)
 			return res.errors.forEach(broker.logger.error);
