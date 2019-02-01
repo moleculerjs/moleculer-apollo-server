@@ -398,29 +398,24 @@ module.exports = function(mixinOptions) {
 		}
 	};
 
-	serviceSchema.actions = {}
 	if (mixinOptions.createAction) {
-		serviceSchema.actions.graphql = {
-			params: {
-				query: { type: "string" },
-				variables: { type: "object", optional: true }
-			},
-			handler(ctx) {
-				this.prepareGraphQLSchema();
-				return GraphQL.graphql(this.graphqlSchema, ctx.params.query, null, { ctx }, ctx.params.variables);
+		serviceSchema.actions = {
+			graphql: {
+				params: {
+					query: { type: "string" },
+					variables: { type: "object", optional: true }
+				},
+				handler(ctx) {
+					this.prepareGraphQLSchema();
+					return GraphQL.graphql(this.graphqlSchema, ctx.params.query, null, { ctx }, ctx.params.variables);
+				}
 			}
 		}
 	}
-	serviceSchema.actions.publish = {
-		params: {
-			tag: { type: "string" },
-			payload: { type: "any", optional: true }
-		},
-		handler(ctx) {
-			this.pubsub.publish(ctx.params.tag, ctx.params.payload)
+	serviceSchema.events = {
+		'graphql.publish'(event) {
+			this.pubsub.publish(event.tag, event.payload)
 		}
 	}
-
-
 	return serviceSchema;
 };

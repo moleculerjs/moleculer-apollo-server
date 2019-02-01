@@ -61,8 +61,8 @@ broker.createService({
 				subscription: "update: String!",
 				tags: ["TEST"]
 			},
-			handler() {
-				// Does nothing
+			handler(ctx) {
+				return ctx.params.payload
 			}
 		}
 	}
@@ -76,11 +76,11 @@ broker.start()
 			query: `query { hello }`
 		});
 
-		setInterval(async () => broker.call("api.publish", { tag: "TEST", payload: "test" }), 5000);
+		setInterval(async () => broker.broadcast("graphql.publish", { tag: "TEST", payload: "test" }), 5000);
 
 		if (res.errors && res.errors.length > 0)
 			return res.errors.forEach(broker.logger.error);
-			
+
 		broker.logger.info(res.data);
 
 		broker.logger.info("----------------------------------------------------------");
