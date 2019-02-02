@@ -54,7 +54,7 @@ module.exports = function(mixinOptions) {
 
 			/**
 			 * Create resolvers for actions.
-			 * 
+			 *
 			 * @param {String} serviceName
 			 * @param {Object} resolvers
 			 */
@@ -338,12 +338,17 @@ module.exports = function(mixinOptions) {
 
 					this.apolloServer = new ApolloServer(_.defaultsDeep(mixinOptions.serverOptions, {
 						schema,
-						context: ({ req }) => {
+						context: ({ req, connection }) => {
 							return req ? {
 								ctx: req.$ctx,
 								service: req.$service,
 								params: req.$params,
-							} : {};
+							} : {
+								service: connection.$service
+							};
+						},
+						subscriptions: {
+							onConnect: connectionParams => ({ ...connectionParams, $service: this })
 						}
 					}));
 
@@ -414,7 +419,7 @@ module.exports = function(mixinOptions) {
 	}
 	serviceSchema.events = {
 		'graphql.publish'(event) {
-			this.pubsub.publish(event.tag, event.payload)
+			this.pubsub.publish(event.tag, event.payload);
 		}
 	}
 	return serviceSchema;
