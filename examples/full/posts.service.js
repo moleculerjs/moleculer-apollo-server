@@ -4,11 +4,11 @@ const _ = require("lodash");
 const { MoleculerClientError } 	= require("moleculer").Errors;
 
 const posts = [
-	{ id: 1, title: "First post", author: 3, votes: 2, voters: [2,5], createdAt: new Date('2018-08-23T08:10:25') },
-	{ id: 2, title: "Second post", author: 1, votes: 0, voters: [], createdAt:new Date('2018-11-23T12:59:30')  },
-	{ id: 3, title: "Third post", author: 2, votes: 1, voters: [5], createdAt:new Date('2018-02-23T22:24:28')  },
-	{ id: 4, title: "4th post", author: 3, votes: 3, voters: [4,1,2], createdAt: new Date('2018-10-23T10:33:00') },
-	{ id: 5, title: "5th post", author: 5, votes: 1, voters: [4], createdAt: new Date('2018-11-24T21:15:30') },
+	{ id: 1, title: "First post", author: 3, votes: 2, voters: [2,5], createdAt: new Date("2018-08-23T08:10:25") },
+	{ id: 2, title: "Second post", author: 1, votes: 0, voters: [], createdAt:new Date("2018-11-23T12:59:30")  },
+	{ id: 3, title: "Third post", author: 2, votes: 1, voters: [5], createdAt:new Date("2018-02-23T22:24:28")  },
+	{ id: 4, title: "4th post", author: 3, votes: 3, voters: [4,1,2], createdAt: new Date("2018-10-23T10:33:00") },
+	{ id: 5, title: "5th post", author: 5, votes: 1, voters: [4], createdAt: new Date("2018-11-24T21:15:30") },
 ]
 
 module.exports = {
@@ -95,7 +95,7 @@ module.exports = {
 			graphql: {
 				mutation: "upvote(id: Int!, userID: Int!): Post"
 			},
-			handler(ctx) {
+			async handler(ctx) {
 				const post = this.findByID(ctx.params.id);
 				if (!post)
 					throw new MoleculerClientError("Post is not found");
@@ -106,6 +106,8 @@ module.exports = {
 
 				post.voters.push(ctx.params.userID);
 				post.votes = post.voters.length;
+
+				await ctx.broadcast("graphql.publish", { tag: "VOTE", payload: { type: "up", userID: ctx.params.userID } });
 
 				return _.cloneDeep(post);
 			}
@@ -119,7 +121,7 @@ module.exports = {
 			graphql: {
 				mutation: "downvote(id: Int!, userID: Int!): Post"
 			},
-			handler(ctx) {
+			async handler(ctx) {
 				const post = this.findByID(ctx.params.id);
 				if (!post)
 					throw new MoleculerClientError("Post is not found");
@@ -131,7 +133,26 @@ module.exports = {
 				post.voters = post.voters.filter(voter => voter != ctx.params.userID);
 				post.votes = post.voters.length;
 
+				await ctx.broadcast("graphql.publish", { tag: "VOTE", payload: { type: "down", userID: ctx.params.userID } });
+
 				return _.cloneDeep(post);
+			}
+		},
+		vote: {
+			params: { payload: "object" },
+			graphql: {
+				subscription: "vote(userID: Int!): String!",
+				tags: ["VOTE"],
+				filter: "posts.vote.filter"
+			},
+			handler(ctx) {
+				return ctx.params.payload.type
+			}
+		},
+		"vote.filter": {
+			params: { userID: "number", payload: "object" },
+			handler(ctx) {
+				return ctx.params.payload.userID === ctx.params.userID
 			}
 		}
 	},

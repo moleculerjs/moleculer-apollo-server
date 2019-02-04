@@ -11,6 +11,7 @@ const { MoleculerServerError } 	= require("moleculer").Errors;
 const { ApolloServer } 			= require("./ApolloServer");
 const { makeExecutableSchema }	= require("graphql-tools");
 const GraphQL 					= require("graphql");
+const { PubSub, withFilter }	= require("graphql-subscriptions");
 
 module.exports = function(mixinOptions) {
 
@@ -20,7 +21,8 @@ module.exports = function(mixinOptions) {
 		},
 		schema: null,
 		serverOptions: {},
-		createAction: true
+		createAction: true,
+		subscriptionEventName: "graphql.publish"
 	});
 
 	let shouldUpdateSchema = true;
@@ -53,7 +55,7 @@ module.exports = function(mixinOptions) {
 
 			/**
 			 * Create resolvers for actions.
-			 * 
+			 *
 			 * @param {String} serviceName
 			 * @param {Object} resolvers
 			 */
@@ -105,6 +107,24 @@ module.exports = function(mixinOptions) {
 				};
 			},
 
+
+			/**
+			 * Create resolver for subscription
+			 *
+			 * @param {String} actionName
+			 * @param {Array?} tags
+			 * @param {Boolean?} filter
+			 */
+			createAsyncIteratorResolver(actionName, tags = [], filter = false) {
+				return {
+					subscribe: filter ? withFilter(
+						() => this.pubsub.asyncIterator(tags),
+						async (payload, params) => payload ? this.broker.call(filter, { ...params, payload }) : false,
+					) : () => this.pubsub.asyncIterator(tags),
+					resolve: async (payload, params) => this.broker.call(actionName, { ...params, payload }),
+				}
+			},
+
 			/**
 			 * Generate GraphQL Schema
 			 */
@@ -122,6 +142,7 @@ module.exports = function(mixinOptions) {
 					const queries = [];
 					const types = [];
 					const mutations = [];
+					const subscriptions = [];
 					const interfaces = [];
 					const unions = [];
 					const enums = [];
@@ -151,6 +172,10 @@ module.exports = function(mixinOptions) {
 
 								if (globalDef.mutation) {
 									mutations.push(globalDef.mutation);
+								}
+
+								if (globalDef.subscription) {
+									subscriptions.push(globalDef.subscription);
 								}
 
 								if (globalDef.interface)
@@ -198,6 +223,13 @@ module.exports = function(mixinOptions) {
 										resolver.Mutation[name] = this.createActionResolver(action.name);
 									}
 
+									if (def.subscription) {
+										const name = def.subscription.split(/[(:]/g)[0];
+										subscriptions.push(def.subscription);
+										if (!resolver["Subscription"]) resolver.Subscription = {};
+										resolver.Subscription[name] = this.createAsyncIteratorResolver(action.name, def.tags, def.filter);
+									}
+
 									if (def.interface)
 										interfaces.push(def.interface);
 
@@ -221,6 +253,7 @@ module.exports = function(mixinOptions) {
 					if (queries.length > 0
 					|| types.length > 0
 					|| mutations.length > 0
+					|| subscriptions.length > 0
 					|| interfaces.length > 0
 					|| unions.length > 0
 					|| enums.length > 0
@@ -244,6 +277,14 @@ module.exports = function(mixinOptions) {
 							str += `
 								type Mutation {
 									${mutations.join("\n")}
+								}
+							`;
+						}
+
+						if (subscriptions.length > 0) {
+							str += `
+								type Subscription {
+									${subscriptions.join("\n")}
 								}
 							`;
 						}
@@ -291,22 +332,29 @@ module.exports = function(mixinOptions) {
 				this.logger.info("♻ Recreate Apollo GraphQL server and regenerate GraphQL schema...");
 
 				try {
+					this.pubsub = new PubSub();
 					const schema = this.generateGraphQLSchema();
 
 					this.logger.debug("Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema));
 
 					this.apolloServer = new ApolloServer(_.defaultsDeep(mixinOptions.serverOptions, {
 						schema,
-						context: ({ req }) => {
-							return {
+						context: ({ req, connection }) => {
+							return req ? {
 								ctx: req.$ctx,
 								service: req.$service,
 								params: req.$params,
+							} : {
+								service: connection.$service
 							};
+						},
+						subscriptions: {
+							onConnect: connectionParams => ({ ...connectionParams, $service: this })
 						}
 					}));
 
 					this.graphqlHandler = this.apolloServer.createHandler();
+					this.apolloServer.installSubscriptionHandlers(this.server);
 					this.graphqlSchema = schema;
 
 					shouldUpdateSchema = false;
@@ -370,6 +418,10 @@ module.exports = function(mixinOptions) {
 			}
 		}
 	}
-
+	serviceSchema.events = {
+		[mixinOptions.subscriptionEventName](event) {
+			this.pubsub.publish(event.tag, event.payload);
+		}
+	}
 	return serviceSchema;
 };

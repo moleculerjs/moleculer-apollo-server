@@ -34,7 +34,7 @@ class ApolloServer extends ApolloServerBase {
 			await promiseWillStart;
 
 			// If file uploads are detected, prepare them for easier handling with
-			// the help of `apollo-upload-server`.
+			// the help of `graphql-upload`.
 			if (this.uploadsConfig) {
 				const contentType = req.headers["content-type"];
 				if (contentType && contentType.startsWith("multipart/form-data")) {
@@ -75,7 +75,7 @@ class ApolloServer extends ApolloServerBase {
 
 	// This integration supports subscriptions.
 	supportsSubscriptions() {
-		return false;
+		return true;
 	}
 }
 exports.ApolloServer = ApolloServer;

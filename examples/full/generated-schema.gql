@@ -20,6 +20,10 @@ type Query {
   users(limit: Int): [User]
 }
 
+type Subscription {
+  vote(userID: Int!): String!
+}
+
 scalar Timestamp
 
 """This type describes a user entity."""
