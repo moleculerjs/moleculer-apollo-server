@@ -21,7 +21,8 @@ module.exports = function(mixinOptions) {
 		},
 		schema: null,
 		serverOptions: {},
-		createAction: true
+		createAction: true,
+		subscriptionEventName: "graphql.publish"
 	});
 
 	let shouldUpdateSchema = true;
@@ -418,7 +419,7 @@ module.exports = function(mixinOptions) {
 		}
 	}
 	serviceSchema.events = {
-		'graphql.publish'(event) {
+		[mixinOptions.subscriptionEventName](event) {
 			this.pubsub.publish(event.tag, event.payload);
 		}
 	}

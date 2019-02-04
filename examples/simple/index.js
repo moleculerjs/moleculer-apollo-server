@@ -76,7 +76,8 @@ broker.start()
 			query: `query { hello }`
 		});
 
-		setInterval(async () => broker.broadcast("graphql.publish", { tag: "TEST", payload: "test" }), 5000);
+		let counter = 1;
+		setInterval(async () => broker.broadcast("graphql.publish", { tag: "TEST", payload: `test ${counter++}` }), 5000);
 
 		if (res.errors && res.errors.length > 0)
 			return res.errors.forEach(broker.logger.error);
