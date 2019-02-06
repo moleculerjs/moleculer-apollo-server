@@ -32,12 +32,12 @@
   "devDependencies": {
     "benchmarkify": "2.1.1",
     "coveralls": "3.0.2",
-    "eslint": "5.12.0",
-    "graphql": "14.0.2",
-    "jest": "23.6.0",
-    "jest-cli": "23.6.0",
+    "eslint": "5.13.0",
+    "graphql": "14.1.1",
+    "jest": "24.1.0",
+    "jest-cli": "24.1.0",
     "moleculer": "0.13.5",
-    "moleculer-repl": "0.5.4",
+    "moleculer-repl": "0.5.5",
     "moleculer-web": "0.9.0-beta1",
     "nodemon": "1.18.9",
     "npm-check": "5.9.0"
@@ -59,9 +59,9 @@
   "dependencies": {
     "@apollographql/graphql-playground-html": "1.6.6",
     "accept": "3.1.3",
-    "apollo-server-core": "2.3.1",
+    "apollo-server-core": "2.3.4",
     "graphql-subscriptions": "^1.0.0",
-    "graphql-tools": "4.0.3",
+    "graphql-tools": "4.0.4",
     "graphql-upload": "^8.0.4",
     "lodash": "4.17.11"
   }

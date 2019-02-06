@@ -119,9 +119,9 @@ module.exports = function(mixinOptions) {
 				return {
 					subscribe: filter ? withFilter(
 						() => this.pubsub.asyncIterator(tags),
-						async (payload, params) => payload ? this.broker.call(filter, { ...params, payload }) : false,
+						async (payload, params, ctx) => payload !== undefined ? this.broker.call(filter, { ...params, payload }, ctx) : false,
 					) : () => this.pubsub.asyncIterator(tags),
-					resolve: async (payload, params) => this.broker.call(actionName, { ...params, payload }),
+					resolve: async (payload, params, ctx) => this.broker.call(actionName, { ...params, payload }, ctx),
 				}
 			},
 
