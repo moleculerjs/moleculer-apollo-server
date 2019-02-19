@@ -13,6 +13,7 @@ type Post {
   votes: Int!
   voters: [User]
   createdAt: Timestamp
+  error: String
 }
 
 type Query {
