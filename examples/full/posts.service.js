@@ -26,6 +26,7 @@ module.exports = {
 					votes: Int!,
 					voters: [User],
 					createdAt: Timestamp
+					error: String
 				}
 			`,
 			resolvers: {
@@ -41,6 +42,10 @@ module.exports = {
 						rootParams: {
 							"voters": "id"
 						}
+					},
+					error: {
+						action: "posts.error",
+						nullIfError: true
 					}
 				}
 			}
@@ -154,7 +159,12 @@ module.exports = {
 			handler(ctx) {
 				return ctx.params.payload.userID === ctx.params.userID
 			}
-		}
+		},
+		error: {
+			handler() {
+				throw new Error('Oh look an error !')
+			}
+		},
 	},
 
 	methods: {
