@@ -101,7 +101,7 @@ module.exports = function(mixinOptions) {
 					} catch(err) {
 						if (err && err.ctx)
 							delete err.ctx; // Avoid circular JSON
-						if (def.nullIfError)
+						if (def && def.nullIfError)
 							return null;
 						throw err;
 					}
