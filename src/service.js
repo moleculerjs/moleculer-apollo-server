@@ -388,25 +388,33 @@ module.exports = function(mixinOptions) {
 			},
 
 			createLoaders(req, services) {
-				return services.reduce((accum, service) => {
+				return services.reduce((serviceAccum, service) => {
 					const serviceName = this.getServiceName(service);
 
 					const { graphql } = service.settings;
 					if (graphql && graphql.resolvers) {
 						const { resolvers } = graphql;
-						const serviceLoaders = Object.values(resolvers).reduce((acc, resolver) => {
-							if (_.isPlainObject(resolver) && resolver.dataLoaderKey != null) {
-								const resolverActionName = this.getResolverActionName(serviceName, resolver.action);
-								acc[resolverActionName] = new DataLoader(keys => {
-									console.log(`calling data loader with ${keys}`);
-									return req.$ctx.call(resolverActionName, { id: keys });
-								});
-							}
-						});
-						accum = { ...accum, ...serviceLoaders };
+
+						const typeLoaders = Object.values(resolvers).reduce((resolverAccum, type) => {
+							const resolverLoaders = Object.values(type).reduce((fieldAccum, resolver) => {
+								if (_.isPlainObject(resolver) && resolver.dataLoaderKey != null) {
+									const resolverActionName = this.getResolverActionName(serviceName, resolver.action);
+									fieldAccum[resolverActionName] = new DataLoader(keys => {
+										console.log(`calling data loader with ${keys}`);
+										return req.$ctx.call(resolverActionName, { id: keys });
+									});
+								}
+
+								return fieldAccum;
+							}, {});
+
+							return { ...resolverAccum, ...resolverLoaders };
+						}, {});
+
+						serviceAccum = { ...serviceAccum, ...typeLoaders };
 					}
 
-					return accum;
+					return serviceAccum;
 				}, {});
 			},
 		},
