@@ -92,6 +92,7 @@ module.exports = function(mixinOptions) {
 					if (dataLoaderKey) {
 						return (root, args, context) => {
 							const idValue = _.get(root, dataLoaderKey);
+							console.log(`loading ${idValue} into ${actionName} dataLoader`);
 							return context.loaders[actionName].load(idValue);
 						};
 					}
