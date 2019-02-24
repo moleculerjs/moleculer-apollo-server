@@ -381,34 +381,34 @@ module.exports = function(mixinOptions) {
 					this.logger.error(err);
 					throw err;
 				}
-			}
-		},
+			},
 
-		getServiceName(service) {
-			return service.version ? `v${service.version}.${service.name}` : service.name;
-		},
+			getServiceName(service) {
+				return service.version ? `v${service.version}.${service.name}` : service.name;
+			},
 
-		createLoaders(req, services) {
-			return services.reduce((accum, service) => {
-				const serviceName = this.getServiceName(service);
+			createLoaders(req, services) {
+				return services.reduce((accum, service) => {
+					const serviceName = this.getServiceName(service);
 
-				const { graphql } = service.settings;
-				if (graphql && graphql.resolvers) {
-					const { resolvers } = graphql;
-					const serviceLoaders = Object.values(resolvers).reduce((acc, resolver) => {
-						if (_.isPlainObject(resolver) && resolver.dataLoaderKey != null) {
-							const resolverActionName = this.getResolverActionName(serviceName, resolver.action);
-							acc[resolverActionName] = new DataLoader(keys => {
-								console.log(`calling data loader with ${keys}`);
-								return req.$ctx.call(resolverActionName, { id: keys });
-							});
-						}
-					});
-					accum = { ...accum, ...serviceLoaders };
-				}
+					const { graphql } = service.settings;
+					if (graphql && graphql.resolvers) {
+						const { resolvers } = graphql;
+						const serviceLoaders = Object.values(resolvers).reduce((acc, resolver) => {
+							if (_.isPlainObject(resolver) && resolver.dataLoaderKey != null) {
+								const resolverActionName = this.getResolverActionName(serviceName, resolver.action);
+								acc[resolverActionName] = new DataLoader(keys => {
+									console.log(`calling data loader with ${keys}`);
+									return req.$ctx.call(resolverActionName, { id: keys });
+								});
+							}
+						});
+						accum = { ...accum, ...serviceLoaders };
+					}
 
-				return accum;
-			}, {});
+					return accum;
+				}, {});
+			},
 		},
 
 		created() {
