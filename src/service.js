@@ -86,22 +86,20 @@ module.exports = function(mixinOptions) {
 			 * @param {Object?} def
 			 */
 			createActionResolver(actionName, def) {
-				const { dataLoader, params, rootParams } = def;
+				const { dataLoader = false, params, rootParams } = def;
+				const rootKeys = rootParams && Object.keys(rootParams);
 
-				if (dataLoader) {
-					const { rootParam } = dataLoader;
-
-					return async (root, args, context) => {
-						const rootValue = root && rootParam && root[rootParam];
+				return dataLoader ?
+					async (root, args, context) => {
+						const rootValue = root && rootKeys && rootKeys[0] && root[rootKeys[0]];
+						if (rootValue == null) {
+							return null;
+						}
 
 						try {
-							if (Array.isArray(rootValue)) {
-								return Promise.all([].concat(rootValue).map(item => {
-									return context.loaders[actionName].load(item);
-								}));
-							}
-
-							return await context.loaders[actionName].load(rootValue);
+							return Array.isArray(rootValue)
+								? await Promise.all(rootValue.map(item => context.loaders[actionName].load(item)))
+								: await context.loaders[actionName].load(rootValue);
 						} catch (err) {
 							if (def && def.nullIfError) {
 								return null;
@@ -111,26 +109,20 @@ module.exports = function(mixinOptions) {
 							}
 							throw err;
 						}
+					} :
+					async (root, args, context) => {
+						const p = {};
+						if (root && rootKeys) {
+							rootKeys.forEach(k => _.set(p, def.rootParams[k], _.get(root, k)));
+						}
+						try {
+							return await context.ctx.call(actionName, _.defaultsDeep(args, p, params));
+						} catch (err) {
+							if (err && err.ctx) delete err.ctx; // Avoid circular JSON
+							if (def && def.nullIfError) return null;
+							throw err;
+						}
 					};
-				}
-
-				const rootKeys = rootParams && Object.keys(rootParams);
-
-				return async (root, args, context) => {
-					const p = {};
-					if (root && rootKeys) {
-						rootKeys.forEach(k => _.set(p, def.rootParams[k], _.get(root, k)));
-					}
-					try {
-						return await context.ctx.call(actionName, _.defaultsDeep(args, p, params));
-					} catch(err) {
-						if (err && err.ctx)
-							delete err.ctx; // Avoid circular JSON
-						if (def && def.nullIfError)
-							return null;
-						throw err;
-					}
-				};
 			},
 
 
