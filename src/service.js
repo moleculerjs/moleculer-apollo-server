@@ -86,12 +86,13 @@ module.exports = function(mixinOptions) {
 			 * @param {Object?} def
 			 */
 			createActionResolver(actionName, def) {
-				const { dataLoader = false, params, rootParams } = def;
-				const rootKeys = rootParams && Object.keys(rootParams);
+				const { dataLoader = false, params, rootParams = {} } = def;
+				const rootKeys = Object.keys(rootParams);
 
 				return dataLoader ?
 					async (root, args, context) => {
-						const rootValue = root && rootKeys && rootKeys[0] && root[rootKeys[0]];
+						const dataLoaderKey = rootKeys[0];
+						const rootValue = root && root[dataLoaderKey];
 						if (rootValue == null) {
 							return null;
 						}
@@ -405,10 +406,10 @@ module.exports = function(mixinOptions) {
 
 						const typeLoaders = Object.values(resolvers).reduce((resolverAccum, type) => {
 							const resolverLoaders = Object.values(type).reduce((fieldAccum, resolver) => {
-								const { dataLoader } = resolver;
-								if (_.isPlainObject(resolver) && dataLoader != null) {
-									const { actionParam } = dataLoader;
-									const resolverActionName = this.getResolverActionName(serviceName, resolver.action);
+								const { action, dataLoader = false, rootParams = {} } = resolver;
+								const actionParam = Object.values(rootParams)[0]; // use the first root parameter
+								if (_.isPlainObject(resolver) && dataLoader && actionParam) {
+									const resolverActionName = this.getResolverActionName(serviceName, action);
 									fieldAccum[resolverActionName] = new DataLoader(keys => {
 										return req.$ctx.call(resolverActionName, { [actionParam]: keys });
 									});
