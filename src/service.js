@@ -96,10 +96,10 @@ module.exports = function(mixinOptions) {
 							return (root, args, context) => {
 								const rootValue = root[rootParam];
 								if (rootValue != null) {
-									return Promise.all([].concat(rootValue).map(item=> {
+									return Promise.all([].concat(rootValue).map(async item => {
 										const loadValue = arrayObjectParam != null ? item[arrayObjectParam] : item;
 										try {
-											return context.loaders[actionName].load(loadValue);
+											return await context.loaders[actionName].load(loadValue);
 										} catch (err) {
 											if (def && def.nullIfError) {
 												return null;
@@ -114,10 +114,10 @@ module.exports = function(mixinOptions) {
 							};
 						}
 
-						return (root, args, context) => {
+						return async (root, args, context) => {
 							const loadValue = root[rootParam];
 							try {
-								return context.loaders[actionName].load(loadValue);
+								return await context.loaders[actionName].load(loadValue);
 							} catch (err) {
 								if (def && def.nullIfError) {
 									return null;
@@ -134,13 +134,13 @@ module.exports = function(mixinOptions) {
 					if (def.rootParams)
 						rootKeys = Object.keys(def.rootParams);
 				}
-				return (root, args, context) => {
+				return async (root, args, context) => {
 					const p = {};
 					if (root && rootKeys) {
 						rootKeys.forEach(k => _.set(p, def.rootParams[k], _.get(root, k)));
 					}
 					try {
-						return context.ctx.call(actionName, _.defaultsDeep(args, p, params));
+						return await context.ctx.call(actionName, _.defaultsDeep(args, p, params));
 					} catch(err) {
 						if (err && err.ctx)
 							delete err.ctx; // Avoid circular JSON
