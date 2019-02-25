@@ -85,7 +85,7 @@ module.exports = function(mixinOptions) {
 			 * @param {String} actionName
 			 * @param {Object?} def
 			 */
-			createActionResolver(actionName, def) {
+			createActionResolver(actionName, def = {}) {
 				const { dataLoader = false, params, rootParams = {} } = def;
 				const rootKeys = Object.keys(rootParams);
 
