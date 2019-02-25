@@ -86,39 +86,36 @@ module.exports = function(mixinOptions) {
 			 * @param {Object?} def
 			 */
 			createActionResolver(actionName, def) {
-				let params, rootKeys;
-				if (def) {
-					const { dataLoader } = def;
-					if (dataLoader) {
-						const { rootParam } = dataLoader;
+				const { dataLoader, params, rootParams } = def;
 
-						return async (root, args, context) => {
-							const rootValue = root[rootParam];
+				if (dataLoader) {
+					const { rootParam } = dataLoader;
 
-							try {
-								if (Array.isArray(rootValue)) {
-									return Promise.all([].concat(rootValue).map(item => {
-										return context.loaders[actionName].load(item);
-									}));
-								}
+					return async (root, args, context) => {
+						const rootValue = root && rootParam && root[rootParam];
 
-								return await context.loaders[actionName].load(rootValue);
-							} catch (err) {
-								if (def && def.nullIfError) {
-									return null;
-								}
-								if (err && err.ctx) {
-									delete err.ctx; // Avoid circular JSON
-								}
-								throw err;
+						try {
+							if (Array.isArray(rootValue)) {
+								return Promise.all([].concat(rootValue).map(item => {
+									return context.loaders[actionName].load(item);
+								}));
 							}
-						};
-					}
 
-					params = def.params;
-					if (def.rootParams)
-						rootKeys = Object.keys(def.rootParams);
+							return await context.loaders[actionName].load(rootValue);
+						} catch (err) {
+							if (def && def.nullIfError) {
+								return null;
+							}
+							if (err && err.ctx) {
+								delete err.ctx; // Avoid circular JSON
+							}
+							throw err;
+						}
+					};
 				}
+
+				const rootKeys = rootParams && Object.keys(rootParams);
+
 				return async (root, args, context) => {
 					const p = {};
 					if (root && rootKeys) {
