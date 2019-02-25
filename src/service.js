@@ -88,12 +88,27 @@ module.exports = function(mixinOptions) {
 			createActionResolver(actionName, def) {
 				let params, rootKeys;
 				if (def) {
-					const { dataLoaderKey } = def;
-					if (dataLoaderKey) {
+					const { dataLoader } = def;
+					if (dataLoader) {
+						const { rootParam, iteratorParam } = dataLoader;
+
+						if (iteratorParam != null) {
+							return (root, args, context) => {
+								const rootValue = _.get(root, rootParam);
+								if (rootValue != null) {
+									return Promise.all([].concat(rootValue).map(item=> {
+										const loadValue = item[iteratorParam];
+										console.log(`loading ${loadValue} into ${actionName} dataLoader`);
+										return context.loaders[actionName].load(loadValue);
+									}));
+								}
+							};
+						}
+
 						return (root, args, context) => {
-							const idValue = _.get(root, dataLoaderKey);
-							console.log(`loading ${idValue} into ${actionName} dataLoader`);
-							return context.loaders[actionName].load(idValue);
+							const loadValue = _.get(root, rootParam);
+							console.log(`loading ${loadValue} into ${actionName} dataLoader`);
+							return context.loaders[actionName].load(loadValue);
 						};
 					}
 
@@ -398,11 +413,13 @@ module.exports = function(mixinOptions) {
 
 						const typeLoaders = Object.values(resolvers).reduce((resolverAccum, type) => {
 							const resolverLoaders = Object.values(type).reduce((fieldAccum, resolver) => {
-								if (_.isPlainObject(resolver) && resolver.dataLoaderKey != null) {
+								const { dataLoader } = resolver;
+								if (_.isPlainObject(resolver) && dataLoader != null) {
+									const { actionParam } = dataLoader;
 									const resolverActionName = this.getResolverActionName(serviceName, resolver.action);
 									fieldAccum[resolverActionName] = new DataLoader(keys => {
 										console.log(`calling data loader with ${keys}`);
-										return req.$ctx.call(resolverActionName, { id: keys });
+										return req.$ctx.call(resolverActionName, { [actionParam]: keys });
 									});
 								}
 
