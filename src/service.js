@@ -90,14 +90,14 @@ module.exports = function(mixinOptions) {
 				if (def) {
 					const { dataLoader } = def;
 					if (dataLoader) {
-						const { rootParam, iteratorParam } = dataLoader;
+						const { rootParam, isArray = false, arrayObjectParam } = dataLoader;
 
-						if (iteratorParam != null) {
+						if (isArray) {
 							return (root, args, context) => {
 								const rootValue = _.get(root, rootParam);
 								if (rootValue != null) {
 									return Promise.all([].concat(rootValue).map(item=> {
-										const loadValue = item[iteratorParam];
+										const loadValue = arrayObjectParam != null ? item[arrayObjectParam] : item;
 										console.log(`loading ${loadValue} into ${actionName} dataLoader`);
 										return context.loaders[actionName].load(loadValue);
 									}));
