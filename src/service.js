@@ -90,34 +90,19 @@ module.exports = function(mixinOptions) {
 				if (def) {
 					const { dataLoader } = def;
 					if (dataLoader) {
-						const { rootParam, isArray = false, arrayObjectParam } = dataLoader;
-
-						if (isArray) {
-							return (root, args, context) => {
-								const rootValue = root[rootParam];
-								if (rootValue != null) {
-									return Promise.all([].concat(rootValue).map(async item => {
-										const loadValue = arrayObjectParam != null ? item[arrayObjectParam] : item;
-										try {
-											return await context.loaders[actionName].load(loadValue);
-										} catch (err) {
-											if (def && def.nullIfError) {
-												return null;
-											}
-											if (err && err.ctx) {
-												delete err.ctx; // Avoid circular JSON
-											}
-											throw err;
-										}
-									}));
-								}
-							};
-						}
+						const { rootParam } = dataLoader;
 
 						return async (root, args, context) => {
-							const loadValue = root[rootParam];
+							const rootValue = root[rootParam];
+
 							try {
-								return await context.loaders[actionName].load(loadValue);
+								if (Array.isArray(rootValue)) {
+									return Promise.all([].concat(rootValue).map(item => {
+										return context.loaders[actionName].load(item);
+									}));
+								}
+
+								return await context.loaders[actionName].load(rootValue);
 							} catch (err) {
 								if (def && def.nullIfError) {
 									return null;
