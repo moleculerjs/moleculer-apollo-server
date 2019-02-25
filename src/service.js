@@ -94,21 +94,39 @@ module.exports = function(mixinOptions) {
 
 						if (isArray) {
 							return (root, args, context) => {
-								const rootValue = _.get(root, rootParam);
+								const rootValue = root[rootParam];
 								if (rootValue != null) {
 									return Promise.all([].concat(rootValue).map(item=> {
 										const loadValue = arrayObjectParam != null ? item[arrayObjectParam] : item;
-										console.log(`loading ${loadValue} into ${actionName} dataLoader`);
-										return context.loaders[actionName].load(loadValue);
+										try {
+											return context.loaders[actionName].load(loadValue);
+										} catch (err) {
+											if (def && def.nullIfError) {
+												return null;
+											}
+											if (err && err.ctx) {
+												delete err.ctx; // Avoid circular JSON
+											}
+											throw err;
+										}
 									}));
 								}
 							};
 						}
 
 						return (root, args, context) => {
-							const loadValue = _.get(root, rootParam);
-							console.log(`loading ${loadValue} into ${actionName} dataLoader`);
-							return context.loaders[actionName].load(loadValue);
+							const loadValue = root[rootParam];
+							try {
+								return context.loaders[actionName].load(loadValue);
+							} catch (err) {
+								if (def && def.nullIfError) {
+									return null;
+								}
+								if (err && err.ctx) {
+									delete err.ctx; // Avoid circular JSON
+								}
+								throw err;
+							}
 						};
 					}
 
@@ -418,7 +436,6 @@ module.exports = function(mixinOptions) {
 									const { actionParam } = dataLoader;
 									const resolverActionName = this.getResolverActionName(serviceName, resolver.action);
 									fieldAccum[resolverActionName] = new DataLoader(keys => {
-										console.log(`calling data loader with ${keys}`);
 										return req.$ctx.call(resolverActionName, { [actionParam]: keys });
 									});
 								}
