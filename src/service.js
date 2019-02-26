@@ -92,7 +92,7 @@ module.exports = function(mixinOptions) {
 				return async (root, args, context) => {
 					try {
 						if (dataLoader) {
-							const dataLoaderKey = rootKeys[0];
+							const dataLoaderKey = rootKeys[0]; // use the first root key
 							const rootValue = root && root[dataLoaderKey];
 							if (rootValue == null) {
 								return null;
@@ -141,8 +141,8 @@ module.exports = function(mixinOptions) {
 			/**
 			 * Generate GraphQL Schema
 			 *
-			 * @param {?[]} services
-			 * @returns {object} Generated schema
+			 * @param {Object[]} services
+			 * @returns {Object} Generated schema
 			 */
 			generateGraphQLSchema(services) {
 				try {
@@ -386,10 +386,21 @@ module.exports = function(mixinOptions) {
 				}
 			},
 
+			/**
+			 * Get the name of a service including version spec
+			 * @param {Object} service - Service object
+			 * @returns {String} Name of service including version spec
+			 */
 			getServiceName(service) {
 				return service.version ? `v${service.version}.${service.name}` : service.name;
 			},
 
+			/**
+			 * Create the DataLoader instances to be used for batch resolution
+			 * @param {Object} req
+			 * @param {Object[]} services
+			 * @returns {Object.<string, Object>} Key/value pairs of DataLoader instances
+			 */
 			createLoaders(req, services) {
 				return services.reduce((serviceAccum, service) => {
 					const serviceName = this.getServiceName(service);
@@ -400,13 +411,18 @@ module.exports = function(mixinOptions) {
 
 						const typeLoaders = Object.values(resolvers).reduce((resolverAccum, type) => {
 							const resolverLoaders = Object.values(type).reduce((fieldAccum, resolver) => {
-								const { action, dataLoader = false, rootParams = {} } = resolver;
-								const actionParam = Object.values(rootParams)[0]; // use the first root parameter
-								if (_.isPlainObject(resolver) && dataLoader && actionParam) {
-									const resolverActionName = this.getResolverActionName(serviceName, action);
-									fieldAccum[resolverActionName] = new DataLoader(keys => {
-										return req.$ctx.call(resolverActionName, { [actionParam]: keys });
-									});
+								if (_.isPlainObject(resolver)) {
+									const { action, dataLoader = false, rootParams = {} } = resolver;
+									const actionParam = Object.values(rootParams)[0]; // use the first root parameter
+									if (dataLoader && actionParam) {
+										const resolverActionName = this.getResolverActionName(serviceName, action);
+										if (fieldAccum[resolverActionName] == null) {
+											// create a new DataLoader instance
+											fieldAccum[resolverActionName] = new DataLoader(keys => {
+												return req.$ctx.call(resolverActionName, { [actionParam]: keys });
+											});
+										}
+									}
 								}
 
 								return fieldAccum;
