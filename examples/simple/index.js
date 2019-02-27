@@ -33,11 +33,11 @@ broker.createService({
 		"graphql.schema.updated"({ schema }) {
 			this.logger.info("Generated GraphQL schema:\n\n" + schema);
 		}
-	}	
+	}
 });
 
 broker.createService({
-	name: "greeter", 
+	name: "greeter",
 
 	actions: {
 		hello: {
@@ -45,7 +45,7 @@ broker.createService({
 				query: "hello: String!"
 			},
 			handler() {
-				return "Hello Moleculer!"
+				return "Hello Moleculer!";
 			}
 		},
 		welcome: {
@@ -62,18 +62,18 @@ broker.createService({
 				tags: ["TEST"]
 			},
 			handler(ctx) {
-				return ctx.params.payload
+				return ctx.params.payload;
 			}
 		}
 	}
-})
+});
 
 broker.start()
 	.then(async () => {
 		broker.repl();
 
 		const res = await broker.call("api.graphql", {
-			query: `query { hello }`
+			query: "query { hello }"
 		});
 
 		let counter = 1;

@@ -1,0 +1,37 @@
+scalar Date
+
+type Mutation {
+  upvote(id: Int!, userID: Int!): Post
+  downvote(id: Int!, userID: Int!): Post
+}
+
+"""This type describes a post entity."""
+type Post {
+  id: Int!
+  title: String!
+  author: User!
+  votes: Int!
+  voters: [User]
+  createdAt: Timestamp
+  error: String
+}
+
+type Query {
+  posts(limit: Int): [Post]
+  users(limit: Int): [User]
+}
+
+type Subscription {
+  vote(userID: Int!): String!
+}
+
+scalar Timestamp
+
+"""This type describes a user entity."""
+type User {
+  id: Int!
+  name: String!
+  birthday: Date
+  posts(limit: Int): [Post]
+  postCount: Int
+}
