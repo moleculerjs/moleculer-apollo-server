@@ -264,6 +264,7 @@ module.exports = {
 
 - [Simple](examples/simple/index.js)
 - [Full](examples/full/index.js)
+- [Full With Dataloader](examples/full-dataloader/index.js)
 
 # Test
 ```
