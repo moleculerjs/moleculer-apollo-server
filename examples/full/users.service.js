@@ -3,12 +3,12 @@
 const _ = require("lodash");
 
 const users = [
-	{ id: 1, name: "Genaro Krueger", birthday: new Date('1975-12-17') },
-	{ id: 2, name: "Nicholas Paris", birthday: new Date('1981-01-27') },
-	{ id: 3, name: "Quinton Loden", birthday: new Date('1995-03-22') },
-	{ id: 4, name: "Bradford Knauer", birthday: new Date('2008-11-01') },
-	{ id: 5, name: "Damien Accetta", birthday: new Date('1959-08-07') },
-]
+	{ id: 1, name: "Genaro Krueger", birthday: new Date("1975-12-17") },
+	{ id: 2, name: "Nicholas Paris", birthday: new Date("1981-01-27") },
+	{ id: 3, name: "Quinton Loden", birthday: new Date("1995-03-22") },
+	{ id: 4, name: "Bradford Knauer", birthday: new Date("2008-11-01") },
+	{ id: 5, name: "Damien Accetta", birthday: new Date("1959-08-07") },
+];
 
 module.exports = {
 	name: "users",
@@ -34,16 +34,16 @@ module.exports = {
 							"id": "userID"
 						}
 					},
-                    postCount: {
-                        // Call the "posts.count" action
-                        action: "posts.count",
-                        // Get `id` value from `root` and put it into `ctx.params.query.author`
-                        rootParams: {
-                            "id": "query.author"
-                        }
-                    }					
+					postCount: {
+						// Call the "posts.count" action
+						action: "posts.count",
+						// Get `id` value from `root` and put it into `ctx.params.query.author`
+						rootParams: {
+							"id": "query.author"
+						}
+					}
 				}
-			}			
+			}
 		}
 	},
 	actions: {
@@ -74,6 +74,7 @@ module.exports = {
 				]
 			},
 			handler(ctx) {
+				this.logger.debug("resolve action called.", { params: ctx.params });
 				if (Array.isArray(ctx.params.id)) {
 					return _.cloneDeep(ctx.params.id.map(id => this.findByID(id)));
 				} else {

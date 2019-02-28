@@ -9,7 +9,7 @@ const posts = [
 	{ id: 3, title: "Third post", author: 2, votes: 1, voters: [5], createdAt:new Date("2018-02-23T22:24:28")  },
 	{ id: 4, title: "4th post", author: 3, votes: 3, voters: [4,1,2], createdAt: new Date("2018-10-23T10:33:00") },
 	{ id: 5, title: "5th post", author: 5, votes: 1, voters: [4], createdAt: new Date("2018-11-24T21:15:30") },
-]
+];
 
 module.exports = {
 	name: "posts",
@@ -33,12 +33,14 @@ module.exports = {
 				Post: {
 					author: {
 						action: "users.resolve",
+						dataLoader: process.env.DATALOADER === "true",
 						rootParams: {
 							"author": "id"
 						}
 					},
 					voters: {
 						action: "users.resolve",
+						dataLoader: process.env.DATALOADER === "true",
 						rootParams: {
 							"voters": "id"
 						}
@@ -58,7 +60,7 @@ module.exports = {
 				limit: { type: "number", optional: true }
 			},
 			graphql: {
-				query: `posts(limit: Int): [Post]`
+				query: "posts(limit: Int): [Post]"
 			},
 			handler(ctx) {
 				let result = _.cloneDeep(posts);
@@ -151,18 +153,18 @@ module.exports = {
 				filter: "posts.vote.filter"
 			},
 			handler(ctx) {
-				return ctx.params.payload.type
+				return ctx.params.payload.type;
 			}
 		},
 		"vote.filter": {
 			params: { userID: "number", payload: "object" },
 			handler(ctx) {
-				return ctx.params.payload.userID === ctx.params.userID
+				return ctx.params.payload.userID === ctx.params.userID;
 			}
 		},
 		error: {
 			handler() {
-				throw new Error('Oh look an error !')
+				throw new Error("Oh look an error !");
 			}
 		},
 	},
@@ -170,6 +172,6 @@ module.exports = {
 	methods: {
 		findByID(id) {
 			return posts.find(post => post.id == id);
-		}		
+		}
 	}
 };

@@ -9,6 +9,7 @@
 const _ 						= require("lodash");
 const { MoleculerServerError } 	= require("moleculer").Errors;
 const { ApolloServer } 			= require("./ApolloServer");
+const DataLoader = require("dataloader");
 const { makeExecutableSchema }	= require("graphql-tools");
 const GraphQL 					= require("graphql");
 const { PubSub, withFilter }	= require("graphql-subscriptions");
@@ -84,25 +85,36 @@ module.exports = function(mixinOptions) {
 			 * @param {String} actionName
 			 * @param {Object?} def
 			 */
-			createActionResolver(actionName, def) {
-				let params, rootKeys;
-				if (def) {
-					params = def.params;
-					if (def.rootParams)
-						rootKeys = Object.keys(def.rootParams);
-				}
+			createActionResolver(actionName, def = {}) {
+				const { dataLoader = false, nullIfError = false, params = {}, rootParams = {} } = def;
+				const rootKeys = Object.keys(rootParams);
+
 				return async (root, args, context) => {
-					const p = {};
-					if (root && rootKeys) {
-						rootKeys.forEach(k => _.set(p, def.rootParams[k], _.get(root, k)));
-					}
 					try {
-						return await context.ctx.call(actionName, _.defaultsDeep(args, p, params));
-					} catch(err) {
-						if (err && err.ctx)
-							delete err.ctx; // Avoid circular JSON
-						if (def && def.nullIfError)
+						if (dataLoader) {
+							const dataLoaderKey = rootKeys[0]; // use the first root key
+							const rootValue = root && root[dataLoaderKey];
+							if (rootValue == null) {
+								return null;
+							}
+
+							return Array.isArray(rootValue)
+								? await Promise.all(rootValue.map(item => context.loaders[actionName].load(item)))
+								: await context.loaders[actionName].load(rootValue);
+						} else {
+							const p = {};
+							if (root && rootKeys) {
+								rootKeys.forEach(k => _.set(p, def.rootParams[k], _.get(root, k)));
+							}
+							return await context.ctx.call(actionName, _.defaultsDeep(args, p, params));
+						}
+					} catch (err) {
+						if (nullIfError) {
 							return null;
+						}
+						if (err && err.ctx) {
+							delete err.ctx; // Avoid circular JSON
+						}
 						throw err;
 					}
 				};
@@ -123,13 +135,16 @@ module.exports = function(mixinOptions) {
 						async (payload, params, ctx) => payload !== undefined ? this.broker.call(filter, { ...params, payload }, ctx) : false,
 					) : () => this.pubsub.asyncIterator(tags),
 					resolve: async (payload, params, ctx) => this.broker.call(actionName, { ...params, payload }, ctx),
-				}
+				};
 			},
 
 			/**
 			 * Generate GraphQL Schema
+			 *
+			 * @param {Object[]} services
+			 * @returns {Object} Generated schema
 			 */
-			generateGraphQLSchema() {
+			generateGraphQLSchema(services) {
 				try {
 					let typeDefs = [];
 					let resolvers = {};
@@ -151,10 +166,9 @@ module.exports = function(mixinOptions) {
 
 					const processedServices = new Set();
 
-					const services = this.broker.registry.getServiceList({ withActions: true });
 					services.forEach(service => {
 						if (service.settings.graphql) {
-							const serviceName = service.version ? `v${service.version}.${service.name}` : service.name;
+							const serviceName = this.getServiceName(service);
 
 							// Skip multiple instances of services
 							if (processedServices.has(serviceName)) return;
@@ -334,7 +348,8 @@ module.exports = function(mixinOptions) {
 
 				try {
 					this.pubsub = new PubSub();
-					const schema = this.generateGraphQLSchema();
+					const services = this.broker.registry.getServiceList({ withActions: true });
+					const schema = this.generateGraphQLSchema(services);
 
 					this.logger.debug("Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema));
 
@@ -345,6 +360,7 @@ module.exports = function(mixinOptions) {
 								ctx: req.$ctx,
 								service: req.$service,
 								params: req.$params,
+								loaders: this.createLoaders(req, services),
 							} : {
 								service: connection.$service
 							};
@@ -368,7 +384,59 @@ module.exports = function(mixinOptions) {
 					this.logger.error(err);
 					throw err;
 				}
-			}
+			},
+
+			/**
+			 * Get the name of a service including version spec
+			 * @param {Object} service - Service object
+			 * @returns {String} Name of service including version spec
+			 */
+			getServiceName(service) {
+				return service.version ? `v${service.version}.${service.name}` : service.name;
+			},
+
+			/**
+			 * Create the DataLoader instances to be used for batch resolution
+			 * @param {Object} req
+			 * @param {Object[]} services
+			 * @returns {Object.<string, Object>} Key/value pairs of DataLoader instances
+			 */
+			createLoaders(req, services) {
+				return services.reduce((serviceAccum, service) => {
+					const serviceName = this.getServiceName(service);
+
+					const { graphql } = service.settings;
+					if (graphql && graphql.resolvers) {
+						const { resolvers } = graphql;
+
+						const typeLoaders = Object.values(resolvers).reduce((resolverAccum, type) => {
+							const resolverLoaders = Object.values(type).reduce((fieldAccum, resolver) => {
+								if (_.isPlainObject(resolver)) {
+									const { action, dataLoader = false, rootParams = {} } = resolver;
+									const actionParam = Object.values(rootParams)[0]; // use the first root parameter
+									if (dataLoader && actionParam) {
+										const resolverActionName = this.getResolverActionName(serviceName, action);
+										if (fieldAccum[resolverActionName] == null) {
+											// create a new DataLoader instance
+											fieldAccum[resolverActionName] = new DataLoader(keys =>
+												req.$ctx.call(resolverActionName, { [actionParam]: keys }),
+											);
+										}
+									}
+								}
+
+								return fieldAccum;
+							}, {});
+
+							return { ...resolverAccum, ...resolverLoaders };
+						}, {});
+
+						serviceAccum = { ...serviceAccum, ...typeLoaders };
+					}
+
+					return serviceAccum;
+				}, {});
+			},
 		},
 
 		created() {
@@ -417,12 +485,12 @@ module.exports = function(mixinOptions) {
 					return GraphQL.graphql(this.graphqlSchema, ctx.params.query, null, { ctx }, ctx.params.variables);
 				}
 			}
-		}
+		};
 	}
 	serviceSchema.events = {
 		[mixinOptions.subscriptionEventName](event) {
 			this.pubsub.publish(event.tag, event.payload);
 		}
-	}
+	};
 	return serviceSchema;
 };
