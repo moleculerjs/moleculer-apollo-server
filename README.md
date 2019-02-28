@@ -263,9 +263,12 @@ module.exports = {
 ## Examples
 
 - [Simple](examples/simple/index.js)
+  - `npm run dev`
 - [Full](examples/full/index.js)
+  - `npm run dev full`
 - [Full With Dataloader](examples/full-dataloader/index.js)
-
+  - set `DATALOADER` environment variable to `"true"`
+  - `npm run dev full`
 # Test
 ```
 $ npm test

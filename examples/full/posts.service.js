@@ -33,12 +33,14 @@ module.exports = {
 				Post: {
 					author: {
 						action: "users.resolve",
+						dataLoader: process.env.DATALOADER === "true",
 						rootParams: {
 							"author": "id"
 						}
 					},
 					voters: {
 						action: "users.resolve",
+						dataLoader: process.env.DATALOADER === "true",
 						rootParams: {
 							"voters": "id"
 						}
