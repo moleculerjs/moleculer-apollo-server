@@ -418,9 +418,9 @@ module.exports = function(mixinOptions) {
 										const resolverActionName = this.getResolverActionName(serviceName, action);
 										if (fieldAccum[resolverActionName] == null) {
 											// create a new DataLoader instance
-											fieldAccum[resolverActionName] = new DataLoader(keys => {
-												return req.$ctx.call(resolverActionName, { [actionParam]: keys });
-											});
+											fieldAccum[resolverActionName] = new DataLoader(keys =>
+												req.$ctx.call(resolverActionName, { [actionParam]: keys }),
+											);
 										}
 									}
 								}
