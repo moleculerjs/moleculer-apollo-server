@@ -1,11 +1,12 @@
 "use strict";
 
 const fs = require("fs");
+const { Kind } = require("graphql");
 const { ServiceBroker } = require("moleculer");
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
-const broker = new ServiceBroker({ logLevel: "info"/*, transporter: "NATS"*/ });
+const broker = new ServiceBroker({ logLevel: process.env.LOGLEVEL || "info"/*, transporter: "NATS"*/ });
 
 broker.createService({
 	name: "api",
@@ -78,7 +79,7 @@ broker.createService({
 			fs.writeFileSync(__dirname + "/generated-schema.gql", schema, "utf8");
 			this.logger.info("Generated GraphQL schema:\n\n" + schema);
 		}
-	}	
+	}
 });
 
 broker.loadServices(__dirname);
