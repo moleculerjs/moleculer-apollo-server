@@ -60,13 +60,13 @@
     "node": ">= 8.x.x"
   },
   "dependencies": {
-    "@apollographql/graphql-playground-html": "1.6.6",
-    "accept": "3.1.3",
-    "apollo-server-core": "2.3.4",
-    "dataloader": "1.4.0",
+    "@apollographql/graphql-playground-html": "^1.6.6",
+    "accept": "^3.1.3",
+    "apollo-server-core": "^2.3.4",
+    "dataloader": "^1.4.0",
     "graphql-subscriptions": "^1.0.0",
-    "graphql-tools": "4.0.4",
+    "graphql-tools": "^4.0.4",
     "graphql-upload": "^8.0.4",
-    "lodash": "4.17.11"
+    "lodash": "^4.17.11"
   }
 }
