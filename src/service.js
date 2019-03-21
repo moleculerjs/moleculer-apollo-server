@@ -28,6 +28,8 @@ module.exports = function(mixinOptions) {
 
 	let shouldUpdateSchema = true;
 
+	console.log(JSON.stringify(mixinOptions.typeDefs, null, 2))
+
 	const serviceSchema = {
 		events: {
 			"$services.changed"() { this.invalidateGraphQLSchema(); },
@@ -156,13 +158,8 @@ module.exports = function(mixinOptions) {
 						resolvers = _.cloneDeep(mixinOptions.resolvers);
 
 					const queries = [];
-					const types = [];
 					const mutations = [];
 					const subscriptions = [];
-					const interfaces = [];
-					const unions = [];
-					const enums = [];
-					const inputs = [];
 
 					const processedServices = new Set();
 
@@ -178,32 +175,9 @@ module.exports = function(mixinOptions) {
 							if (_.isObject(service.settings.graphql)) {
 								const globalDef = service.settings.graphql;
 
-								if (globalDef.query) {
-									queries.push(globalDef.query);
+								if (globalDef.typeDefs) {
+									typeDefs.push(globalDef.typeDefs);
 								}
-
-								if (globalDef.type)
-									types.push(globalDef.type);
-
-								if (globalDef.mutation) {
-									mutations.push(globalDef.mutation);
-								}
-
-								if (globalDef.subscription) {
-									subscriptions.push(globalDef.subscription);
-								}
-
-								if (globalDef.interface)
-									interfaces.push(globalDef.interface);
-
-								if (globalDef.union)
-									unions.push(globalDef.union);
-
-								if (globalDef.enum)
-									enums.push(globalDef.enum);
-
-								if (globalDef.input)
-									inputs.push(globalDef.input);
 
 								if (globalDef.resolvers) {
 									_.forIn(globalDef.resolvers, (r, name) => {
@@ -228,9 +202,6 @@ module.exports = function(mixinOptions) {
 										resolver.Query[name] = this.createActionResolver(action.name);
 									}
 
-									if (def.type)
-										types.push(def.type);
-
 									if (def.mutation) {
 										const name = def.mutation.split(/[(:]/g)[0];
 										mutations.push(def.mutation);
@@ -244,18 +215,6 @@ module.exports = function(mixinOptions) {
 										if (!resolver["Subscription"]) resolver.Subscription = {};
 										resolver.Subscription[name] = this.createAsyncIteratorResolver(action.name, def.tags, def.filter);
 									}
-
-									if (def.interface)
-										interfaces.push(def.interface);
-
-									if (def.union)
-										unions.push(def.union);
-
-									if (def.enum)
-										enums.push(def.enum);
-
-									if (def.input)
-										inputs.push(def.input);
 								}
 							}
 						});
@@ -265,70 +224,28 @@ module.exports = function(mixinOptions) {
 
 					});
 
-					if (queries.length > 0
-					|| types.length > 0
-					|| mutations.length > 0
-					|| subscriptions.length > 0
-					|| interfaces.length > 0
-					|| unions.length > 0
-					|| enums.length > 0
-					|| inputs.length > 0) {
-						let str = "";
-						if (queries.length > 0) {
-							str += `
-								type Query {
-									${queries.join("\n")}
-								}
-							`;
-						}
+					if (queries.length > 0) {
+						typeDefs.push(`
+							extend type Query {
+								${queries.join("\n")}
+							}
+						`);
+					}
 
-						if (types.length > 0) {
-							str += `
-								${types.join("\n")}
-							`;
-						}
+					if (mutations.length > 0) {
+						typeDefs.push(`
+							extend type Mutation {
+								${queries.join("\n")}
+							}
+						`);
+					}
 
-						if (mutations.length > 0) {
-							str += `
-								type Mutation {
-									${mutations.join("\n")}
-								}
-							`;
-						}
-
-						if (subscriptions.length > 0) {
-							str += `
-								type Subscription {
-									${subscriptions.join("\n")}
-								}
-							`;
-						}
-
-						if (interfaces.length > 0) {
-							str += `
-								${interfaces.join("\n")}
-							`;
-						}
-
-						if (unions.length > 0) {
-							str += `
-								${unions.join("\n")}
-							`;
-						}
-
-						if (enums.length > 0) {
-							str += `
-								${enums.join("\n")}
-							`;
-						}
-
-						if (inputs.length > 0) {
-							str += `
-								${inputs.join("\n")}
-							`;
-						}
-
-						typeDefs.push(str);
+					if (subscriptions.length > 0) {
+						typeDefs.push(`
+							extend type Subscription {
+								${queries.join("\n")}
+							}
+						`);
 					}
 
 					return makeExecutableSchema({ typeDefs, resolvers });
@@ -392,7 +309,7 @@ module.exports = function(mixinOptions) {
 			 * @returns {String} Name of service including version spec
 			 */
 			getServiceName(service) {
-				return service.version ? `v${service.version}.${service.name}` : service.name;
+				return service.version ? `${service.version}.${service.name}` : service.name;
 			},
 
 			/**
