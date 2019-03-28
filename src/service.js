@@ -222,7 +222,7 @@ module.exports = function(mixinOptions) {
 									const def = action.graphql;
 
 									if (def.query) {
-										const name = def.query.split(/[(:]/g)[0];
+										const name = def.query.trim().split(/[(:]/g)[0];
 										queries.push(def.query);
 										if (!resolver["Query"]) resolver.Query = {};
 										resolver.Query[name] = this.createActionResolver(action.name);
@@ -232,14 +232,14 @@ module.exports = function(mixinOptions) {
 										types.push(def.type);
 
 									if (def.mutation) {
-										const name = def.mutation.split(/[(:]/g)[0];
+										const name = def.mutation.trim().split(/[(:]/g)[0];
 										mutations.push(def.mutation);
 										if (!resolver["Mutation"]) resolver.Mutation = {};
 										resolver.Mutation[name] = this.createActionResolver(action.name);
 									}
 
 									if (def.subscription) {
-										const name = def.subscription.split(/[(:]/g)[0];
+										const name = def.subscription.trim().split(/[(:]/g)[0];
 										subscriptions.push(def.subscription);
 										if (!resolver["Subscription"]) resolver.Subscription = {};
 										resolver.Subscription[name] = this.createAsyncIteratorResolver(action.name, def.tags, def.filter);
