@@ -34,4 +34,12 @@ type User {
   birthday: Date
   posts(limit: Int): [Post]
   postCount: Int
+  type: UserType
+}
+
+"""Enumerations for user types"""
+enum UserType {
+  ADMIN
+  PUBLISHER
+  READER
 }

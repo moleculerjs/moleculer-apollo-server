@@ -3,11 +3,11 @@
 const _ = require("lodash");
 
 const users = [
-	{ id: 1, name: "Genaro Krueger", birthday: new Date("1975-12-17") },
-	{ id: 2, name: "Nicholas Paris", birthday: new Date("1981-01-27") },
-	{ id: 3, name: "Quinton Loden", birthday: new Date("1995-03-22") },
-	{ id: 4, name: "Bradford Knauer", birthday: new Date("2008-11-01") },
-	{ id: 5, name: "Damien Accetta", birthday: new Date("1959-08-07") },
+	{ id: 1, name: "Genaro Krueger", birthday: new Date("1975-12-17"), type: 1 },
+	{ id: 2, name: "Nicholas Paris", birthday: new Date("1981-01-27"), type: 2 },
+	{ id: 3, name: "Quinton Loden", birthday: new Date("1995-03-22"), type: 3 },
+	{ id: 4, name: "Bradford Knauer", birthday: new Date("2008-11-01"), type: 2 },
+	{ id: 5, name: "Damien Accetta", birthday: new Date("1959-08-07"), type: 1 },
 ];
 
 module.exports = {
@@ -23,7 +23,18 @@ module.exports = {
 					name: String!
 					birthday: Date
 					posts(limit: Int): [Post]
-					postCount: Int
+					postCount: Int,
+					type: UserType
+				}
+			`,
+			enum: `
+				"""
+				Enumerations for user types
+				"""
+				enum UserType {
+					ADMIN
+					PUBLISHER
+					READER
 				}
 			`,
 			resolvers: {
@@ -42,6 +53,11 @@ module.exports = {
 							"id": "query.author"
 						}
 					}
+				},
+				UserType: {
+					ADMIN: 1,
+					PUBLISHER: 2,
+					READER: 3
 				}
 			}
 		}

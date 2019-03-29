@@ -53,7 +53,8 @@ broker.createService({
 
 						return null;
 					}
-				}
+				},
+
 			},
 
 			// API Gateway route options
