@@ -232,10 +232,13 @@ module.exports = function(mixinOptions) {
 										types.push(def.type);
 
 									if (def.mutation) {
-										const name = def.mutation.trim().split(/[(:]/g)[0];
-										mutations.push(def.mutation);
+										let mutation = def.mutation.trim().split(/[\n]/g).map(m => m.trim())
+										let names = mutation.map(m => m.trim().split(/[(:]/g)[0])
 										if (!resolver["Mutation"]) resolver.Mutation = {};
-										resolver.Mutation[name] = this.createActionResolver(action.name);
+										mutations.push(...mutation);
+										names.forEach(name => {
+											resolver.Mutation[name] = this.createActionResolver(action.name);	
+										})
 									}
 
 									if (def.subscription) {
