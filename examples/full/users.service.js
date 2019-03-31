@@ -3,11 +3,11 @@
 const _ = require("lodash");
 
 const users = [
-	{ id: 1, name: "Genaro Krueger", birthday: new Date("1975-12-17"), type: 1 },
-	{ id: 2, name: "Nicholas Paris", birthday: new Date("1981-01-27"), type: 2 },
-	{ id: 3, name: "Quinton Loden", birthday: new Date("1995-03-22"), type: 3 },
-	{ id: 4, name: "Bradford Knauer", birthday: new Date("2008-11-01"), type: 2 },
-	{ id: 5, name: "Damien Accetta", birthday: new Date("1959-08-07"), type: 1 },
+	{ id: 1, name: "Genaro Krueger", birthday: new Date("1975-12-17"), type: "1" },
+	{ id: 2, name: "Nicholas Paris", birthday: new Date("1981-01-27"), type: "2" },
+	{ id: 3, name: "Quinton Loden", birthday: new Date("1995-03-22"), type: "3" },
+	{ id: 4, name: "Bradford Knauer", birthday: new Date("2008-11-01"), type: "2" },
+	{ id: 5, name: "Damien Accetta", birthday: new Date("1959-08-07"), type: "1" },
 ];
 
 module.exports = {
@@ -55,9 +55,9 @@ module.exports = {
 					}
 				},
 				UserType: {
-					ADMIN: 1,
-					PUBLISHER: 2,
-					READER: 3
+					ADMIN: "1",
+					PUBLISHER: "2",
+					READER: "3"
 				}
 			}
 		}

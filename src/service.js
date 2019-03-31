@@ -55,28 +55,23 @@ module.exports = function(mixinOptions) {
 			},
 
 			/**
-			 * Create resolvers for actions.
+			 * Create resolvers from service settings
 			 *
 			 * @param {String} serviceName
 			 * @param {Object} resolvers
 			 */
-			createActionResolvers(serviceName, resolvers) {
-				const res = {};
-				_.forIn(resolvers, (r, name) => {
-					if (_.isString(r)) {
-						// If String, it is an action name
-						res[name] = this.createActionResolver(this.getResolverActionName(serviceName, r));
-					}
-					else if (_.isPlainObject(r)) {
-						// If Object, it is a remote action resolver
-						res[name] = this.createActionResolver(this.getResolverActionName(serviceName, r.action), r);
+			createServiceResolvers(serviceName, resolvers) {
+				return Object.entries(resolvers).reduce((acc, [name, r]) => {
+					if (_.isPlainObject(r) && r.action != null) {
+						// matches signature for remote action resolver
+						acc[name] = this.createActionResolver(this.getResolverActionName(serviceName, r.action), r);
 					} else {
-						// Something else.
-						res[name] = r;
+						// something else (enum, etc.)
+						acc[name] = r;
 					}
-				});
 
-				return res;
+					return acc;
+				}, {});
 			},
 
 			/**
@@ -207,7 +202,7 @@ module.exports = function(mixinOptions) {
 
 								if (globalDef.resolvers) {
 									_.forIn(globalDef.resolvers, (r, name) => {
-										resolvers[name] = _.merge(resolvers[name] || {}, this.createActionResolvers(serviceName, r));
+										resolvers[name] = _.merge(resolvers[name] || {}, this.createServiceResolvers(serviceName, r));
 									});
 								}
 							}
@@ -232,13 +227,13 @@ module.exports = function(mixinOptions) {
 										types.push(def.type);
 
 									if (def.mutation) {
-										let mutation = def.mutation.trim().split(/[\n]/g).map(m => m.trim())
-										let names = mutation.map(m => m.trim().split(/[(:]/g)[0])
+										let mutation = def.mutation.trim().split(/[\n]/g).map(m => m.trim());
+										let names = mutation.map(m => m.trim().split(/[(:]/g)[0]);
 										if (!resolver["Mutation"]) resolver.Mutation = {};
 										mutations.push(...mutation);
 										names.forEach(name => {
-											resolver.Mutation[name] = this.createActionResolver(action.name);	
-										})
+											resolver.Mutation[name] = this.createActionResolver(action.name);
+										});
 									}
 
 									if (def.subscription) {
