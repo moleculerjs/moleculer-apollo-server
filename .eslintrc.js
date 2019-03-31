@@ -69,4 +69,4 @@ module.exports = {
 			"always"
 		]
 	}
-}; 
+};

@@ -17,7 +17,7 @@ module.exports = {
 			type: `
 				"""
 				This type describes a user entity.
-				"""			
+				"""
 				type User {
 					id: Int!
 					name: String!
