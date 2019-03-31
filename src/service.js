@@ -237,7 +237,7 @@ module.exports = function(mixinOptions) {
 										if (!resolver["Mutation"]) resolver.Mutation = {};
 										mutations.push(...mutation);
 										names.forEach(name => {
-											resolver.Mutation[name] = this.createActionResolver(action.name);	
+											resolver.Mutation[name] = this.createActionResolver(action.name);
 										})
 									}
 

@@ -18,7 +18,7 @@ module.exports = {
 			type: `
 				"""
 				This type describes a post entity.
-				"""			
+				"""
 				type Post {
 					id: Int!,
 					title: String!,
