@@ -33,7 +33,9 @@
     "benchmarkify": "2.1.1",
     "coveralls": "3.0.2",
     "eslint": "5.13.0",
+    "eslint-config-prettier": "4.1.0",
     "eslint-plugin-node": "8.0.1",
+    "eslint-plugin-prettier": "3.0.1",
     "eslint-plugin-promise": "4.0.1",
     "eslint-plugin-security": "1.4.0",
     "graphql": "14.1.1",
@@ -43,7 +45,8 @@
     "moleculer-repl": "0.5.5",
     "moleculer-web": "0.9.0-beta1",
     "nodemon": "1.18.9",
-    "npm-check": "5.9.0"
+    "npm-check": "5.9.0",
+    "prettier": "1.16.4"
   },
   "jest": {
     "testEnvironment": "node",

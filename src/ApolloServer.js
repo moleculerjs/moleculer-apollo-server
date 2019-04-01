@@ -10,15 +10,15 @@ function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
 
 	const ctx = res.$ctx;
-	if (!ctx.meta.$responseType)
+	if (!ctx.meta.$responseType) {
 		ctx.meta.$responseType = responseType;
+	}
 
 	const service = res.$service;
 	service.sendResponse(req, res, data);
 }
 
 class ApolloServer extends ApolloServerBase {
-
 	// Extract Apollo Server options from the request.
 	createGraphQLServerOptions(req, res) {
 		return super.graphQLServerOptions({ req, res });
@@ -26,7 +26,7 @@ class ApolloServer extends ApolloServerBase {
 
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
-	createHandler({ path, disableHealthCheck, onHealthCheck, } = {}) {
+	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
 		const promiseWillStart = this.willStart();
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
@@ -52,10 +52,17 @@ class ApolloServer extends ApolloServerBase {
 			// incoming GraphQL requests.
 			if (this.playgroundOptions && req.method === "GET") {
 				const { mediaTypes } = accept.parseAll(req.headers);
-				const prefersHTML = mediaTypes.find((x) => x === "text/html" || x === "application/json") === "text/html";
+				const prefersHTML =
+					mediaTypes.find(x => x === "text/html" || x === "application/json") === "text/html";
 
 				if (prefersHTML) {
-					const middlewareOptions = Object.assign({ endpoint: this.graphqlPath, subscriptionEndpoint: this.subscriptionsPath }, this.playgroundOptions);
+					const middlewareOptions = Object.assign(
+						{
+							endpoint: this.graphqlPath,
+							subscriptionEndpoint: this.subscriptionsPath,
+						},
+						this.playgroundOptions,
+					);
 					return send(req, res, 200, renderPlaygroundPage(middlewareOptions), "text/html");
 				}
 			}
@@ -64,7 +71,6 @@ class ApolloServer extends ApolloServerBase {
 			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
 			const responseData = await graphqlHandler(req, res);
 			send(req, res, 200, responseData);
-
 		};
 	}
 
