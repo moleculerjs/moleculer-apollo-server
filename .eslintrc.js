@@ -10,10 +10,7 @@ module.exports = {
 	extends: ["eslint:recommended", "plugin:security/recommended", "plugin:prettier/recommended"],
 	parserOptions: {
 		sourceType: "module",
-		ecmaVersion: 2017,
-		ecmaFeatures: {
-			experimentalObjectRestSpread: true,
-		},
+		ecmaVersion: 2018,
 	},
 	plugins: ["node", "promise", "security"],
 	rules: {
