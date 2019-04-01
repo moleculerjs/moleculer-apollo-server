@@ -39,5 +39,5 @@ module.exports = {
 	ApolloServer,
 
 	// Apollo Moleculer Service
-	ApolloService
+	ApolloService,
 };

@@ -6,7 +6,9 @@ const { ServiceBroker } = require("moleculer");
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
-const broker = new ServiceBroker({ logLevel: process.env.LOGLEVEL || "info"/*, transporter: "NATS"*/ });
+const broker = new ServiceBroker({
+	logLevel: process.env.LOGLEVEL || "info" /*, transporter: "NATS"*/,
+});
 
 broker.createService({
 	name: "api",
@@ -17,7 +19,6 @@ broker.createService({
 
 		// GraphQL Apollo Server
 		ApolloService({
-
 			// Global GraphQL typeDefs
 			typeDefs: `
 				scalar Date
@@ -34,11 +35,12 @@ broker.createService({
 						return value.toISOString().split("T")[0]; // value sent to the client
 					},
 					__parseLiteral(ast) {
-						if (ast.kind === Kind.INT)
+						if (ast.kind === Kind.INT) {
 							return parseInt(ast.value, 10); // ast value is always in string format
+						}
 
 						return null;
-					}
+					},
 				},
 				Timestamp: {
 					__parseValue(value) {
@@ -48,20 +50,20 @@ broker.createService({
 						return value.toISOString(); // value sent to the client
 					},
 					__parseLiteral(ast) {
-						if (ast.kind === Kind.INT)
+						if (ast.kind === Kind.INT) {
 							return parseInt(ast.value, 10); // ast value is always in string format
+						}
 
 						return null;
-					}
+					},
 				},
-
 			},
 
 			// API Gateway route options
 			routeOptions: {
 				path: "/graphql",
 				cors: true,
-				mappingPolicy: "restrict"
+				mappingPolicy: "restrict",
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
@@ -69,27 +71,26 @@ broker.createService({
 				tracing: false,
 
 				engine: {
-					apiKey: process.env.APOLLO_ENGINE_KEY
-				}
-			}
-		})
+					apiKey: process.env.APOLLO_ENGINE_KEY,
+				},
+			},
+		}),
 	],
 
 	events: {
 		"graphql.schema.updated"({ schema }) {
 			fs.writeFileSync(__dirname + "/generated-schema.gql", schema, "utf8");
 			this.logger.info("Generated GraphQL schema:\n\n" + schema);
-		}
-	}
+		},
+	},
 });
 
 broker.loadServices(__dirname);
 
-broker.start()
-	.then(async () => {
-		broker.repl();
+broker.start().then(async () => {
+	broker.repl();
 
-		broker.logger.info("----------------------------------------------------------");
-		broker.logger.info("Open the http://localhost:3000/graphql URL in your browser");
-		broker.logger.info("----------------------------------------------------------");
-	});
+	broker.logger.info("----------------------------------------------------------");
+	broker.logger.info("Open the http://localhost:3000/graphql URL in your browser");
+	broker.logger.info("----------------------------------------------------------");
+});
