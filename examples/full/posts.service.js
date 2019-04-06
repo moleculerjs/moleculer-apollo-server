@@ -95,7 +95,11 @@ module.exports = {
 				limit: { type: "number", optional: true },
 			},
 			graphql: {
-				query: "posts(limit: Int): [Post]",
+				query: `
+					posts(
+						limit: Int
+					): [Post]
+				`,
 			},
 			handler(ctx) {
 				let result = _.cloneDeep(posts);
@@ -137,7 +141,12 @@ module.exports = {
 				userID: "number",
 			},
 			graphql: {
-				mutation: "upvote(id: Int!, userID: Int!): Post",
+				mutation: `
+					upvote(
+						id: Int!
+						userID: Int!
+					): Post
+				`,
 			},
 			async handler(ctx) {
 				const post = this.findByID(ctx.params.id);
@@ -168,7 +177,12 @@ module.exports = {
 				userID: "number",
 			},
 			graphql: {
-				mutation: "downvote(id: Int!, userID: Int!): Post",
+				mutation: `
+					downvote(
+						id: Int!
+						userID: Int!
+					): Post
+				`,
 			},
 			async handler(ctx) {
 				const post = this.findByID(ctx.params.id);
@@ -195,7 +209,11 @@ module.exports = {
 		vote: {
 			params: { payload: "object" },
 			graphql: {
-				subscription: "vote(userID: Int!): String!",
+				subscription: `
+					vote(
+						userID: Int!
+					): String!
+				`,
 				tags: ["VOTE"],
 				filter: "posts.vote.filter",
 			},
