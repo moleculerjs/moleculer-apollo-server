@@ -49,7 +49,11 @@ broker.createService({
 		},
 		welcome: {
 			graphql: {
-				mutation: "welcome(name: String!): String!",
+				mutation: `
+					welcome(
+						name: String!
+					): String!
+				`,
 			},
 			handler(ctx) {
 				return `Hello ${ctx.params.name}`;

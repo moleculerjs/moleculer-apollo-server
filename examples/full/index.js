@@ -20,10 +20,7 @@ broker.createService({
 		// GraphQL Apollo Server
 		ApolloService({
 			// Global GraphQL typeDefs
-			typeDefs: `
-				scalar Date
-				scalar Timestamp
-			`,
+			typeDefs: ["scalar Date", "scalar Timestamp"],
 
 			// Global resolvers
 			resolvers: {

@@ -69,7 +69,11 @@ module.exports = {
 				limit: { type: "number", optional: true },
 			},
 			graphql: {
-				query: "users(limit: Int): [User]",
+				query: `
+					users(
+						limit: Int
+					): [User]
+				`,
 			},
 			handler(ctx) {
 				let result = _.cloneDeep(users);

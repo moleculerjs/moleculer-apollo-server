@@ -155,21 +155,21 @@ module.exports = function(mixinOptions) {
 					let resolvers = {};
 
 					if (mixinOptions.typeDefs) {
-						typeDefs.push(mixinOptions.typeDefs);
+						typeDefs = typeDefs.concat(mixinOptions.typeDefs);
 					}
 
 					if (mixinOptions.resolvers) {
 						resolvers = _.cloneDeep(mixinOptions.resolvers);
 					}
 
-					const queries = [];
-					const types = [];
-					const mutations = [];
-					const subscriptions = [];
-					const interfaces = [];
-					const unions = [];
-					const enums = [];
-					const inputs = [];
+					let queries = [];
+					let mutations = [];
+					let subscriptions = [];
+					let types = [];
+					let interfaces = [];
+					let unions = [];
+					let enums = [];
+					let inputs = [];
 
 					const processedServices = new Set();
 
@@ -186,44 +186,48 @@ module.exports = function(mixinOptions) {
 								const globalDef = service.settings.graphql;
 
 								if (globalDef.query) {
-									queries.push(globalDef.query);
-								}
-
-								if (globalDef.type) {
-									types.push(globalDef.type);
+									queries = queries.concat(globalDef.query);
 								}
 
 								if (globalDef.mutation) {
-									mutations.push(globalDef.mutation);
+									mutations = mutations.concat(globalDef.mutation);
 								}
 
 								if (globalDef.subscription) {
-									subscriptions.push(globalDef.subscription);
+									subscriptions = subscriptions.concat(globalDef.subscription);
+								}
+
+								if (globalDef.type) {
+									types = types.concat(globalDef.type);
 								}
 
 								if (globalDef.interface) {
-									interfaces.push(globalDef.interface);
+									interfaces = interfaces.concat(globalDef.interface);
 								}
 
 								if (globalDef.union) {
-									unions.push(globalDef.union);
+									unions = unions.concat(globalDef.union);
 								}
 
 								if (globalDef.enum) {
-									enums.push(globalDef.enum);
+									enums = enums.concat(globalDef.enum);
 								}
 
 								if (globalDef.input) {
-									inputs.push(globalDef.input);
+									inputs = inputs.concat(globalDef.input);
 								}
 
 								if (globalDef.resolvers) {
-									_.forIn(globalDef.resolvers, (r, name) => {
-										resolvers[name] = _.merge(
-											resolvers[name] || {},
-											this.createServiceResolvers(serviceName, r),
-										);
-									});
+									resolvers = Object.entries(globalDef.resolvers).reduce(
+										(acc, [name, resolver]) => {
+											acc[name] = _.merge(
+												acc[name] || {},
+												this.createServiceResolvers(serviceName, resolver),
+											);
+											return acc;
+										},
+										resolvers,
+									);
 								}
 							}
 						}
@@ -231,61 +235,61 @@ module.exports = function(mixinOptions) {
 						// --- COMPILE ACTION-LEVEL DEFINITIONS ---
 						const resolver = {};
 
-						_.forIn(service.actions, action => {
-							if (action.graphql) {
-								if (_.isObject(action.graphql)) {
-									const def = action.graphql;
+						Object.values(service.actions).forEach(action => {
+							const { graphql: def } = action;
+							if (def && _.isObject(def)) {
+								if (def.query) {
+									if (!resolver["Query"]) resolver.Query = {};
 
-									if (def.query) {
-										const name = def.query.trim().split(/[(:]/g)[0];
-										queries.push(def.query);
-										if (!resolver["Query"]) resolver.Query = {};
+									_.castArray(def.query).forEach(query => {
+										const name = query.trim().split(/[(:]/g)[0];
+										queries.push(query);
 										resolver.Query[name] = this.createActionResolver(action.name);
-									}
+									});
+								}
 
-									if (def.type) {
-										types.push(def.type);
-									}
+								if (def.mutation) {
+									if (!resolver["Mutation"]) resolver.Mutation = {};
 
-									if (def.mutation) {
-										let mutation = def.mutation
-											.trim()
-											.split(/[\n]/g)
-											.map(m => m.trim());
-										let names = mutation.map(m => m.trim().split(/[(:]/g)[0]);
-										if (!resolver["Mutation"]) resolver.Mutation = {};
-										mutations.push(...mutation);
-										names.forEach(name => {
-											resolver.Mutation[name] = this.createActionResolver(action.name);
-										});
-									}
+									_.castArray(def.mutation).forEach(mutation => {
+										const name = mutation.trim().split(/[(:]/g)[0];
+										mutations.push(mutation);
+										resolver.Mutation[name] = this.createActionResolver(action.name);
+									});
+								}
 
-									if (def.subscription) {
-										const name = def.subscription.trim().split(/[(:]/g)[0];
-										subscriptions.push(def.subscription);
-										if (!resolver["Subscription"]) resolver.Subscription = {};
+								if (def.subscription) {
+									if (!resolver["Subscription"]) resolver.Subscription = {};
+
+									_.castArray(def.subscription).forEach(subscription => {
+										const name = subscription.trim().split(/[(:]/g)[0];
+										subscriptions.push(subscription);
 										resolver.Subscription[name] = this.createAsyncIteratorResolver(
 											action.name,
 											def.tags,
 											def.filter,
 										);
-									}
+									});
+								}
 
-									if (def.interface) {
-										interfaces.push(def.interface);
-									}
+								if (def.type) {
+									types = types.concat(def.type);
+								}
 
-									if (def.union) {
-										unions.push(def.union);
-									}
+								if (def.interface) {
+									interfaces = interfaces.concat(def.interface);
+								}
 
-									if (def.enum) {
-										enums.push(def.enum);
-									}
+								if (def.union) {
+									unions = unions.concat(def.union);
+								}
 
-									if (def.input) {
-										inputs.push(def.input);
-									}
+								if (def.enum) {
+									enums = enums.concat(def.enum);
+								}
+
+								if (def.input) {
+									inputs = inputs.concat(def.input);
 								}
 							}
 						});
@@ -314,12 +318,6 @@ module.exports = function(mixinOptions) {
 							`;
 						}
 
-						if (types.length > 0) {
-							str += `
-								${types.join("\n")}
-							`;
-						}
-
 						if (mutations.length > 0) {
 							str += `
 								type Mutation {
@@ -333,6 +331,12 @@ module.exports = function(mixinOptions) {
 								type Subscription {
 									${subscriptions.join("\n")}
 								}
+							`;
+						}
+
+						if (types.length > 0) {
+							str += `
+								${types.join("\n")}
 							`;
 						}
 
