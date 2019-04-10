@@ -1,6 +1,7 @@
 "use strict";
 
 const _ = require("lodash");
+const { moleculerGql: gql } = require("../../index");
 
 const users = [
 	{ id: 1, name: "Genaro Krueger", birthday: new Date("1975-12-17"), type: "1" },
@@ -14,7 +15,7 @@ module.exports = {
 	name: "users",
 	settings: {
 		graphql: {
-			type: `
+			type: gql`
 				"""
 				This type describes a user entity.
 				"""
@@ -23,11 +24,11 @@ module.exports = {
 					name: String!
 					birthday: Date
 					posts(limit: Int): [Post]
-					postCount: Int,
+					postCount: Int
 					type: UserType
 				}
 			`,
-			enum: `
+			enum: gql`
 				"""
 				Enumerations for user types
 				"""
@@ -69,10 +70,10 @@ module.exports = {
 				limit: { type: "number", optional: true },
 			},
 			graphql: {
-				query: `
-					users(
-						limit: Int
-					): [User]
+				query: gql`
+					type Query {
+						users(limit: Int): [User]
+					}
 				`,
 			},
 			handler(ctx) {

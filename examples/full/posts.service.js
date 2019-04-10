@@ -2,6 +2,7 @@
 
 const _ = require("lodash");
 const { MoleculerClientError } = require("moleculer").Errors;
+const { moleculerGql: gql } = require("../../index");
 
 const posts = [
 	{
@@ -50,16 +51,16 @@ module.exports = {
 	name: "posts",
 	settings: {
 		graphql: {
-			type: `
+			type: gql`
 				"""
 				This type describes a post entity.
 				"""
 				type Post {
-					id: Int!,
-					title: String!,
-					author: User!,
-					votes: Int!,
-					voters: [User],
+					id: Int!
+					title: String!
+					author: User!
+					votes: Int!
+					voters: [User]
 					createdAt: Timestamp
 					error: String
 				}
@@ -95,10 +96,10 @@ module.exports = {
 				limit: { type: "number", optional: true },
 			},
 			graphql: {
-				query: `
-					posts(
-						limit: Int
-					): [Post]
+				query: gql`
+					type Query {
+						posts(limit: Int): [Post]
+					}
 				`,
 			},
 			handler(ctx) {
@@ -141,11 +142,10 @@ module.exports = {
 				userID: "number",
 			},
 			graphql: {
-				mutation: `
-					upvote(
-						id: Int!
-						userID: Int!
-					): Post
+				mutation: gql`
+					type Mutation {
+						upvote(id: Int!, userID: Int!): Post
+					}
 				`,
 			},
 			async handler(ctx) {
@@ -177,11 +177,10 @@ module.exports = {
 				userID: "number",
 			},
 			graphql: {
-				mutation: `
-					downvote(
-						id: Int!
-						userID: Int!
-					): Post
+				mutation: gql`
+					type Mutation {
+						downvote(id: Int!, userID: Int!): Post
+					}
 				`,
 			},
 			async handler(ctx) {
@@ -209,10 +208,10 @@ module.exports = {
 		vote: {
 			params: { payload: "object" },
 			graphql: {
-				subscription: `
-					vote(
-						userID: Int!
-					): String!
+				subscription: gql`
+					type Subscription {
+						vote(userID: Int!): String!
+					}
 				`,
 				tags: ["VOTE"],
 				filter: "posts.vote.filter",
