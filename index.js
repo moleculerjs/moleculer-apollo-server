@@ -17,6 +17,7 @@
 const core = require("apollo-server-core");
 const { ApolloServer } = require("./src/ApolloServer");
 const ApolloService = require("./src/service");
+const gql = require("./src/gql");
 
 module.exports = {
 	// Core
@@ -40,4 +41,7 @@ module.exports = {
 
 	// Apollo Moleculer Service
 	ApolloService,
+
+	// Moleculer gql formatter
+	moleculerGql: gql,
 };
