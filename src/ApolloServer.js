@@ -10,6 +10,7 @@ function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
 
 	const ctx = res.$ctx;
+	ctx.meta = ctx.meta || {}
 	if (!ctx.meta.$responseType) {
 		ctx.meta.$responseType = responseType;
 	}
