@@ -93,7 +93,7 @@ module.exports = function(mixinOptions) {
 					try {
 						if (dataLoader) {
 							const dataLoaderKey = rootKeys[0]; // use the first root key
-							const rootValue = root && root[dataLoaderKey];
+							const rootValue = root && _.get(root, dataLoaderKey);
 							if (rootValue == null) {
 								return null;
 							}
