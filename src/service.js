@@ -464,16 +464,22 @@ module.exports = function(mixinOptions) {
 						const typeLoaders = Object.values(resolvers).reduce((resolverAccum, type) => {
 							const resolverLoaders = Object.values(type).reduce((fieldAccum, resolver) => {
 								if (_.isPlainObject(resolver)) {
-									const { action, dataLoader = false, rootParams = {} } = resolver;
+									const { action, dataLoader = false, params = {}, rootParams = {} } = resolver;
 									const actionParam = Object.values(rootParams)[0]; // use the first root parameter
 									if (dataLoader && actionParam) {
 										const resolverActionName = this.getResolverActionName(serviceName, action);
 										if (fieldAccum[resolverActionName] == null) {
 											// create a new DataLoader instance
 											fieldAccum[resolverActionName] = new DataLoader(keys =>
-												req.$ctx.call(resolverActionName, {
-													[actionParam]: keys,
-												}),
+												req.$ctx.call(
+													resolverActionName,
+													_.defaultsDeep(
+														{
+															[actionParam]: keys,
+														},
+														params,
+													),
+												),
 											);
 										}
 									}
