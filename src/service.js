@@ -179,12 +179,13 @@ module.exports = function(mixinOptions) {
 					const processedServices = new Set();
 
 					services.forEach(service => {
-						if (service.settings.graphql) {
-							const serviceName = this.getServiceName(service);
+						const serviceName = this.getServiceName(service);
 
-							// Skip multiple instances of services
-							if (processedServices.has(serviceName)) return;
-							processedServices.add(serviceName);
+						// Skip multiple instances of services
+						if (processedServices.has(serviceName)) return;
+						processedServices.add(serviceName);
+
+						if (service.settings.graphql) {
 
 							// --- COMPILE SERVICE-LEVEL DEFINITIONS ---
 							if (_.isObject(service.settings.graphql)) {
