@@ -32,6 +32,11 @@ module.exports = function(mixinOptions) {
 			"$services.changed"() {
 				this.invalidateGraphQLSchema();
 			},
+			[mixinOptions.subscriptionEventName](event) {
+				if (this.pubsub) {
+					this.pubsub.publish(event.tag, event.payload);
+				}
+			},
 		},
 
 		methods: {
@@ -186,7 +191,6 @@ module.exports = function(mixinOptions) {
 						processedServices.add(serviceName);
 
 						if (service.settings.graphql) {
-
 							// --- COMPILE SERVICE-LEVEL DEFINITIONS ---
 							if (_.isObject(service.settings.graphql)) {
 								const globalDef = service.settings.graphql;
@@ -553,10 +557,6 @@ module.exports = function(mixinOptions) {
 			},
 		};
 	}
-	serviceSchema.events = {
-		[mixinOptions.subscriptionEventName](event) {
-			this.pubsub.publish(event.tag, event.payload);
-		},
-	};
+
 	return serviceSchema;
 };
