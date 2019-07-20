@@ -404,9 +404,9 @@ module.exports = function(mixinOptions) {
 
 					this.logger.debug("Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema));
 
-					this.apolloServer = new ApolloServer(
-						_.defaultsDeep(mixinOptions.serverOptions, {
-							schema,
+					this.apolloServer = new ApolloServer({
+						schema,
+						..._.defaultsDeep(mixinOptions.serverOptions, {
 							context: ({ req, connection }) => {
 								return req
 									? {
@@ -426,7 +426,7 @@ module.exports = function(mixinOptions) {
 								}),
 							},
 						}),
-					);
+					});
 
 					this.graphqlHandler = this.apolloServer.createHandler();
 					this.apolloServer.installSubscriptionHandlers(this.server);
