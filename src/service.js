@@ -428,7 +428,7 @@ module.exports = function(mixinOptions) {
 						}),
 					});
 
-					this.graphqlHandler = this.apolloServer.createHandler();
+					this.graphqlHandler = this.apolloServer.createHandler(mixinOptions.serverOptions);
 					this.apolloServer.installSubscriptionHandlers(this.server);
 					this.graphqlSchema = schema;
 
@@ -517,6 +517,20 @@ module.exports = function(mixinOptions) {
 						} catch (err) {
 							this.sendError(req, res, err);
 						}
+					},
+					"/.well-known/apollo/server-health"(req, res) {
+						try {
+							this.prepareGraphQLSchema();
+						} catch (err) {
+							res.statusCode = 503;
+							return this.sendResponse(
+								req,
+								res,
+								{ status: "fail", schema: false },
+								{ responseType: "application/health+json" },
+							);
+						}
+						return this.graphqlHandler(req, res);
 					},
 				},
 

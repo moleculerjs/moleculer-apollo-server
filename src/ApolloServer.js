@@ -28,6 +28,7 @@ class ApolloServer extends ApolloServerBase {
 	// GraphQL requests.
 	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
 		const promiseWillStart = this.willStart();
+
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
 
@@ -82,6 +83,17 @@ class ApolloServer extends ApolloServerBase {
 	// This integration supports subscriptions.
 	supportsSubscriptions() {
 		return true;
+	}
+
+	async handleHealthCheck({ req, res, onHealthCheck }) {
+		onHealthCheck = onHealthCheck || (() => undefined);
+		try {
+			const result = await onHealthCheck(req);
+			send(req, res, 200, { status: "pass", result }, "application/health+json");
+		} catch (error) {
+			const result = error instanceof Error ? error.toString() : error;
+			send(req, res, 503, { status: "fail", result }, "application/health+json");
+		}
 	}
 }
 exports.ApolloServer = ApolloServer;
