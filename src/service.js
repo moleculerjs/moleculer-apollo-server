@@ -252,7 +252,7 @@ module.exports = function(mixinOptions) {
 									if (!resolver["Query"]) resolver.Query = {};
 
 									_.castArray(def.query).forEach(query => {
-										const name = query.trim().split(/[(:]/g)[0];
+										const name = this.getFieldName(query);
 										queries.push(query);
 										resolver.Query[name] = this.createActionResolver(action.name);
 									});
@@ -262,7 +262,7 @@ module.exports = function(mixinOptions) {
 									if (!resolver["Mutation"]) resolver.Mutation = {};
 
 									_.castArray(def.mutation).forEach(mutation => {
-										const name = mutation.trim().split(/[(:]/g)[0];
+										const name = this.getFieldName(mutation);
 										mutations.push(mutation);
 										resolver.Mutation[name] = this.createActionResolver(action.name);
 									});
@@ -272,7 +272,7 @@ module.exports = function(mixinOptions) {
 									if (!resolver["Subscription"]) resolver.Subscription = {};
 
 									_.castArray(def.subscription).forEach(subscription => {
-										const name = subscription.trim().split(/[(:]/g)[0];
+										const name = this.getFieldName(subscription);
 										subscriptions.push(subscription);
 										resolver.Subscription[name] = this.createAsyncIteratorResolver(
 											action.name,
@@ -441,6 +441,20 @@ module.exports = function(mixinOptions) {
 					this.logger.error(err);
 					throw err;
 				}
+			},
+
+			/**
+			 * Return the field name in a GraphQL Mutation, Query, or Subscription declaration
+			 * @param {String} declaration - Mutation, Query, or Subscription declaration
+			 * @returns {String} Field name of declaration
+			 */
+			getFieldName(declaration) {
+				// Remove all multi-line/single-line descriptions and comments
+				const cleanedDeclaration = declaration
+					.replace(/"([\s\S]*?)"/g, "")
+					.replace(/^[\s]*?#.*\n?/gm, "")
+					.trim();
+				return cleanedDeclaration.split(/[(:]/g)[0];
 			},
 
 			/**
