@@ -1,28 +1,25 @@
 "use strict";
 
-const { ServiceBroker } = require("moleculer");
-const MyService = require("../../src");
+const MolApolloServer = require("../../");
 
-describe("Test MyService", () => {
-	const broker = new ServiceBroker();
-	const service = broker.createService(MyService);
-
-	beforeAll(() => broker.start());
-	afterAll(() => broker.stop());
-
-	it("should be created", () => {
-		expect(service).toBeDefined();
+describe("Test ApolloService exports", () => {
+	it("should export ApolloServerCore classes", () => {
+		expect(MolApolloServer.GraphQLUpload).toBeDefined();
+		expect(MolApolloServer.GraphQLExtension).toBeDefined();
+		expect(MolApolloServer.gql).toBeDefined();
+		expect(MolApolloServer.ApolloError).toBeDefined();
+		expect(MolApolloServer.toApolloError).toBeDefined();
+		expect(MolApolloServer.SyntaxError).toBeDefined();
+		expect(MolApolloServer.ValidationError).toBeDefined();
+		expect(MolApolloServer.AuthenticationError).toBeDefined();
+		expect(MolApolloServer.ForbiddenError).toBeDefined();
+		expect(MolApolloServer.UserInputError).toBeDefined();
+		expect(MolApolloServer.defaultPlaygroundOptions).toBeDefined();
 	});
 
-	it("should return with 'Hello Anonymous'", () => {
-		return broker.call("apollo-server.test").then(res => {
-			expect(res).toBe("Hello Anonymous");
-		});
-	});
-
-	it("should return with 'Hello John'", () => {
-		return broker.call("apollo-server.test", { name: "John" }).then(res => {
-			expect(res).toBe("Hello John");
-		});
+	it("should export Moleculer modules", () => {
+		expect(MolApolloServer.ApolloServer).toBeDefined();
+		expect(MolApolloServer.ApolloService).toBeDefined();
+		expect(MolApolloServer.moleculerGql).toBeDefined();
 	});
 });

@@ -2,8 +2,6 @@
 
 [![Build Status](https://travis-ci.org/moleculerjs/moleculer-apollo-server.svg?branch=master)](https://travis-ci.org/moleculerjs/moleculer-apollo-server)
 [![Coverage Status](https://coveralls.io/repos/github/moleculerjs/moleculer-apollo-server/badge.svg?branch=master)](https://coveralls.io/github/moleculerjs/moleculer-apollo-server?branch=master)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/<----hash----->)](https://www.codacy.com/app/<---username---->/moleculer-apollo-server?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=moleculerjs/moleculer-apollo-server&amp;utm_campaign=Badge_Grade)
-[![Code Climate](https://codeclimate.com/github/moleculerjs/moleculer-apollo-server/badges/gpa.svg)](https://codeclimate.com/github/moleculerjs/moleculer-apollo-server)
 [![David](https://img.shields.io/david/moleculerjs/moleculer-apollo-server.svg)](https://david-dm.org/moleculerjs/moleculer-apollo-server)
 [![Known Vulnerabilities](https://snyk.io/test/github/moleculerjs/moleculer-apollo-server/badge.svg)](https://snyk.io/test/github/moleculerjs/moleculer-apollo-server)
 [![Join the chat at https://gitter.im/moleculerjs/moleculer](https://badges.gitter.im/moleculerjs/moleculer.svg)](https://gitter.im/moleculerjs/moleculer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -16,7 +14,7 @@
 
 ## Install
 ```
-npm i moleculerjs/moleculer-apollo-server moleculer-web@next graphql
+npm i moleculer-apollo-server moleculer-web@next graphql
 ```
 
 ## Usage
