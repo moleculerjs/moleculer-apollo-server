@@ -28,26 +28,26 @@
   "license": "MIT",
   "peerDependencies": {
     "graphql": ">= 14.x.x",
-    "moleculer": "^0.13.0"
+    "moleculer": "^0.13.0 || ^0.14.0"
   },
   "devDependencies": {
-    "benchmarkify": "2.1.1",
-    "coveralls": "3.0.2",
-    "eslint": "5.13.0",
-    "eslint-config-prettier": "4.1.0",
-    "eslint-plugin-node": "8.0.1",
-    "eslint-plugin-prettier": "3.0.1",
-    "eslint-plugin-promise": "4.0.1",
+    "benchmarkify": "^2.1.2",
+    "coveralls": "^3.0.7",
+    "eslint": "^6.5.1",
+    "eslint-config-prettier": "^6.4.0",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-security": "1.4.0",
-    "graphql": "14.1.1",
-    "jest": "24.1.0",
-    "jest-cli": "24.1.0",
-    "moleculer": "0.13.5",
-    "moleculer-repl": "0.5.5",
-    "moleculer-web": "0.9.0-beta1",
-    "nodemon": "1.18.9",
-    "npm-check": "5.9.0",
-    "prettier": "1.16.4"
+    "graphql": "^14.5.8",
+    "jest": "^24.9.0",
+    "jest-cli": "^24.9.0",
+    "moleculer": "^0.14.0-beta5",
+    "moleculer-repl": "^0.6.1",
+    "moleculer-web": "^0.9.0-beta6",
+    "nodemon": "^1.19.4",
+    "npm-check": "^5.9.0",
+    "prettier": "^1.18.2"
   },
   "jest": {
     "testEnvironment": "node",
@@ -64,13 +64,13 @@
     "node": ">= 8.x.x"
   },
   "dependencies": {
-    "@apollographql/graphql-playground-html": "^1.6.6",
+    "@apollographql/graphql-playground-html": "^1.6.24",
     "accept": "^3.1.3",
-    "apollo-server-core": "^2.3.4",
+    "apollo-server-core": "^2.9.6",
     "dataloader": "^1.4.0",
-    "graphql-subscriptions": "^1.0.0",
-    "graphql-tools": "^4.0.4",
-    "graphql-upload": "^8.0.4",
-    "lodash": "^4.17.11"
+    "graphql-subscriptions": "^1.1.0",
+    "graphql-tools": "^4.0.5",
+    "graphql-upload": "^8.1.0",
+    "lodash": "^4.17.15"
   }
 }

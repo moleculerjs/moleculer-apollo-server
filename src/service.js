@@ -118,7 +118,7 @@ module.exports = function(mixinOptions) {
 							return null;
 						}
 						if (err && err.ctx) {
-							delete err.ctx; // Avoid circular JSON
+							err.ctx = null; // Avoid circular JSON in Moleculer <= 0.13
 						}
 						throw err;
 					}

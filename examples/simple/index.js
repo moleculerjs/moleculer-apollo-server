@@ -1,6 +1,7 @@
 "use strict";
 
-let { ServiceBroker } = require("moleculer");
+const { ServiceBroker } = require("moleculer");
+const { MoleculerClientError } = require("moleculer").Errors;
 
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
@@ -66,6 +67,15 @@ broker.createService({
 			},
 			handler(ctx) {
 				return ctx.params.payload;
+			},
+		},
+
+		danger: {
+			graphql: {
+				query: "danger: String!",
+			},
+			async handler() {
+				throw new MoleculerClientError("I've said it's a danger action!", 422, "DANGER");
 			},
 		},
 	},
