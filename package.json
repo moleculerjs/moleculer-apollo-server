@@ -50,6 +50,7 @@
     "prettier": "^1.18.2"
   },
   "jest": {
+    "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "rootDir": "./src",
     "roots": [
