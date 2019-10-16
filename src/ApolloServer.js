@@ -96,4 +96,6 @@ class ApolloServer extends ApolloServerBase {
 		}
 	}
 }
-exports.ApolloServer = ApolloServer;
+module.exports = {
+	ApolloServer,
+};
