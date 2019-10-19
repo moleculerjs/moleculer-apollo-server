@@ -8,7 +8,7 @@
  * 		https://github.com/apollographql/apollo-server/blob/master/packages/apollo-server-micro/
  *
  *
- * Copyright (c) 2018 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
+ * Copyright (c) 2019 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
  * MIT Licensed
  */
 

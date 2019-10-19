@@ -27,6 +27,7 @@ module.exports = {
 		"security/detect-non-literal-fs-filename": ["off"],
 		"no-process-exit": ["off"],
 		"node/no-unpublished-require": 0,
+		"require-atomic-updates": 0,
 		"space-before-function-paren": [
 			"warn",
 			{

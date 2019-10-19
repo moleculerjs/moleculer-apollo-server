@@ -1,6 +1,6 @@
 /*
  * moleculer-apollo-server
- * Copyright (c) 2018 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
+ * Copyright (c) 2019 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
  * MIT Licensed
  */
 
@@ -91,7 +91,12 @@ module.exports = function(mixinOptions) {
 			 * @param {Object?} def
 			 */
 			createActionResolver(actionName, def = {}) {
-				const { dataLoader = false, nullIfError = false, params = {}, rootParams = {} } = def;
+				const {
+					dataLoader = false,
+					nullIfError = false,
+					params = {},
+					rootParams = {},
+				} = def;
 				const rootKeys = Object.keys(rootParams);
 
 				return async (root, args, context) => {
@@ -104,14 +109,21 @@ module.exports = function(mixinOptions) {
 							}
 
 							return Array.isArray(rootValue)
-								? await Promise.all(rootValue.map(item => context.loaders[actionName].load(item)))
+								? await Promise.all(
+										rootValue.map(item =>
+											context.loaders[actionName].load(item),
+										),
+								  )
 								: await context.loaders[actionName].load(rootValue);
 						} else {
 							const p = {};
 							if (root && rootKeys) {
 								rootKeys.forEach(k => _.set(p, def.rootParams[k], _.get(root, k)));
 							}
-							return await context.ctx.call(actionName, _.defaultsDeep(args, p, params));
+							return await context.ctx.call(
+								actionName,
+								_.defaultsDeep(args, p, params),
+							);
 						}
 					} catch (err) {
 						if (nullIfError) {
@@ -254,7 +266,9 @@ module.exports = function(mixinOptions) {
 									_.castArray(def.query).forEach(query => {
 										const name = this.getFieldName(query);
 										queries.push(query);
-										resolver.Query[name] = this.createActionResolver(action.name);
+										resolver.Query[name] = this.createActionResolver(
+											action.name,
+										);
 									});
 								}
 
@@ -264,7 +278,9 @@ module.exports = function(mixinOptions) {
 									_.castArray(def.mutation).forEach(mutation => {
 										const name = this.getFieldName(mutation);
 										mutations.push(mutation);
-										resolver.Mutation[name] = this.createActionResolver(action.name);
+										resolver.Mutation[name] = this.createActionResolver(
+											action.name,
+										);
 									});
 								}
 
@@ -274,7 +290,9 @@ module.exports = function(mixinOptions) {
 									_.castArray(def.subscription).forEach(subscription => {
 										const name = this.getFieldName(subscription);
 										subscriptions.push(subscription);
-										resolver.Subscription[name] = this.createAsyncIteratorResolver(
+										resolver.Subscription[
+											name
+										] = this.createAsyncIteratorResolver(
 											action.name,
 											def.tags,
 											def.filter,
@@ -395,14 +413,18 @@ module.exports = function(mixinOptions) {
 				}
 
 				// Create new server & regenerate GraphQL schema
-				this.logger.info("♻ Recreate Apollo GraphQL server and regenerate GraphQL schema...");
+				this.logger.info(
+					"♻ Recreate Apollo GraphQL server and regenerate GraphQL schema...",
+				);
 
 				try {
 					this.pubsub = new PubSub();
 					const services = this.broker.registry.getServiceList({ withActions: true });
 					const schema = this.generateGraphQLSchema(services);
 
-					this.logger.debug("Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema));
+					this.logger.debug(
+						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema),
+					);
 
 					this.apolloServer = new ApolloServer({
 						schema,
@@ -428,7 +450,9 @@ module.exports = function(mixinOptions) {
 						}),
 					});
 
-					this.graphqlHandler = this.apolloServer.createHandler(mixinOptions.serverOptions);
+					this.graphqlHandler = this.apolloServer.createHandler(
+						mixinOptions.serverOptions,
+					);
 					this.apolloServer.installSubscriptionHandlers(this.server);
 					this.graphqlSchema = schema;
 
@@ -480,35 +504,50 @@ module.exports = function(mixinOptions) {
 					if (graphql && graphql.resolvers) {
 						const { resolvers } = graphql;
 
-						const typeLoaders = Object.values(resolvers).reduce((resolverAccum, type) => {
-							const resolverLoaders = Object.values(type).reduce((fieldAccum, resolver) => {
-								if (_.isPlainObject(resolver)) {
-									const { action, dataLoader = false, params = {}, rootParams = {} } = resolver;
-									const actionParam = Object.values(rootParams)[0]; // use the first root parameter
-									if (dataLoader && actionParam) {
-										const resolverActionName = this.getResolverActionName(serviceName, action);
-										if (fieldAccum[resolverActionName] == null) {
-											// create a new DataLoader instance
-											fieldAccum[resolverActionName] = new DataLoader(keys =>
-												req.$ctx.call(
-													resolverActionName,
-													_.defaultsDeep(
-														{
-															[actionParam]: keys,
-														},
-														params,
-													),
-												),
-											);
+						const typeLoaders = Object.values(resolvers).reduce(
+							(resolverAccum, type) => {
+								const resolverLoaders = Object.values(type).reduce(
+									(fieldAccum, resolver) => {
+										if (_.isPlainObject(resolver)) {
+											const {
+												action,
+												dataLoader = false,
+												params = {},
+												rootParams = {},
+											} = resolver;
+											const actionParam = Object.values(rootParams)[0]; // use the first root parameter
+											if (dataLoader && actionParam) {
+												const resolverActionName = this.getResolverActionName(
+													serviceName,
+													action,
+												);
+												if (fieldAccum[resolverActionName] == null) {
+													// create a new DataLoader instance
+													fieldAccum[resolverActionName] = new DataLoader(
+														keys =>
+															req.$ctx.call(
+																resolverActionName,
+																_.defaultsDeep(
+																	{
+																		[actionParam]: keys,
+																	},
+																	params,
+																),
+															),
+													);
+												}
+											}
 										}
-									}
-								}
 
-								return fieldAccum;
-							}, {});
+										return fieldAccum;
+									},
+									{},
+								);
 
-							return { ...resolverAccum, ...resolverLoaders };
-						}, {});
+								return { ...resolverAccum, ...resolverLoaders };
+							},
+							{},
+						);
 
 						serviceAccum = { ...serviceAccum, ...typeLoaders };
 					}

@@ -152,7 +152,11 @@ describe("Test ApolloServer", () => {
 			expect(fakeRes.statusCode).toBe(200);
 
 			expect(fakeService.sendResponse).toBeCalledTimes(1);
-			expect(fakeService.sendResponse).toBeCalledWith(fakeReq, fakeRes, "GraphQL Response Data");
+			expect(fakeService.sendResponse).toBeCalledWith(
+				fakeReq,
+				fakeRes,
+				"GraphQL Response Data",
+			);
 
 			expect(fakeCtx.meta.$responseType).toBe("application/json");
 
@@ -198,7 +202,11 @@ describe("Test ApolloServer", () => {
 			expect(fakeRes.statusCode).toBe(200);
 
 			expect(fakeService.sendResponse).toBeCalledTimes(1);
-			expect(fakeService.sendResponse).toBeCalledWith(fakeReq, fakeRes, "GraphQL Response Data");
+			expect(fakeService.sendResponse).toBeCalledWith(
+				fakeReq,
+				fakeRes,
+				"GraphQL Response Data",
+			);
 
 			expect(fakeCtx.meta.$responseType).toBe("application/json");
 		});

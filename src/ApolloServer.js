@@ -54,7 +54,8 @@ class ApolloServer extends ApolloServerBase {
 			if (this.playgroundOptions && req.method === "GET") {
 				const { mediaTypes } = accept.parseAll(req.headers);
 				const prefersHTML =
-					mediaTypes.find(x => x === "text/html" || x === "application/json") === "text/html";
+					mediaTypes.find(x => x === "text/html" || x === "application/json") ===
+					"text/html";
 
 				if (prefersHTML) {
 					const middlewareOptions = Object.assign(
@@ -64,7 +65,13 @@ class ApolloServer extends ApolloServerBase {
 						},
 						this.playgroundOptions,
 					);
-					return send(req, res, 200, renderPlaygroundPage(middlewareOptions), "text/html");
+					return send(
+						req,
+						res,
+						200,
+						renderPlaygroundPage(middlewareOptions),
+						"text/html",
+					);
 				}
 			}
 
