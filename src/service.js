@@ -25,8 +25,6 @@ module.exports = function(mixinOptions) {
 		subscriptionEventName: "graphql.publish",
 	});
 
-	let shouldUpdateSchema = true;
-
 	const serviceSchema = {
 		events: {
 			"$services.changed"() {
@@ -44,7 +42,42 @@ module.exports = function(mixinOptions) {
 			 * Invalidate the generated GraphQL schema
 			 */
 			invalidateGraphQLSchema() {
-				shouldUpdateSchema = true;
+				this.shouldUpdateGraphqlSchema = true;
+			},
+
+			/**
+			 * Return the field name in a GraphQL Mutation, Query, or Subscription declaration
+			 * @param {String} declaration - Mutation, Query, or Subscription declaration
+			 * @returns {String} Field name of declaration
+			 */
+			getFieldName(declaration) {
+				// Remove all multi-line/single-line descriptions and comments
+				const cleanedDeclaration = declaration
+					.replace(/"([\s\S]*?)"/g, "")
+					.replace(/^[\s]*?#.*\n?/gm, "")
+					.trim();
+				return cleanedDeclaration.split(/[(:]/g)[0];
+			},
+
+			/**
+			 * Get the full name of a service including version spec.
+			 *
+			 * @param {Service} service - Service object
+			 * @returns {String} Name of service including version spec
+			 */
+			getServiceName(service) {
+				if (service.fullName) return service.fullName;
+
+				if (service.version != null)
+					return (
+						(typeof service.version == "number"
+							? "v" + service.version
+							: service.version) +
+						"." +
+						service.name
+					);
+
+				return service.name;
 			},
 
 			/**
@@ -73,7 +106,7 @@ module.exports = function(mixinOptions) {
 						// matches signature for remote action resolver
 						acc[name] = this.createActionResolver(
 							this.getResolverActionName(serviceName, r.action),
-							r,
+							r
 						);
 					} else {
 						// something else (enum, etc.)
@@ -111,8 +144,8 @@ module.exports = function(mixinOptions) {
 							return Array.isArray(rootValue)
 								? await Promise.all(
 										rootValue.map(item =>
-											context.loaders[actionName].load(item),
-										),
+											context.loaders[actionName].load(item)
+										)
 								  )
 								: await context.loaders[actionName].load(rootValue);
 						} else {
@@ -122,13 +155,14 @@ module.exports = function(mixinOptions) {
 							}
 							return await context.ctx.call(
 								actionName,
-								_.defaultsDeep(args, p, params),
+								_.defaultsDeep(args, p, params)
 							);
 						}
 					} catch (err) {
 						if (nullIfError) {
 							return null;
 						}
+						/* istanbul ignore next */
 						if (err && err.ctx) {
 							err.ctx = null; // Avoid circular JSON in Moleculer <= 0.13
 						}
@@ -152,7 +186,7 @@ module.exports = function(mixinOptions) {
 								async (payload, params, ctx) =>
 									payload !== undefined
 										? this.broker.call(filter, { ...params, payload }, ctx)
-										: false,
+										: false
 						  )
 						: () => this.pubsub.asyncIterator(tags),
 					resolve: async (payload, params, ctx) =>
@@ -244,11 +278,11 @@ module.exports = function(mixinOptions) {
 										(acc, [name, resolver]) => {
 											acc[name] = _.merge(
 												acc[name] || {},
-												this.createServiceResolvers(serviceName, resolver),
+												this.createServiceResolvers(serviceName, resolver)
 											);
 											return acc;
 										},
-										resolvers,
+										resolvers
 									);
 								}
 							}
@@ -267,7 +301,7 @@ module.exports = function(mixinOptions) {
 										const name = this.getFieldName(query);
 										queries.push(query);
 										resolver.Query[name] = this.createActionResolver(
-											action.name,
+											action.name
 										);
 									});
 								}
@@ -279,7 +313,7 @@ module.exports = function(mixinOptions) {
 										const name = this.getFieldName(mutation);
 										mutations.push(mutation);
 										resolver.Mutation[name] = this.createActionResolver(
-											action.name,
+											action.name
 										);
 									});
 								}
@@ -295,7 +329,7 @@ module.exports = function(mixinOptions) {
 										] = this.createAsyncIteratorResolver(
 											action.name,
 											def.tags,
-											def.filter,
+											def.filter
 										);
 									});
 								}
@@ -401,20 +435,20 @@ module.exports = function(mixinOptions) {
 						"Unable to compile GraphQL schema",
 						500,
 						"UNABLE_COMPILE_GRAPHQL_SCHEMA",
-						{ err },
+						{ err }
 					);
 				}
 			},
 
 			prepareGraphQLSchema() {
 				// Schema is up-to-date
-				if (!shouldUpdateSchema && this.graphqlHandler) {
+				if (!this.shouldUpdateGraphqlSchema && this.graphqlHandler) {
 					return;
 				}
 
 				// Create new server & regenerate GraphQL schema
 				this.logger.info(
-					"♻ Recreate Apollo GraphQL server and regenerate GraphQL schema...",
+					"♻ Recreate Apollo GraphQL server and regenerate GraphQL schema..."
 				);
 
 				try {
@@ -423,7 +457,7 @@ module.exports = function(mixinOptions) {
 					const schema = this.generateGraphQLSchema(services);
 
 					this.logger.debug(
-						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema),
+						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
 					);
 
 					this.apolloServer = new ApolloServer({
@@ -451,12 +485,12 @@ module.exports = function(mixinOptions) {
 					});
 
 					this.graphqlHandler = this.apolloServer.createHandler(
-						mixinOptions.serverOptions,
+						mixinOptions.serverOptions
 					);
 					this.apolloServer.installSubscriptionHandlers(this.server);
 					this.graphqlSchema = schema;
 
-					shouldUpdateSchema = false;
+					this.shouldUpdateGraphqlSchema = false;
 
 					this.broker.broadcast("graphql.schema.updated", {
 						schema: GraphQL.printSchema(schema),
@@ -465,29 +499,6 @@ module.exports = function(mixinOptions) {
 					this.logger.error(err);
 					throw err;
 				}
-			},
-
-			/**
-			 * Return the field name in a GraphQL Mutation, Query, or Subscription declaration
-			 * @param {String} declaration - Mutation, Query, or Subscription declaration
-			 * @returns {String} Field name of declaration
-			 */
-			getFieldName(declaration) {
-				// Remove all multi-line/single-line descriptions and comments
-				const cleanedDeclaration = declaration
-					.replace(/"([\s\S]*?)"/g, "")
-					.replace(/^[\s]*?#.*\n?/gm, "")
-					.trim();
-				return cleanedDeclaration.split(/[(:]/g)[0];
-			},
-
-			/**
-			 * Get the name of a service including version spec
-			 * @param {Object} service - Service object
-			 * @returns {String} Name of service including version spec
-			 */
-			getServiceName(service) {
-				return service.version ? `v${service.version}.${service.name}` : service.name;
 			},
 
 			/**
@@ -519,7 +530,7 @@ module.exports = function(mixinOptions) {
 											if (dataLoader && actionParam) {
 												const resolverActionName = this.getResolverActionName(
 													serviceName,
-													action,
+													action
 												);
 												if (fieldAccum[resolverActionName] == null) {
 													// create a new DataLoader instance
@@ -531,9 +542,9 @@ module.exports = function(mixinOptions) {
 																	{
 																		[actionParam]: keys,
 																	},
-																	params,
-																),
-															),
+																	params
+																)
+															)
 													);
 												}
 											}
@@ -541,12 +552,12 @@ module.exports = function(mixinOptions) {
 
 										return fieldAccum;
 									},
-									{},
+									{}
 								);
 
 								return { ...resolverAccum, ...resolverLoaders };
 							},
-							{},
+							{}
 						);
 
 						serviceAccum = { ...serviceAccum, ...typeLoaders };
@@ -560,6 +571,7 @@ module.exports = function(mixinOptions) {
 		created() {
 			this.apolloServer = null;
 			this.graphqlHandler = null;
+			this.shouldUpdateGraphqlSchema = true;
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {
@@ -571,7 +583,7 @@ module.exports = function(mixinOptions) {
 							this.sendError(req, res, err);
 						}
 					},
-					"/.well-known/apollo/server-health"(req, res) {
+					"GET /.well-known/apollo/server-health"(req, res) {
 						try {
 							this.prepareGraphQLSchema();
 						} catch (err) {
@@ -580,7 +592,7 @@ module.exports = function(mixinOptions) {
 								req,
 								res,
 								{ status: "fail", schema: false },
-								{ responseType: "application/health+json" },
+								{ responseType: "application/health+json" }
 							);
 						}
 						return this.graphqlHandler(req, res);
@@ -618,7 +630,7 @@ module.exports = function(mixinOptions) {
 						ctx.params.query,
 						null,
 						{ ctx },
-						ctx.params.variables,
+						ctx.params.variables
 					);
 				},
 			},
