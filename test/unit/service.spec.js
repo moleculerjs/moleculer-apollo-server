@@ -1,7 +1,7 @@
 "use strict";
 
-jest.mock("../../src/Apolloserver");
-const { Apolloserver } = require("../../src/Apolloserver");
+jest.mock("../../src/ApolloServer");
+const { ApolloServer } = require("../../src/ApolloServer");
 
 jest.mock("dataloader");
 const DataLoader = require("dataloader");
