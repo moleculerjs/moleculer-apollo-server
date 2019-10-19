@@ -185,7 +185,7 @@ module.exports = function(mixinOptions) {
 								() => this.pubsub.asyncIterator(tags),
 								async (payload, params, ctx) =>
 									payload !== undefined
-										? this.broker.call(filter, { ...params, payload }, ctx)
+										? this.broker.call(actionName, { ...params, payload }, ctx)
 										: false
 						  )
 						: () => this.pubsub.asyncIterator(tags),

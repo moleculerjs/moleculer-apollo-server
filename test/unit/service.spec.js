@@ -12,7 +12,7 @@ const { makeExecutableSchema } = require("graphql-tools");
 jest.mock("graphql");
 const GraphQL = require("graphql");
 
-jest.mock("graphql");
+jest.mock("graphql-subscriptions");
 const { PubSub, withFilter } = require("graphql-subscriptions");
 
 const ApolloServerService = require("../../src/service");
@@ -487,6 +487,93 @@ describe("Test Service", () => {
 			expect(loaders["posts.find"].load).toBeCalledWith(1);
 			expect(loaders["posts.find"].load).toBeCalledWith(2);
 			expect(loaders["posts.find"].load).toBeCalledWith(5);
+		});
+	});
+
+	describe("Test 'createAsyncIteratorResolver'", () => {
+		let broker, svc, stop;
+
+		beforeAll(async () => {
+			const res = await startService();
+			broker = res.broker;
+			svc = res.svc;
+			stop = res.stop;
+
+			svc.pubsub = { asyncIterator: jest.fn(() => "iterator-result") };
+			broker.call = jest.fn(async () => "action response");
+		});
+
+		afterAll(async () => await stop());
+
+		it("should create resolver without tags & filter", async () => {
+			const res = svc.createAsyncIteratorResolver("posts.find");
+
+			expect(res).toEqual({
+				subscribe: expect.any(Function),
+				resolve: expect.any(Function),
+			});
+
+			// Test subscribe
+			const res2 = res.subscribe();
+
+			expect(res2).toBe("iterator-result");
+			expect(svc.pubsub.asyncIterator).toBeCalledTimes(1);
+			expect(svc.pubsub.asyncIterator).toBeCalledWith([]);
+
+			// Test resolve
+			const ctx = new Context(broker);
+			const res3 = await res.resolve({ a: 5 }, { b: "John" }, ctx);
+
+			expect(res3).toBe("action response");
+			expect(broker.call).toBeCalledTimes(1);
+			expect(broker.call).toBeCalledWith("posts.find", { b: "John", payload: { a: 5 } }, ctx);
+		});
+
+		it("should create resolver with tags", async () => {
+			svc.pubsub.asyncIterator.mockClear();
+
+			const res = svc.createAsyncIteratorResolver("posts.find", ["a", "b"]);
+
+			expect(res).toEqual({
+				subscribe: expect.any(Function),
+				resolve: expect.any(Function),
+			});
+
+			// Test subscribe
+			const res2 = res.subscribe();
+
+			expect(res2).toBe("iterator-result");
+			expect(svc.pubsub.asyncIterator).toBeCalledTimes(1);
+			expect(svc.pubsub.asyncIterator).toBeCalledWith(["a", "b"]);
+		});
+
+		it("should create resolver with tags & filter", async () => {
+			svc.pubsub.asyncIterator.mockClear();
+			broker.call.mockClear();
+			withFilter.mockImplementation((fn1, fn2) => [fn1, fn2]);
+
+			const res = svc.createAsyncIteratorResolver("posts.find", ["a", "b"], true);
+
+			expect(res).toEqual({
+				subscribe: [expect.any(Function), expect.any(Function)],
+				resolve: expect.any(Function),
+			});
+
+			// Test first function
+			expect(res.subscribe[0]()).toBe("iterator-result");
+
+			expect(svc.pubsub.asyncIterator).toBeCalledTimes(1);
+			expect(svc.pubsub.asyncIterator).toBeCalledWith(["a", "b"]);
+
+			// Test second function without payload
+			expect(await res.subscribe[1]()).toBe(false);
+
+			// Test second function with payload
+			const ctx = new Context(broker);
+			expect(await res.subscribe[1]({ a: 5 }, { b: "John" }, ctx)).toBe("action response");
+
+			expect(broker.call).toBeCalledTimes(1);
+			expect(broker.call).toBeCalledWith("posts.find", { b: "John", payload: { a: 5 } }, ctx);
 		});
 	});
 });
