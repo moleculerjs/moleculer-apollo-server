@@ -176,16 +176,16 @@ module.exports = function(mixinOptions) {
 			 *
 			 * @param {String} actionName
 			 * @param {Array?} tags
-			 * @param {Boolean?} filter
+			 * @param {String?} filter
 			 */
-			createAsyncIteratorResolver(actionName, tags = [], filter = false) {
+			createAsyncIteratorResolver(actionName, tags = [], filter) {
 				return {
 					subscribe: filter
 						? withFilter(
 								() => this.pubsub.asyncIterator(tags),
 								async (payload, params, ctx) =>
 									payload !== undefined
-										? this.broker.call(actionName, { ...params, payload }, ctx)
+										? this.broker.call(filter, { ...params, payload }, ctx)
 										: false
 						  )
 						: () => this.pubsub.asyncIterator(tags),

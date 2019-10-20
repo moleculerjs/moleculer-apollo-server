@@ -552,7 +552,7 @@ describe("Test Service", () => {
 			broker.call.mockClear();
 			withFilter.mockImplementation((fn1, fn2) => [fn1, fn2]);
 
-			const res = svc.createAsyncIteratorResolver("posts.find", ["a", "b"], true);
+			const res = svc.createAsyncIteratorResolver("posts.find", ["a", "b"], "posts.filter");
 
 			expect(res).toEqual({
 				subscribe: [expect.any(Function), expect.any(Function)],
@@ -573,7 +573,11 @@ describe("Test Service", () => {
 			expect(await res.subscribe[1]({ a: 5 }, { b: "John" }, ctx)).toBe("action response");
 
 			expect(broker.call).toBeCalledTimes(1);
-			expect(broker.call).toBeCalledWith("posts.find", { b: "John", payload: { a: 5 } }, ctx);
+			expect(broker.call).toBeCalledWith(
+				"posts.filter",
+				{ b: "John", payload: { a: 5 } },
+				ctx
+			);
 		});
 	});
 });
