@@ -462,7 +462,7 @@ module.exports = function(mixinOptions) {
 
 					this.apolloServer = new ApolloServer({
 						schema,
-						..._.defaultsDeep(mixinOptions.serverOptions, {
+						..._.defaultsDeep({}, mixinOptions.serverOptions, {
 							context: ({ req, connection }) => {
 								return req
 									? {
@@ -571,6 +571,8 @@ module.exports = function(mixinOptions) {
 		created() {
 			this.apolloServer = null;
 			this.graphqlHandler = null;
+			this.graphqlSchema = null;
+			this.pubsub = null;
 			this.shouldUpdateGraphqlSchema = true;
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
