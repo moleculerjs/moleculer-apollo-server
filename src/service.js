@@ -236,7 +236,7 @@ module.exports = function(mixinOptions) {
 						if (processedServices.has(serviceName)) return;
 						processedServices.add(serviceName);
 
-						if (service.settings.graphql) {
+						if (service.settings && service.settings.graphql) {
 							// --- COMPILE SERVICE-LEVEL DEFINITIONS ---
 							if (_.isObject(service.settings.graphql)) {
 								const globalDef = service.settings.graphql;
@@ -510,7 +510,9 @@ module.exports = function(mixinOptions) {
 			createLoaders(req, services) {
 				return services.reduce((serviceAccum, service) => {
 					const serviceName = this.getServiceName(service);
-
+					if(!service.settings) {
+						service.settings = {}
+					}
 					const { graphql } = service.settings;
 					if (graphql && graphql.resolvers) {
 						const { resolvers } = graphql;
