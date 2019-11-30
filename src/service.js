@@ -510,8 +510,8 @@ module.exports = function(mixinOptions) {
 			createLoaders(req, services) {
 				return services.reduce((serviceAccum, service) => {
 					const serviceName = this.getServiceName(service);
-					if(!service.settings) {
-						service.settings = {}
+					if (!service.settings) {
+						service.settings = {};
 					}
 					const { graphql } = service.settings;
 					if (graphql && graphql.resolvers) {
