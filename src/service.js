@@ -154,10 +154,11 @@ module.exports = function(mixinOptions) {
 							if (context.dataLoaders.has(dataLoaderMapKey)) {
 								dataLoader = context.dataLoaders.get(dataLoaderMapKey);
 							} else {
+								const batchedParamKey = rootParams[dataLoaderRootKey];
 								dataLoader = this.buildDataLoader(
 									context.ctx,
 									actionName,
-									dataLoaderRootKey,
+									batchedParamKey,
 									staticParams,
 									args
 								);
@@ -179,9 +180,10 @@ module.exports = function(mixinOptions) {
 									_.set(params, rootParams[key], _.get(root, key))
 								);
 							}
+
 							return await context.ctx.call(
 								actionName,
-								_.defaultsDeep(args, params, staticParams)
+								_.defaultsDeep({}, args, params, staticParams)
 							);
 						}
 					} catch (err) {
@@ -206,7 +208,7 @@ module.exports = function(mixinOptions) {
 			getDataLoaderMapKey(actionName, staticParams, args) {
 				if (Object.keys(staticParams).length > 0 || Object.keys(args).length > 0) {
 					// create a unique hash of the static params and the arguments to ensure a unique DataLoader instance
-					const actionParams = _.defaultsDeep(args, staticParams);
+					const actionParams = _.defaultsDeep({}, args, staticParams);
 					const paramsHash = hash(actionParams);
 					return `${actionName}:${paramsHash}`;
 				}
@@ -227,7 +229,7 @@ module.exports = function(mixinOptions) {
 			buildDataLoader(ctx, actionName, batchedParamKey, staticParams, args) {
 				const batchLoadFn = keys => {
 					const rootParams = { [batchedParamKey]: keys };
-					return ctx.call(actionName, _.defaultsDeep(args, rootParams, staticParams));
+					return ctx.call(actionName, _.defaultsDeep({}, args, rootParams, staticParams));
 				};
 
 				if (dataLoaderOptions.has(actionName)) {
