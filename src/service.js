@@ -198,6 +198,7 @@ module.exports = function(mixinOptions) {
 			 * @param {string} actionName - Fully qualified action name to bind to dataloader
 			 * @param {Object.<string, any>} staticParams - Static parameters to use in dataloader
 			 * @param {Object.<string, any>} args - Arguments passed to GraphQL child resolver
+			 * @returns {string} Key to the dataloader instance
 			 */
 			getDataLoaderMapKey(actionName, staticParams, args) {
 				if (Object.keys(staticParams).length > 0 || Object.keys(args).length > 0) {
@@ -219,6 +220,7 @@ module.exports = function(mixinOptions) {
 			 * @param {string} batchedParamKey - Parameter key to use for loaded values
 			 * @param {Object} staticParams - Static parameters to use in dataloader
 			 * @param {Object} args - Arguments passed to GraphQL child resolver
+			 * @returns {DataLoader} Dataloader instance
 			 */
 			buildDataLoader(ctx, actionName, batchedParamKey, staticParams, args) {
 				const batchLoadFn = keys => {
