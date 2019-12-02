@@ -26,12 +26,6 @@ module.exports = function(mixinOptions) {
 		subscriptionEventName: "graphql.publish",
 	});
 
-	/**
-	 * DataLoader options
-	 * @type {Map<string, Object.<string, any>>} Action name key; value of options object to pass to DataLoader constructor
-	 */
-	const dataLoaderOptions = new Map();
-
 	const serviceSchema = {
 		events: {
 			"$services.changed"() {
@@ -232,9 +226,9 @@ module.exports = function(mixinOptions) {
 					return ctx.call(actionName, _.defaultsDeep({}, args, rootParams, staticParams));
 				};
 
-				if (dataLoaderOptions.has(actionName)) {
+				if (this.dataLoaderOptions.has(actionName)) {
 					// use any specified options assigned to this action
-					const options = dataLoaderOptions.get(actionName);
+					const options = this.dataLoaderOptions.get(actionName);
 					return new DataLoader(batchLoadFn, options);
 				}
 
@@ -577,10 +571,10 @@ module.exports = function(mixinOptions) {
 			 * Build a map of options to use with DataLoader
 			 *
 			 * @param {Object[]} services
-			 * @modifies {dataLoaderOptions}
+			 * @modifies {this.dataLoaderOptions}
 			 */
 			buildLoaderOptionMap(services) {
-				dataLoaderOptions.clear(); // clear map before rebuilding
+				this.dataLoaderOptions.clear(); // clear map before rebuilding
 
 				services.forEach(service => {
 					Object.values(service.actions).forEach(action => {
@@ -591,7 +585,7 @@ module.exports = function(mixinOptions) {
 								serviceName,
 								actionName
 							);
-							dataLoaderOptions.set(
+							this.dataLoaderOptions.set(
 								fullActionName,
 								graphqlDefinition.dataLoaderOptions
 							);
@@ -607,6 +601,7 @@ module.exports = function(mixinOptions) {
 			this.graphqlSchema = null;
 			this.pubsub = null;
 			this.shouldUpdateGraphqlSchema = true;
+			this.dataLoaderOptions = new Map();
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {
