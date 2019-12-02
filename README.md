@@ -258,13 +258,63 @@ module.exports = {
 };
 ```
 
+### Dataloader
+moleculer-apollo-server supports [DataLoader](https://github.com/graphql/dataloader) via configuration in the resolver definition.
+The called action must be compatible with DataLoader semantics -- that is, it must accept params with an array property and return an array of the same size,
+with the results in the same order as they were provided.
+
+To activate DataLoader for a resolver, simply add `dataLoader: true` to the resolver's property object in the `resolvers` property of the service's `graphql` property:
+
+```js
+settings: {
+	graphql: {
+		resolvers: {
+			Post: {
+				author: {
+					action: "users.resolve",
+					dataLoader: true,
+					rootParams: {
+						author: "id",
+					},
+				},
+				voters: {
+					action: "users.resolve",
+					dataLoader: true,
+					rootParams: {
+						voters: "id",
+					},
+				},
+                ...
+```
+Since DataLoader only expects a single value to be loaded at a time, only one `rootParams` key/value pairing will be utilized, but `params` and GraphQL child arguments work properly.
+
+You can also specify [options](https://github.com/graphql/dataloader#api) for construction of the DataLoader in the called action definition's `graphql` property.  This is useful for setting things like `maxBatchSize'.
+
+```js
+resolve: {
+	params: {
+		id: [{ type: "number" }, { type: "array", items: "number" }],
+		graphql: { dataLoaderOptions: { maxBatchSize: 100 } },
+	},
+	handler(ctx) {
+		this.logger.debug("resolve action called.", { params: ctx.params });
+		if (Array.isArray(ctx.params.id)) {
+			return _.cloneDeep(ctx.params.id.map(id => this.findByID(id)));
+		} else {
+			return _.cloneDeep(this.findByID(ctx.params.id));
+		}
+	},
+},
+```
+It is unlikely that setting any of the options which accept a function will work properly unless you are running moleculer in a single-node environment.  This is because the functions will not serialize and be run by the moleculer-web Api Gateway.
+
 ## Examples
 
 - [Simple](examples/simple/index.js)
   - `npm run dev`
 - [Full](examples/full/index.js)
   - `npm run dev full`
-- [Full With Dataloader](examples/full-dataloader/index.js)
+- [Full With Dataloader](examples/full/index.js)
   - set `DATALOADER` environment variable to `"true"`
   - `npm run dev full`
 # Test
