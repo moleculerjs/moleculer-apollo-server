@@ -28,3 +28,4 @@ indent_size = 2
 
 [*.js]
 quote_type = "double"
+indent_size = unset
