@@ -3,9 +3,6 @@
 jest.mock("../../src/ApolloServer");
 const { ApolloServer } = require("../../src/ApolloServer");
 
-jest.mock("dataloader");
-const DataLoader = require("dataloader");
-
 jest.mock("graphql-tools");
 const { makeExecutableSchema } = require("graphql-tools");
 
@@ -522,6 +519,10 @@ describe("Test Service", () => {
 
 		afterAll(async () => await stop());
 
+		beforeEach(() => {
+			svc.dataLoaderOptions.clear();
+		});
+
 		it("should return null if no rootValue", async () => {
 			const resolver = svc.createActionResolver("posts.find", {
 				rootParams: {
@@ -533,13 +534,13 @@ describe("Test Service", () => {
 
 			const fakeRoot = { user: 12345 };
 
-			const res = await resolver(fakeRoot, { a: 5 }, {});
+			const res = await resolver(fakeRoot, { a: 5 }, { dataLoaders: new Map() });
 
 			expect(res).toBeNull();
 		});
 
-		it("should call the loader with single value", async () => {
-			const resolver = svc.createActionResolver("posts.find", {
+		it("should call the action via the loader with single value", async () => {
+			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
 					author: "id",
 				},
@@ -547,24 +548,21 @@ describe("Test Service", () => {
 				dataLoader: true,
 			});
 
-			const loaders = {
-				"posts.find": {
-					load: jest.fn(async () => "Response from loader"),
-				},
-			};
+			const ctx = new Context(broker);
+			ctx.call = jest.fn().mockResolvedValue(["response from action"]);
 
 			const fakeRoot = { author: 12345 };
 
-			const res = await resolver(fakeRoot, { a: 5 }, { loaders });
+			const res = await resolver(fakeRoot, { a: 5 }, { ctx, dataLoaders: new Map() });
 
-			expect(res).toBe("Response from loader");
+			expect(res).toBe("response from action");
 
-			expect(loaders["posts.find"].load).toBeCalledTimes(1);
-			expect(loaders["posts.find"].load).toBeCalledWith(12345);
+			expect(ctx.call).toHaveBeenCalledTimes(1);
+			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", { a: 5, id: [12345] });
 		});
 
-		it("should call the loader with multi value", async () => {
-			const resolver = svc.createActionResolver("posts.find", {
+		it("should call the action via the loader with multi value", async () => {
+			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
 					author: "id",
 				},
@@ -572,22 +570,166 @@ describe("Test Service", () => {
 				dataLoader: true,
 			});
 
-			const loaders = {
-				"posts.find": {
-					load: jest.fn(async () => "Res"),
-				},
-			};
+			const ctx = new Context(broker);
+			ctx.call = jest.fn().mockResolvedValue(["res1", "res2", "res3"]);
 
 			const fakeRoot = { author: [1, 2, 5] };
 
-			const res = await resolver(fakeRoot, { a: 5 }, { loaders });
+			const res = await resolver(fakeRoot, { a: 5 }, { ctx, dataLoaders: new Map() });
 
-			expect(res).toEqual(["Res", "Res", "Res"]);
+			expect(res).toEqual(["res1", "res2", "res3"]);
 
-			expect(loaders["posts.find"].load).toBeCalledTimes(3);
-			expect(loaders["posts.find"].load).toBeCalledWith(1);
-			expect(loaders["posts.find"].load).toBeCalledWith(2);
-			expect(loaders["posts.find"].load).toBeCalledWith(5);
+			expect(ctx.call).toHaveBeenCalledTimes(1);
+			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", { a: 5, id: [1, 2, 5] });
+		});
+
+		it("should call the action via the loader with multi value and use max batch size", async () => {
+			svc.dataLoaderOptions.set("users.resolve", { maxBatchSize: 2 });
+			const resolver = svc.createActionResolver("users.resolve", {
+				rootParams: {
+					author: "id",
+				},
+
+				dataLoader: true,
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest
+				.fn()
+				.mockResolvedValueOnce(["res1", "res2"])
+				.mockResolvedValueOnce(["res3"]);
+
+			const fakeRoot = { author: [1, 2, 5] };
+
+			const res = await resolver(fakeRoot, { a: 5 }, { ctx, dataLoaders: new Map() });
+
+			expect(res).toEqual(["res1", "res2", "res3"]);
+
+			expect(ctx.call).toHaveBeenCalledTimes(2);
+			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", { a: 5, id: [1, 2] });
+			expect(ctx.call).toHaveBeenNthCalledWith(2, "users.resolve", { a: 5, id: [5] });
+		});
+
+		it("should reuse the loader for multiple calls with the same context", async () => {
+			const resolver = svc.createActionResolver("users.resolve", {
+				rootParams: {
+					author: "id",
+				},
+
+				dataLoader: true,
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest
+				.fn()
+				.mockResolvedValueOnce(["res1", "res2", "res5"])
+				.mockResolvedValueOnce(["res3", "res4", "res6"]);
+
+			const fakeRoot1 = { author: [1, 2, 5] };
+			const fakeRoot2 = { author: [3, 4, 6] };
+
+			const fakeContext = { ctx, dataLoaders: new Map() };
+			const res1 = await resolver(fakeRoot1, { a: 5 }, fakeContext);
+			expect(fakeContext.dataLoaders.size).toBe(1);
+			const res2 = await resolver(fakeRoot2, { a: 5 }, fakeContext);
+			expect(fakeContext.dataLoaders.size).toBe(1);
+
+			expect(res1).toEqual(["res1", "res2", "res5"]);
+			expect(res2).toEqual(["res3", "res4", "res6"]);
+
+			expect(ctx.call).toHaveBeenCalledTimes(2);
+			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", {
+				a: 5,
+				id: [1, 2, 5],
+			});
+			expect(ctx.call).toHaveBeenNthCalledWith(2, "users.resolve", {
+				a: 5,
+				id: [3, 4, 6],
+			});
+		});
+
+		it("should make multiple loaders for multiple calls with different args", async () => {
+			const resolver = svc.createActionResolver("users.resolve", {
+				rootParams: {
+					author: "id",
+				},
+
+				dataLoader: true,
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest
+				.fn()
+				.mockResolvedValueOnce(["res1", "res2", "res5"])
+				.mockResolvedValueOnce(["res3", "res4", "res6"]);
+
+			const fakeRoot1 = { author: [1, 2, 5] };
+			const fakeRoot2 = { author: [3, 4, 6] };
+
+			const fakeContext = { ctx, dataLoaders: new Map() };
+			const res1 = await resolver(fakeRoot1, { a: 5 }, fakeContext);
+			expect(fakeContext.dataLoaders.size).toBe(1);
+			const res2 = await resolver(fakeRoot2, { a: 10 }, fakeContext);
+			expect(fakeContext.dataLoaders.size).toBe(2);
+
+			expect(res1).toEqual(["res1", "res2", "res5"]);
+			expect(res2).toEqual(["res3", "res4", "res6"]);
+
+			expect(ctx.call).toHaveBeenCalledTimes(2);
+			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", {
+				a: 5,
+				id: [1, 2, 5],
+			});
+			expect(ctx.call).toHaveBeenNthCalledWith(2, "users.resolve", {
+				a: 10,
+				id: [3, 4, 6],
+			});
+		});
+
+		it("should construct a loader with key without a hash if no args and no params", async () => {
+			const resolver = svc.createActionResolver("users.resolve", {
+				rootParams: {
+					author: "id",
+				},
+
+				dataLoader: true,
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn().mockResolvedValue(["response from action"]);
+
+			const fakeRoot = { author: 12345 };
+
+			const fakeContext = { ctx, dataLoaders: new Map() };
+			await resolver(fakeRoot, {}, fakeContext);
+
+			const dataLoaderEntries = [...fakeContext.dataLoaders.entries()];
+
+			expect(dataLoaderEntries.length).toBe(1);
+			expect(dataLoaderEntries[0][0].split(":").length).toBe(1);
+		});
+
+		it("should construct a loader with key with a hash if args passed", async () => {
+			const resolver = svc.createActionResolver("users.resolve", {
+				rootParams: {
+					author: "id",
+				},
+
+				dataLoader: true,
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn().mockResolvedValue(["response from action"]);
+
+			const fakeRoot = { author: 12345 };
+
+			const fakeContext = { ctx, dataLoaders: new Map() };
+			await resolver(fakeRoot, { a: 5 }, fakeContext);
+
+			const dataLoaderEntries = [...fakeContext.dataLoaders.entries()];
+
+			expect(dataLoaderEntries.length).toBe(1);
+			expect(dataLoaderEntries[0][0].split(":").length).toBe(2);
 		});
 	});
 
@@ -996,7 +1138,30 @@ describe("Test Service", () => {
 
 			svc.server = "server";
 			broker.broadcast = jest.fn();
-			broker.registry.getServiceList = jest.fn(() => "service-list");
+			const services = [
+				{
+					name: "test-svc-1",
+					actions: [
+						{
+							name: "test-action-1",
+							graphql: { dataLoaderOptions: { option1: "option-value-1" } },
+						},
+						{ name: "test-action-2" },
+					],
+				},
+				{
+					name: "test-svc-2",
+					version: 1,
+					actions: [
+						{
+							name: "test-action-3",
+							graphql: { dataLoaderOptions: { option2: "option-value-2" } },
+						},
+						{ name: "test-action-4" },
+					],
+				},
+			];
+			broker.registry.getServiceList = jest.fn(() => services);
 			svc.generateGraphQLSchema = jest.fn(() => "graphql schema");
 
 			expect(svc.pubsub).toBeNull();
@@ -1013,7 +1178,7 @@ describe("Test Service", () => {
 			expect(broker.registry.getServiceList).toBeCalledWith({ withActions: true });
 
 			expect(svc.generateGraphQLSchema).toBeCalledTimes(1);
-			expect(svc.generateGraphQLSchema).toBeCalledWith("service-list");
+			expect(svc.generateGraphQLSchema).toBeCalledWith(services);
 
 			expect(svc.apolloServer).toBe(fakeApolloServer);
 
@@ -1051,6 +1216,13 @@ describe("Test Service", () => {
 			expect(GraphQL.printSchema).toBeCalledTimes(2);
 			expect(GraphQL.printSchema).toBeCalledWith("graphql schema");
 
+			expect(svc.dataLoaderOptions).toEqual(
+				new Map([
+					["test-svc-1.test-action-1", { option1: "option-value-1" }],
+					["v1.test-svc-2.test-action-3", { option2: "option-value-2" }],
+				])
+			);
+
 			// Test `context` method
 			const contextFn = ApolloServer.mock.calls[0][0].context;
 
@@ -1063,8 +1235,6 @@ describe("Test Service", () => {
 			).toEqual({
 				service: "service",
 			});
-
-			svc.createLoaders = jest.fn(() => "loaders");
 
 			const req = {
 				$ctx: "context",
@@ -1080,15 +1250,12 @@ describe("Test Service", () => {
 				})
 			).toEqual({
 				ctx: "context",
-				loaders: "loaders",
+				dataLoaders: new Map(),
 				params: {
 					a: 5,
 				},
 				service: "service",
 			});
-
-			expect(svc.createLoaders).toBeCalledTimes(1);
-			expect(svc.createLoaders).toBeCalledWith(req, "service-list");
 
 			// Test subscription `onConnect`
 			const onConnect = ApolloServer.mock.calls[0][0].subscriptions.onConnect;
@@ -1099,87 +1266,6 @@ describe("Test Service", () => {
 				b: 100,
 				$service: svc,
 			});
-
-			await stop();
-		});
-	});
-
-	describe("Test 'createLoaders'", () => {
-		it("should create local variables", async () => {
-			const { broker, svc, stop } = await startService();
-
-			const ctx = new Context(broker);
-			ctx.call = jest.fn(async () => "ctx.call result");
-
-			const req = {
-				$ctx: ctx,
-			};
-
-			const services = [
-				{
-					name: "posts",
-					settings: {
-						graphql: {
-							resolvers: {
-								Post: {
-									posts: {
-										action: "posts.list",
-										dataLoader: true,
-										rootParams: {
-											count: "limit",
-										},
-										params: {
-											a: 5,
-										},
-									},
-
-									archived: {
-										action: "posts.archivedList",
-										rootParams: {
-											count: "limit",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					name: "users",
-					settings: {
-						graphql: {
-							resolvers: {
-								Users: {
-									profile: {
-										action: "users.getProfile",
-										dataLoader: true,
-										rootParams: {
-											id: "userID",
-											"loggedInUser.id": "requesterID",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			];
-
-			const res = svc.createLoaders(req, services);
-
-			expect(res).toEqual({
-				"posts.list": expect.any(DataLoader),
-				"users.getProfile": expect.any(DataLoader),
-			});
-
-			expect(DataLoader).toBeCalledTimes(2);
-
-			let dataLoaderFn = DataLoader.mock.calls[0][0];
-
-			expect(await dataLoaderFn(123)).toBe("ctx.call result");
-
-			expect(ctx.call).toBeCalledTimes(1);
-			expect(ctx.call).toBeCalledWith("posts.list", { a: 5, limit: 123 });
 
 			await stop();
 		});

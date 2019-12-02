@@ -13,6 +13,7 @@ const DataLoader = require("dataloader");
 const { makeExecutableSchema } = require("graphql-tools");
 const GraphQL = require("graphql");
 const { PubSub, withFilter } = require("graphql-subscriptions");
+const hash = require("object-hash");
 
 module.exports = function(mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
@@ -127,7 +128,7 @@ module.exports = function(mixinOptions) {
 				const {
 					dataLoader = false,
 					nullIfError = false,
-					params = {},
+					params: staticParams = {},
 					rootParams = {},
 				} = def;
 				const rootKeys = Object.keys(rootParams);
@@ -135,27 +136,48 @@ module.exports = function(mixinOptions) {
 				return async (root, args, context) => {
 					try {
 						if (dataLoader) {
-							const dataLoaderKey = rootKeys[0]; // use the first root key
-							const rootValue = root && _.get(root, dataLoaderKey);
+							const dataLoaderMapKey = this.getDataLoaderMapKey(
+								actionName,
+								staticParams,
+								args
+							);
+							const dataLoaderRootKey = rootKeys[0]; // for dataloader, use the first root key only
+
+							// check to see if the DataLoader has already been added to the GraphQL context; if not then add it for subsequent use
+							let dataLoader;
+							if (context.dataLoaders.has(dataLoaderMapKey)) {
+								dataLoader = context.dataLoaders.get(dataLoaderMapKey);
+							} else {
+								const batchedParamKey = rootParams[dataLoaderRootKey];
+								dataLoader = this.buildDataLoader(
+									context.ctx,
+									actionName,
+									batchedParamKey,
+									staticParams,
+									args
+								);
+								context.dataLoaders.set(dataLoaderMapKey, dataLoader);
+							}
+
+							const rootValue = root && _.get(root, dataLoaderRootKey);
 							if (rootValue == null) {
 								return null;
 							}
 
 							return Array.isArray(rootValue)
-								? await Promise.all(
-										rootValue.map(item =>
-											context.loaders[actionName].load(item)
-										)
-								  )
-								: await context.loaders[actionName].load(rootValue);
+								? await dataLoader.loadMany(rootValue)
+								: await dataLoader.load(rootValue);
 						} else {
-							const p = {};
+							const params = {};
 							if (root && rootKeys) {
-								rootKeys.forEach(k => _.set(p, def.rootParams[k], _.get(root, k)));
+								rootKeys.forEach(key =>
+									_.set(params, rootParams[key], _.get(root, key))
+								);
 							}
+
 							return await context.ctx.call(
 								actionName,
-								_.defaultsDeep(args, p, params)
+								_.defaultsDeep({}, args, params, staticParams)
 							);
 						}
 					} catch (err) {
@@ -169,6 +191,50 @@ module.exports = function(mixinOptions) {
 						throw err;
 					}
 				};
+			},
+
+			/**
+			 * Get the unique key assigned to the DataLoader map
+			 * @param {string} actionName - Fully qualified action name to bind to dataloader
+			 * @param {Object.<string, any>} staticParams - Static parameters to use in dataloader
+			 * @param {Object.<string, any>} args - Arguments passed to GraphQL child resolver
+			 * @returns {string} Key to the dataloader instance
+			 */
+			getDataLoaderMapKey(actionName, staticParams, args) {
+				if (Object.keys(staticParams).length > 0 || Object.keys(args).length > 0) {
+					// create a unique hash of the static params and the arguments to ensure a unique DataLoader instance
+					const actionParams = _.defaultsDeep({}, args, staticParams);
+					const paramsHash = hash(actionParams);
+					return `${actionName}:${paramsHash}`;
+				}
+
+				// if no static params or arguments are present then the action name can serve as the key
+				return actionName;
+			},
+
+			/**
+			 * Build a DataLoader instance
+			 *
+			 * @param {Object} ctx - Moleculer context
+			 * @param {string} actionName - Fully qualified action name to bind to dataloader
+			 * @param {string} batchedParamKey - Parameter key to use for loaded values
+			 * @param {Object} staticParams - Static parameters to use in dataloader
+			 * @param {Object} args - Arguments passed to GraphQL child resolver
+			 * @returns {DataLoader} Dataloader instance
+			 */
+			buildDataLoader(ctx, actionName, batchedParamKey, staticParams, args) {
+				const batchLoadFn = keys => {
+					const rootParams = { [batchedParamKey]: keys };
+					return ctx.call(actionName, _.defaultsDeep({}, args, rootParams, staticParams));
+				};
+
+				if (this.dataLoaderOptions.has(actionName)) {
+					// use any specified options assigned to this action
+					const options = this.dataLoaderOptions.get(actionName);
+					return new DataLoader(batchLoadFn, options);
+				}
+
+				return new DataLoader(batchLoadFn);
 			},
 
 			/**
@@ -469,7 +535,7 @@ module.exports = function(mixinOptions) {
 											ctx: req.$ctx,
 											service: req.$service,
 											params: req.$params,
-											loaders: this.createLoaders(req, services),
+											dataLoaders: new Map(), // create an empty map to load DataLoader instances into
 									  }
 									: {
 											service: connection.$service,
@@ -490,6 +556,8 @@ module.exports = function(mixinOptions) {
 					this.apolloServer.installSubscriptionHandlers(this.server);
 					this.graphqlSchema = schema;
 
+					this.buildLoaderOptionMap(services); // rebuild the options for DataLoaders
+
 					this.shouldUpdateGraphqlSchema = false;
 
 					this.broker.broadcast("graphql.schema.updated", {
@@ -502,71 +570,30 @@ module.exports = function(mixinOptions) {
 			},
 
 			/**
-			 * Create the DataLoader instances to be used for batch resolution
-			 * @param {Object} req
+			 * Build a map of options to use with DataLoader
+			 *
 			 * @param {Object[]} services
-			 * @returns {Object.<string, Object>} Key/value pairs of DataLoader instances
+			 * @modifies {this.dataLoaderOptions}
 			 */
-			createLoaders(req, services) {
-				return services.reduce((serviceAccum, service) => {
-					const serviceName = this.getServiceName(service);
-					if (!service.settings) {
-						service.settings = {};
-					}
-					const { graphql } = service.settings;
-					if (graphql && graphql.resolvers) {
-						const { resolvers } = graphql;
+			buildLoaderOptionMap(services) {
+				this.dataLoaderOptions.clear(); // clear map before rebuilding
 
-						const typeLoaders = Object.values(resolvers).reduce(
-							(resolverAccum, type) => {
-								const resolverLoaders = Object.values(type).reduce(
-									(fieldAccum, resolver) => {
-										if (_.isPlainObject(resolver)) {
-											const {
-												action,
-												dataLoader = false,
-												params = {},
-												rootParams = {},
-											} = resolver;
-											const actionParam = Object.values(rootParams)[0]; // use the first root parameter
-											if (dataLoader && actionParam) {
-												const resolverActionName = this.getResolverActionName(
-													serviceName,
-													action
-												);
-												if (fieldAccum[resolverActionName] == null) {
-													// create a new DataLoader instance
-													fieldAccum[resolverActionName] = new DataLoader(
-														keys =>
-															req.$ctx.call(
-																resolverActionName,
-																_.defaultsDeep(
-																	{
-																		[actionParam]: keys,
-																	},
-																	params
-																)
-															)
-													);
-												}
-											}
-										}
-
-										return fieldAccum;
-									},
-									{}
-								);
-
-								return { ...resolverAccum, ...resolverLoaders };
-							},
-							{}
-						);
-
-						serviceAccum = { ...serviceAccum, ...typeLoaders };
-					}
-
-					return serviceAccum;
-				}, {});
+				services.forEach(service => {
+					Object.values(service.actions).forEach(action => {
+						const { graphql: graphqlDefinition, name: actionName } = action;
+						if (graphqlDefinition && graphqlDefinition.dataLoaderOptions) {
+							const serviceName = this.getServiceName(service);
+							const fullActionName = this.getResolverActionName(
+								serviceName,
+								actionName
+							);
+							this.dataLoaderOptions.set(
+								fullActionName,
+								graphqlDefinition.dataLoaderOptions
+							);
+						}
+					});
+				});
 			},
 		},
 
@@ -576,6 +603,7 @@ module.exports = function(mixinOptions) {
 			this.graphqlSchema = null;
 			this.pubsub = null;
 			this.shouldUpdateGraphqlSchema = true;
+			this.dataLoaderOptions = new Map();
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {
