@@ -7,6 +7,7 @@
     "dev": "nodemon examples/index.js",
     "ci": "jest --watch",
     "test": "jest --coverage",
+    "ci:integration": "jest \"**/integration/**spec.js\" --watch",
     "lint": "eslint --ext=.js src test",
     "lint:fix": "eslint --fix --ext=.js src test",
     "deps": "npm-check -u",
@@ -45,6 +46,7 @@
     "moleculer": "^0.14.0-beta5",
     "moleculer-repl": "^0.6.1",
     "moleculer-web": "^0.9.0-beta6",
+    "node-fetch": "^2.6.0",
     "nodemon": "^1.19.4",
     "npm-check": "^5.9.0",
     "prettier": "^1.18.2"
