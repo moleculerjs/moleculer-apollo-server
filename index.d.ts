@@ -1,185 +1,89 @@
-const { ServiceBroker } = require("moleculer");
-const { MoleculerClientError } = require("moleculer").Errors;
+declare module "moleculer-apollo-server" {
+	import { ServiceSchema, Context } from "moleculer";
+	import { Config } from "apollo-server-core";
+	import { OptionsUrlencoded } from "body-parser";
+	import { SchemaDirectiveVisitor, IResolvers } from "graphql-tools";
 
-const ApiGateway = require("moleculer-web");
-const { ApolloService } = require("../../index");
+	export {
+		GraphQLUpload,
+		GraphQLExtension,
+		gql,
+		ApolloError,
+		toApolloError,
+		SyntaxError,
+		ValidationError,
+		AuthenticationError,
+		ForbiddenError,
+		UserInputError,
+		defaultPlaygroundOptions,
+	} from "apollo-server-core";
 
-const fetch = require("node-fetch");
+	export * from "graphql-tools";
 
-describe("Integration test for greeter service", () => {
-	const broker = new ServiceBroker({ logger: false });
+	export interface ApolloServerOptions {
+		path: string;
+		disableHealthCheck: boolean;
+		onHealthCheck: () => {};
+	}
 
-	let port;
-	const apiSvc = broker.createService({
-		name: "api",
+	export class ApolloServer {
+		createGraphQLServerOptions(req: any, res: any): Promise<any>;
+		createHandler(options: ApolloServerOptions): void;
+		supportsUploads(): boolean;
+		supportsSubscriptions(): boolean;
+	}
 
-		mixins: [
-			// Gateway
-			ApiGateway,
+	export interface ActionResolverSchema {
+		action: string;
+		rootParams?: {
+			[key: string]: string;
+		};
+		dataLoader?: boolean;
+	}
 
-			// GraphQL Apollo Server
-			ApolloService({
-				// API Gateway route options
-				routeOptions: {
-					path: "/graphql",
-					cors: true,
-					mappingPolicy: "restrict",
-				},
+	export interface ServiceResolverSchema {
+		[key: string]: {
+			[key: string]: ActionResolverSchema;
+		};
+	}
 
-				// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
-				serverOptions: {},
-			}),
-		],
+	export interface ServiceRouteOptions {
+		path: string;
+		use?: any[];
+		etag?: boolean;
+		whitelist?: string[];
+		authorization?: boolean;
+		camelCaseNames?: boolean;
+		aliases?: {
+			[key: string]: any; // Should discuss more on this. string | AliasSchema, ...
+		};
+		bodyParsers?: {
+			json: boolean;
+			urlencoded: OptionsUrlencoded;
+		};
+		cors?: boolean | { origin: string[]; methods: string[] };
+		callOptions?: {
+			timeout: number;
+			fallbackResponse?: any;
+		};
+		onBeforeCall: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
+		onAfterCall: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
+	}
 
-		settings: {
-			port: 0, // Random
-		},
-	});
+	export interface ApolloServiceOptions {
+		typeDefs?: string | string[];
+		resolvers?: ServiceResolverSchema | IResolvers | Array<IResolvers>;
+		schemaDirectives?: {
+			[name: string]: typeof SchemaDirectiveVisitor;
+		};
+		routeOptions: ServiceRouteOptions;
+		serverOptions: Config;
+	}
 
-	broker.createService({
-		name: "greeter",
+	export function ApolloService(options: ApolloServiceOptions): ServiceSchema;
 
-		actions: {
-			hello: {
-				graphql: {
-					query: "hello: String!",
-				},
-				handler() {
-					return "Hello Moleculer!";
-				},
-			},
-			welcome: {
-				graphql: {
-					query: `
-						welcome(name: String!): String!
-					`,
-				},
-				handler(ctx) {
-					return `Hello ${ctx.params.name}`;
-				},
-			},
-			/*update: {
-				graphql: {
-					subscription: "update: String!",
-					tags: ["TEST"],
-				},
-				handler(ctx) {
-					return ctx.params.payload;
-				},
-			},*/
-
-			danger: {
-				graphql: {
-					query: "danger: String!",
-				},
-				async handler() {
-					throw new MoleculerClientError(
-						"I've said it's a danger action!",
-						422,
-						"DANGER"
-					);
-				},
-			},
-		},
-	});
-
-	beforeAll(async () => {
-		await broker.start();
-		port = apiSvc.server.address().port;
-	});
-	afterAll(() => broker.stop());
-
-	it("should call the greeter.hello action", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
-			method: "post",
-			body: JSON.stringify({
-				operationName: null,
-				variables: {},
-				query: "{ hello }",
-			}),
-			headers: { "Content-Type": "application/json" },
-		});
-
-		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
-			data: {
-				hello: "Hello Moleculer!",
-			},
-		});
-	});
-
-	it("should call the greeter.welcome action with parameter", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
-			method: "post",
-			body: JSON.stringify({
-				operationName: null,
-				variables: {},
-				query: 'query { welcome(name: "GraphQL") }',
-			}),
-			headers: { "Content-Type": "application/json" },
-		});
-
-		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
-			data: {
-				welcome: "Hello GraphQL",
-			},
-		});
-	});
-
-	it("should call the greeter.welcome action with query variable", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
-			method: "post",
-			body: JSON.stringify({
-				operationName: null,
-				variables: { name: "Moleculer GraphQL" },
-				query: "query ($name: String!) { welcome(name: $name) }",
-			}),
-			headers: { "Content-Type": "application/json" },
-		});
-
-		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
-			data: {
-				welcome: "Hello Moleculer GraphQL",
-			},
-		});
-	});
-
-	it("should call the greeter.danger and receives an error", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
-			method: "post",
-			body: JSON.stringify({
-				operationName: null,
-				variables: {},
-				query: "query { danger }",
-			}),
-			headers: { "Content-Type": "application/json" },
-		});
-
-		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
-			data: null,
-			errors: [
-				{
-					extensions: {
-						code: "INTERNAL_SERVER_ERROR",
-						exception: {
-							code: 422,
-							retryable: false,
-							type: "DANGER",
-						},
-					},
-					locations: [
-						{
-							column: 9,
-							line: 1,
-						},
-					],
-					message: "I've said it's a danger action!",
-					path: ["danger"],
-				},
-			],
-		});
-	});
-});
+	export function moleculerGql<T>(
+		typeString: TemplateStringsArray | string,
+		...placeholders: T[]
+	): string;
+}
