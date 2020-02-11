@@ -39,6 +39,8 @@ declare module "moleculer-apollo-server" {
 			[key: string]: string;
 		};
 		dataLoader?: boolean;
+		nullIfError?: boolean;
+		params?: { [key: string]: any };
 	}
 
 	export interface ServiceResolverSchema {
@@ -47,8 +49,17 @@ declare module "moleculer-apollo-server" {
 		};
 	}
 
+	export interface ServiceRouteCorsOptions {
+		origin?: string | string[];
+		methods?: "GET" | "POST" | "PUT" | "DELETE" | "OPTIONS"[];
+		allowedHeaders?: string[];
+		exposedHeaders?: string[];
+		credentials?: boolean;
+		maxAge?: number;
+	}
+
 	export interface ServiceRouteOptions {
-		path: string;
+		path?: string;
 		use?: any[];
 		etag?: boolean;
 		whitelist?: string[];
@@ -61,13 +72,15 @@ declare module "moleculer-apollo-server" {
 			json: boolean;
 			urlencoded: OptionsUrlencoded;
 		};
-		cors?: boolean | { origin: string[]; methods: string[] };
+		cors?: boolean | ServiceRouteCorsOptions;
+		mappingPolicy?: "all" | "restrict";
+		authentication?: boolean;
 		callOptions?: {
 			timeout: number;
 			fallbackResponse?: any;
 		};
-		onBeforeCall: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
-		onAfterCall: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
+		onBeforeCall?: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
+		onAfterCall?: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
 	}
 
 	export interface ApolloServiceOptions {
@@ -76,8 +89,8 @@ declare module "moleculer-apollo-server" {
 		schemaDirectives?: {
 			[name: string]: typeof SchemaDirectiveVisitor;
 		};
-		routeOptions: ServiceRouteOptions;
-		serverOptions: Config;
+		routeOptions?: ServiceRouteOptions;
+		serverOptions?: Config;
 	}
 
 	export function ApolloService(options: ApolloServiceOptions): ServiceSchema;
