@@ -11,6 +11,7 @@
     "lint": "eslint --ext=.js src test",
     "lint:fix": "eslint --fix --ext=.js src test",
     "deps": "npm-check -u",
+    "postdeps": "npm test",
     "coverall": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
   "keywords": [
@@ -35,17 +36,17 @@
     "benchmarkify": "^2.1.2",
     "coveralls": "^3.0.9",
     "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.9.0",
+    "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-security": "1.4.0",
-    "graphql": "^14.5.8",
-    "jest": "^24.9.0",
-    "jest-cli": "^24.9.0",
-    "moleculer": "^0.14.0-beta6",
+    "eslint-plugin-security": "^1.4.0",
+    "graphql": "^14.6.0",
+    "jest": "^25.1.0",
+    "jest-cli": "^25.1.0",
+    "moleculer": "^0.14.0",
     "moleculer-repl": "^0.6.2",
-    "moleculer-web": "^0.9.0-beta7",
+    "moleculer-web": "^0.9.0",
     "node-fetch": "^2.6.0",
     "nodemon": "^2.0.2",
     "npm-check": "^5.9.0",
@@ -64,17 +65,17 @@
     ]
   },
   "engines": {
-    "node": ">= 8.x.x"
+    "node": ">= 10.x.x"
   },
   "dependencies": {
     "@apollographql/graphql-playground-html": "^1.6.24",
     "accept": "^3.1.3",
-    "apollo-server-core": "^2.9.15",
+    "apollo-server-core": "^2.10.0",
     "dataloader": "^2.0.0",
     "graphql-subscriptions": "^1.1.0",
     "graphql-tools": "^4.0.6",
-    "graphql-upload": "^9.0.0",
+    "graphql-upload": "^10.0.0",
     "lodash": "^4.17.15",
-    "object-hash": "^2.0.1"
+    "object-hash": "^2.0.2"
   }
 }

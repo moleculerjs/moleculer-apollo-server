@@ -1,6 +1,10 @@
 --------------------------------------------------
-<a name="0.1.4"></a>
-# 0.1.4 (2020-02-12)
+<a name="0.2.0"></a>
+# 0.2.0 (2020-02-12)
+
+## Breaking changes
+- minimum required Node version is 10.x
+- update dependencies and some require Node 10.x
 
 ## Changes
 - Typescript definition files added.
