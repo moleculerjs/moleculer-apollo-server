@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/moleculerjs/moleculer-apollo-server/badge.svg?branch=master)](https://coveralls.io/github/moleculerjs/moleculer-apollo-server?branch=master)
 [![David](https://img.shields.io/david/moleculerjs/moleculer-apollo-server.svg)](https://david-dm.org/moleculerjs/moleculer-apollo-server)
 [![Known Vulnerabilities](https://snyk.io/test/github/moleculerjs/moleculer-apollo-server/badge.svg)](https://snyk.io/test/github/moleculerjs/moleculer-apollo-server)
-[![Join the chat at https://gitter.im/moleculerjs/moleculer](https://badges.gitter.im/moleculerjs/moleculer.svg)](https://gitter.im/moleculerjs/moleculer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 # moleculer-apollo-server [![NPM version](https://img.shields.io/npm/v/moleculer-apollo-server.svg)](https://www.npmjs.com/package/moleculer-apollo-server)
 
@@ -335,6 +335,6 @@ Please send pull requests improving the usage and fixing bugs, improving documen
 The project is available under the [MIT license](https://tldrlegal.com/license/mit-license).
 
 # Contact
-Copyright (c) 2019 MoleculerJS
+Copyright (c) 2020 MoleculerJS
 
 [![@moleculerjs](https://img.shields.io/badge/github-moleculerjs-green.svg)](https://github.com/moleculerjs) [![@MoleculerJS](https://img.shields.io/badge/twitter-MoleculerJS-blue.svg)](https://twitter.com/MoleculerJS)
