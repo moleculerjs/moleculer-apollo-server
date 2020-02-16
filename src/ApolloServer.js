@@ -3,7 +3,7 @@
 const { ApolloServerBase } = require("apollo-server-core");
 const { processRequest } = require("graphql-upload");
 const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
-const accept = require("accept");
+const accept = require("@hapi/accept");
 const moleculerApollo = require("./moleculerApollo");
 
 function send(req, res, statusCode, data, responseType = "application/json") {
