@@ -168,11 +168,11 @@ module.exports = function(mixinOptions) {
 
 							let dataLoaderKey;
 							if (dataLoaderUseAllRootKeys) {
-								if (root) {
+								if (root && rootKeys) {
 									dataLoaderKey = {};
 
-									Object.entries(rootParams).forEach(([rootKey, paramName]) => {
-										_.set(dataLoaderKey, paramName, _.get(root, rootKey));
+									rootKeys.forEach(key => {
+										_.set(dataLoaderKey, rootParams[key], _.get(root, key));
 									});
 								}
 							} else {
@@ -188,9 +188,9 @@ module.exports = function(mixinOptions) {
 								: await dataLoader.load(dataLoaderKey);
 						} else {
 							const params = {};
-							if (root) {
-								Object.entries(rootParams).forEach(([rootKey, paramName]) => {
-									_.set(params, paramName, _.get(root, rootKey));
+							if (root && rootKeys) {
+								rootKeys.forEach(key => {
+									_.set(params, rootParams[key], _.get(root, key));
 								});
 							}
 
