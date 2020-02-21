@@ -618,7 +618,7 @@ module.exports = function(mixinOptions) {
 						if (
 							graphqlDefinition &&
 							(graphqlDefinition.dataLoaderOptions ||
-								graphqlDefinition.dataLoaderBatchParams)
+								graphqlDefinition.dataLoaderBatchParam)
 						) {
 							const serviceName = this.getServiceName(service);
 							const fullActionName = this.getResolverActionName(

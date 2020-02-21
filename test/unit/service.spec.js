@@ -210,7 +210,7 @@ describe("Test Service", () => {
 
 		it("should not invalidate schema when autoUpdateSchema is false", async () => {
 			const { broker, svc, stop } = await startService({
-				autoUpdateSchema: false
+				autoUpdateSchema: false,
 			});
 			svc.invalidateGraphQLSchema = jest.fn();
 
@@ -223,7 +223,7 @@ describe("Test Service", () => {
 
 		it("should not invalidate schema when autoUpdateSchema is true", async () => {
 			const { broker, svc, stop } = await startService({
-				autoUpdateSchema: true
+				autoUpdateSchema: true,
 			});
 			svc.invalidateGraphQLSchema = jest.fn();
 
