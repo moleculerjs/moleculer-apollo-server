@@ -208,6 +208,33 @@ describe("Test Service", () => {
 			await stop();
 		});
 
+		it("should not invalidate schema when autoUpdateSchema is false", async () => {
+			const { broker, svc, stop } = await startService({
+				autoUpdateSchema: false
+			});
+			svc.invalidateGraphQLSchema = jest.fn();
+
+			await broker.broadcastLocal("$services.changed");
+
+			expect(svc.invalidateGraphQLSchema).toBeCalledTimes(0);
+
+			await stop();
+		});
+
+		it("should not invalidate schema when autoUpdateSchema is true", async () => {
+			const { broker, svc, stop } = await startService({
+				autoUpdateSchema: true
+			});
+			svc.invalidateGraphQLSchema = jest.fn();
+
+			await broker.broadcastLocal("$services.changed");
+
+			expect(svc.invalidateGraphQLSchema).toBeCalledTimes(1);
+			expect(svc.invalidateGraphQLSchema).toBeCalledWith();
+
+			await stop();
+		});
+
 		it("should subscribe to the default subscription event", async () => {
 			const { broker, svc, stop } = await startService();
 

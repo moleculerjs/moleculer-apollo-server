@@ -91,6 +91,7 @@ declare module "moleculer-apollo-server" {
 		};
 		routeOptions?: ServiceRouteOptions;
 		serverOptions?: Config;
+		autoUpdateSchema?: boolean;
 	}
 
 	export function ApolloService(options: ApolloServiceOptions): ServiceSchema;

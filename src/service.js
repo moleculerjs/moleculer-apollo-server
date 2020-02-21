@@ -24,12 +24,15 @@ module.exports = function(mixinOptions) {
 		serverOptions: {},
 		createAction: true,
 		subscriptionEventName: "graphql.publish",
+		autoUpdateSchema: true,
 	});
 
 	const serviceSchema = {
 		events: {
 			"$services.changed"() {
-				this.invalidateGraphQLSchema();
+				if (mixinOptions.autoUpdateSchema) {
+					this.invalidateGraphQLSchema();
+				}
 			},
 			[mixinOptions.subscriptionEventName](event) {
 				if (this.pubsub) {
