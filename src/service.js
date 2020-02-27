@@ -129,7 +129,7 @@ module.exports = function(mixinOptions) {
 			 */
 			createActionResolver(actionName, def = {}) {
 				const {
-					dataLoader = false,
+					dataLoader: useDataLoader = false,
 					nullIfError = false,
 					params: staticParams = {},
 					rootParams = {},
@@ -138,44 +138,63 @@ module.exports = function(mixinOptions) {
 
 				return async (root, args, context) => {
 					try {
-						if (dataLoader) {
+						if (useDataLoader) {
 							const dataLoaderMapKey = this.getDataLoaderMapKey(
 								actionName,
 								staticParams,
 								args
 							);
-							const dataLoaderRootKey = rootKeys[0]; // for dataloader, use the first root key only
+							// if a dataLoader batching parameter is specified, then all root params can be data loaded;
+							// otherwise use only the primary rootParam
+							const primaryDataLoaderRootKey = rootKeys[0]; // for dataloader, use the first root key only
+							const dataLoaderBatchParam = this.dataLoaderBatchParams.get(actionName);
+							const dataLoaderUseAllRootKeys = dataLoaderBatchParam != null;
 
 							// check to see if the DataLoader has already been added to the GraphQL context; if not then add it for subsequent use
 							let dataLoader;
 							if (context.dataLoaders.has(dataLoaderMapKey)) {
 								dataLoader = context.dataLoaders.get(dataLoaderMapKey);
 							} else {
-								const batchedParamKey = rootParams[dataLoaderRootKey];
+								const batchedParamKey =
+									dataLoaderBatchParam || rootParams[primaryDataLoaderRootKey];
+
 								dataLoader = this.buildDataLoader(
 									context.ctx,
 									actionName,
 									batchedParamKey,
 									staticParams,
-									args
+									args,
+									{ hashCacheKey: dataLoaderUseAllRootKeys } // must hash the cache key if not loading scalar
 								);
 								context.dataLoaders.set(dataLoaderMapKey, dataLoader);
 							}
 
-							const rootValue = root && _.get(root, dataLoaderRootKey);
-							if (rootValue == null) {
+							let dataLoaderKey;
+							if (dataLoaderUseAllRootKeys) {
+								if (root && rootKeys) {
+									dataLoaderKey = {};
+
+									rootKeys.forEach(key => {
+										_.set(dataLoaderKey, rootParams[key], _.get(root, key));
+									});
+								}
+							} else {
+								dataLoaderKey = root && _.get(root, primaryDataLoaderRootKey);
+							}
+
+							if (dataLoaderKey == null) {
 								return null;
 							}
 
-							return Array.isArray(rootValue)
-								? await dataLoader.loadMany(rootValue)
-								: await dataLoader.load(rootValue);
+							return Array.isArray(dataLoaderKey)
+								? await dataLoader.loadMany(dataLoaderKey)
+								: await dataLoader.load(dataLoaderKey);
 						} else {
 							const params = {};
 							if (root && rootKeys) {
-								rootKeys.forEach(key =>
-									_.set(params, rootParams[key], _.get(root, key))
-								);
+								rootKeys.forEach(key => {
+									_.set(params, rootParams[key], _.get(root, key));
+								});
 							}
 
 							return await context.ctx.call(
@@ -223,21 +242,31 @@ module.exports = function(mixinOptions) {
 			 * @param {string} batchedParamKey - Parameter key to use for loaded values
 			 * @param {Object} staticParams - Static parameters to use in dataloader
 			 * @param {Object} args - Arguments passed to GraphQL child resolver
+			 * @param {Object} [options={}] - Optional arguments
+			 * @param {Boolean} [options.hashCacheKey=false] - Use a hash for the cacheKeyFn
 			 * @returns {DataLoader} Dataloader instance
 			 */
-			buildDataLoader(ctx, actionName, batchedParamKey, staticParams, args) {
+			buildDataLoader(
+				ctx,
+				actionName,
+				batchedParamKey,
+				staticParams,
+				args,
+				{ hashCacheKey = false } = {}
+			) {
 				const batchLoadFn = keys => {
 					const rootParams = { [batchedParamKey]: keys };
 					return ctx.call(actionName, _.defaultsDeep({}, args, rootParams, staticParams));
 				};
 
-				if (this.dataLoaderOptions.has(actionName)) {
-					// use any specified options assigned to this action
-					const options = this.dataLoaderOptions.get(actionName);
-					return new DataLoader(batchLoadFn, options);
-				}
+				const dataLoaderOptions = this.dataLoaderOptions.get(actionName) || {};
+				const cacheKeyFn = hashCacheKey && (key => hash(key));
+				const options = {
+					...(cacheKeyFn && { cacheKeyFn }),
+					...dataLoaderOptions,
+				};
 
-				return new DataLoader(batchLoadFn);
+				return new DataLoader(batchLoadFn, options);
 			},
 
 			/**
@@ -577,23 +606,39 @@ module.exports = function(mixinOptions) {
 			 *
 			 * @param {Object[]} services
 			 * @modifies {this.dataLoaderOptions}
+			 * @modifies {this.dataLoaderBatchParams}
 			 */
 			buildLoaderOptionMap(services) {
 				this.dataLoaderOptions.clear(); // clear map before rebuilding
+				this.dataLoaderBatchParams.clear(); // clear map before rebuilding
 
 				services.forEach(service => {
 					Object.values(service.actions).forEach(action => {
 						const { graphql: graphqlDefinition, name: actionName } = action;
-						if (graphqlDefinition && graphqlDefinition.dataLoaderOptions) {
+						if (
+							graphqlDefinition &&
+							(graphqlDefinition.dataLoaderOptions ||
+								graphqlDefinition.dataLoaderBatchParam)
+						) {
 							const serviceName = this.getServiceName(service);
 							const fullActionName = this.getResolverActionName(
 								serviceName,
 								actionName
 							);
-							this.dataLoaderOptions.set(
-								fullActionName,
-								graphqlDefinition.dataLoaderOptions
-							);
+
+							if (graphqlDefinition.dataLoaderOptions) {
+								this.dataLoaderOptions.set(
+									fullActionName,
+									graphqlDefinition.dataLoaderOptions
+								);
+							}
+
+							if (graphqlDefinition.dataLoaderBatchParam) {
+								this.dataLoaderBatchParams.set(
+									fullActionName,
+									graphqlDefinition.dataLoaderBatchParam
+								);
+							}
 						}
 					});
 				});
@@ -607,6 +652,7 @@ module.exports = function(mixinOptions) {
 			this.pubsub = null;
 			this.shouldUpdateGraphqlSchema = true;
 			this.dataLoaderOptions = new Map();
+			this.dataLoaderBatchParams = new Map();
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {

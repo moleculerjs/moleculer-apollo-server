@@ -210,7 +210,7 @@ describe("Test Service", () => {
 
 		it("should not invalidate schema when autoUpdateSchema is false", async () => {
 			const { broker, svc, stop } = await startService({
-				autoUpdateSchema: false
+				autoUpdateSchema: false,
 			});
 			svc.invalidateGraphQLSchema = jest.fn();
 
@@ -223,7 +223,7 @@ describe("Test Service", () => {
 
 		it("should not invalidate schema when autoUpdateSchema is true", async () => {
 			const { broker, svc, stop } = await startService({
-				autoUpdateSchema: true
+				autoUpdateSchema: true,
 			});
 			svc.invalidateGraphQLSchema = jest.fn();
 
@@ -548,6 +548,7 @@ describe("Test Service", () => {
 
 		beforeEach(() => {
 			svc.dataLoaderOptions.clear();
+			svc.dataLoaderBatchParams.clear();
 		});
 
 		it("should return null if no rootValue", async () => {
@@ -635,6 +636,79 @@ describe("Test Service", () => {
 			expect(ctx.call).toHaveBeenCalledTimes(2);
 			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", { a: 5, id: [1, 2] });
 			expect(ctx.call).toHaveBeenNthCalledWith(2, "users.resolve", { a: 5, id: [5] });
+		});
+
+		it("should call the action via the loader using all root params", async () => {
+			svc.dataLoaderBatchParams.set("users.resolve", "testBatchParam");
+			const resolver = svc.createActionResolver("users.resolve", {
+				rootParams: {
+					authorId: "authorIdParam",
+					testId: "testIdParam",
+				},
+
+				dataLoader: true,
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn().mockResolvedValue(["res1", "res2", "res3"]);
+
+			const fakeRoot1 = { authorId: 1, testId: "foo" };
+			const fakeRoot2 = { authorId: 2, testId: "bar" };
+			const fakeRoot3 = { authorId: 5, testId: "baz" };
+
+			const fakeContext = { ctx, dataLoaders: new Map() };
+			const res = await Promise.all([
+				resolver(fakeRoot1, {}, fakeContext),
+				resolver(fakeRoot2, {}, fakeContext),
+				resolver(fakeRoot3, {}, fakeContext),
+			]);
+
+			expect(res).toEqual(["res1", "res2", "res3"]);
+
+			expect(ctx.call).toHaveBeenCalledTimes(1);
+			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", {
+				testBatchParam: [
+					{ authorIdParam: 1, testIdParam: "foo" },
+					{ authorIdParam: 2, testIdParam: "bar" },
+					{ authorIdParam: 5, testIdParam: "baz" },
+				],
+			});
+		});
+
+		it("should call the action via the loader using all root params while leveraging cache", async () => {
+			svc.dataLoaderBatchParams.set("users.resolve", "testBatchParam");
+			const resolver = svc.createActionResolver("users.resolve", {
+				rootParams: {
+					authorId: "authorIdParam",
+					testId: "testIdParam",
+				},
+
+				dataLoader: true,
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn().mockResolvedValue(["res1", "res2"]);
+
+			const fakeRoot1 = { authorId: 1, testId: "foo" };
+			const fakeRoot2 = { authorId: 2, testId: "bar" };
+			const fakeRoot3 = { authorId: 1, testId: "foo" }; // same as fakeRoot1
+
+			const fakeContext = { ctx, dataLoaders: new Map() };
+			const res = await Promise.all([
+				resolver(fakeRoot1, {}, fakeContext),
+				resolver(fakeRoot2, {}, fakeContext),
+				resolver(fakeRoot3, {}, fakeContext),
+			]);
+
+			expect(res).toEqual(["res1", "res2", "res1"]);
+
+			expect(ctx.call).toHaveBeenCalledTimes(1);
+			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", {
+				testBatchParam: [
+					{ authorIdParam: 1, testIdParam: "foo" },
+					{ authorIdParam: 2, testIdParam: "bar" },
+				],
+			});
 		});
 
 		it("should reuse the loader for multiple calls with the same context", async () => {
@@ -1171,7 +1245,10 @@ describe("Test Service", () => {
 					actions: [
 						{
 							name: "test-action-1",
-							graphql: { dataLoaderOptions: { option1: "option-value-1" } },
+							graphql: {
+								dataLoaderOptions: { option1: "option-value-1" },
+								dataLoaderBatchParam: "batch-param-1",
+							},
 						},
 						{ name: "test-action-2" },
 					],
@@ -1182,7 +1259,10 @@ describe("Test Service", () => {
 					actions: [
 						{
 							name: "test-action-3",
-							graphql: { dataLoaderOptions: { option2: "option-value-2" } },
+							graphql: {
+								dataLoaderOptions: { option2: "option-value-2" },
+								dataLoaderBatchParam: "batch-param-2",
+							},
 						},
 						{ name: "test-action-4" },
 					],
@@ -1247,6 +1327,13 @@ describe("Test Service", () => {
 				new Map([
 					["test-svc-1.test-action-1", { option1: "option-value-1" }],
 					["v1.test-svc-2.test-action-3", { option2: "option-value-2" }],
+				])
+			);
+
+			expect(svc.dataLoaderBatchParams).toEqual(
+				new Map([
+					["test-svc-1.test-action-1", "batch-param-1"],
+					["v1.test-svc-2.test-action-3", "batch-param-2"],
 				])
 			);
 
