@@ -2,6 +2,7 @@
 <a name="0.2.1"></a>
 # 0.2.1 (2020-03-03)
 
+## Changes
 - add `autoUpdateSchema` option. [#63](https://github.com/moleculerjs/moleculer-apollo-server/pull/63)
 - Allow multiple rootParams to be used with Dataloader child resolution. [#65](https://github.com/moleculerjs/moleculer-apollo-server/pull/65)
 
