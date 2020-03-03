@@ -1,6 +1,6 @@
 {
   "name": "moleculer-apollo-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Apollo GraphQL server for Moleculer API Gateway",
   "main": "index.js",
   "scripts": {
