@@ -49,7 +49,7 @@
     "moleculer-web": "^0.9.0",
     "node-fetch": "^2.6.0",
     "nodemon": "^2.0.2",
-    "npm-check": "^5.9.0",
+    "npm-check": "^5.9.2",
     "prettier": "^1.19.1"
   },
   "jest": {
@@ -69,7 +69,7 @@
   },
   "dependencies": {
     "@apollographql/graphql-playground-html": "^1.6.24",
-    "@hapi/accept": "^4.0.0",
+    "@hapi/accept": "^3.2.4",
     "apollo-server-core": "^2.10.0",
     "dataloader": "^2.0.0",
     "graphql-subscriptions": "^1.1.0",
