@@ -133,6 +133,7 @@ module.exports = function(mixinOptions) {
 					nullIfError = false,
 					params: staticParams = {},
 					rootParams = {},
+					fileUploadArg = null,
 				} = def;
 				const rootKeys = Object.keys(rootParams);
 
@@ -189,6 +190,27 @@ module.exports = function(mixinOptions) {
 							return Array.isArray(dataLoaderKey)
 								? await dataLoader.loadMany(dataLoaderKey)
 								: await dataLoader.load(dataLoaderKey);
+						} else if (fileUploadArg != null && args[fileUploadArg] != null) {
+							if (Array.isArray(args[fileUploadArg])) {
+								return await Promise.all(
+									args[fileUploadArg].map(async uploadPromise => {
+										const {
+											createReadStream,
+											...$fileInfo
+										} = await uploadPromise;
+										const stream = createReadStream();
+										return await context.ctx.call(actionName, stream, {
+											meta: { $fileInfo },
+										});
+									})
+								);
+							}
+
+							const { createReadStream, ...$fileInfo } = await args[fileUploadArg];
+							const stream = createReadStream();
+							return await context.ctx.call(actionName, stream, {
+								meta: { $fileInfo },
+							});
 						} else {
 							const params = {};
 							if (root && rootKeys) {
@@ -390,7 +412,7 @@ module.exports = function(mixinOptions) {
 						const resolver = {};
 
 						Object.values(service.actions).forEach(action => {
-							const { graphql: def } = action;
+							const { graphql: def, fileUploadArg } = action;
 							if (def && _.isObject(def)) {
 								if (def.query) {
 									if (!resolver["Query"]) resolver.Query = {};
@@ -411,7 +433,10 @@ module.exports = function(mixinOptions) {
 										const name = this.getFieldName(mutation);
 										mutations.push(mutation);
 										resolver.Mutation[name] = this.createActionResolver(
-											action.name
+											action.name,
+											{
+												fileUploadArg,
+											}
 										);
 									});
 								}
