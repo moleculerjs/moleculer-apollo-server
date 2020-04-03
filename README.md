@@ -258,6 +258,107 @@ module.exports = {
 };
 ```
 
+### File Uploads
+moleculer-apollo-server supports file uploads through the [GraphQL multipart request specification](https://github.com/jaydenseric/graphql-multipart-request-spec). 
+
+To enable uploads, the Upload scalar must be added to the Gateway:
+
+```js
+"use strict";
+
+const ApiGateway 	= require("moleculer-web");
+const { ApolloService, GraphQLUpload } = require("moleculer-apollo-server");
+
+module.exports = {
+    name: "api",
+
+    mixins: [
+        // Gateway
+        ApiGateway,
+
+        // GraphQL Apollo Server
+        ApolloService({
+
+            // Global GraphQL typeDefs
+            typeDefs: ["scalar Upload"],
+
+            // Global resolvers
+            resolvers: {
+                Upload: GraphQLUpload
+            },
+
+            // API Gateway route options
+            routeOptions: {
+                path: "/graphql",
+                cors: true,
+                mappingPolicy: "restrict"
+            },
+
+            // https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
+            serverOptions: {
+                tracing: true,
+
+                engine: {
+                    apiKey: process.env.APOLLO_ENGINE_KEY
+                }
+            }
+        })
+    ]
+};
+
+```
+
+Then a mutation can be created which accepts an Upload argument. The `fileUploadArg` property must be set to the mutation's argument name so that moleculer-apollo-server knows where to expect a file upload. When the mutation's action handler is called, `ctx.params` will be a [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams) which can be used to read the contents of the uploaded file (or pipe the contents into a Writable Stream). File metadata will be made available in `ctx.meta.$fileInfo`.
+
+**files.service.js**
+```js
+module.exports = {
+    name: "files",
+    settings: {
+        graphql: {
+            type: `
+                """
+                This type describes a File entity.
+                """			
+                type File {
+                    filename: String!
+                    encoding: String!
+                    mimetype: String!
+                }
+            `
+        }
+    },
+    actions: {
+        uploadFile: {
+            graphql: {
+                mutation: "uploadFile(file: Upload!): File!",
+                fileUploadArg: "file",
+            },
+            async handler(ctx) {
+                const fileChunks = [];
+                for await (const chunk of ctx.params) {
+                    fileChunks.push(chunk);
+                }
+                const fileContents = Buffer.concat(fileChunks);
+                // Do something with file contents
+                return ctx.params.$fileInfo;
+            }
+        }
+    }
+};
+```
+
+To accept multiple uploaded files in a single request, the mutation can be changed to accept an array of `Upload`s and return an array of results. The action handler will then be called once for each uploaded file, and the results will be combined into an array automatically with results in the same order as the provided files.
+
+```js
+...
+graphql: {
+    mutation: "upload(file: [Upload!]!): [File!]!",
+    fileUploadArg: "file"
+}
+...
+```
+
 ### Dataloader
 moleculer-apollo-server supports [DataLoader](https://github.com/graphql/dataloader) via configuration in the resolver definition.
 The called action must be compatible with DataLoader semantics -- that is, it must accept params with an array property and return an array of the same size,
