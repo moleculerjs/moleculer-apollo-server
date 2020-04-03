@@ -22,7 +22,7 @@ const gql = require("./src/gql");
 
 module.exports = {
 	// Core
-	GraphQLUpload: GraphQLUpload,
+	GraphQLUpload,
 	GraphQLExtension: core.GraphQLExtension,
 	gql: core.gql,
 	ApolloError: core.ApolloError,
