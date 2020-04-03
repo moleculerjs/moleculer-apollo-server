@@ -412,7 +412,7 @@ module.exports = function(mixinOptions) {
 						const resolver = {};
 
 						Object.values(service.actions).forEach(action => {
-							const { graphql: def, fileUploadArg } = action;
+							const { graphql: def } = action;
 							if (def && _.isObject(def)) {
 								if (def.query) {
 									if (!resolver["Query"]) resolver.Query = {};
@@ -435,7 +435,7 @@ module.exports = function(mixinOptions) {
 										resolver.Mutation[name] = this.createActionResolver(
 											action.name,
 											{
-												fileUploadArg,
+												fileUploadArg: def.fileUploadArg,
 											}
 										);
 									});
