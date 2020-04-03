@@ -413,6 +413,9 @@ It is unlikely that setting any of the options which accept a function will work
 
 - [Simple](examples/simple/index.js)
   - `npm run dev`
+- [File Upload](examples/upload/index.js)
+  - `npm run dev upload`
+  - See [here](https://github.com/jaydenseric/graphql-multipart-request-spec#curl-request) for information about how to create a file upload request
 - [Full](examples/full/index.js)
   - `npm run dev full`
 - [Full With Dataloader](examples/full/index.js)
