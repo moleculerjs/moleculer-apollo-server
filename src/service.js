@@ -199,7 +199,7 @@ module.exports = function(mixinOptions) {
 											...$fileInfo
 										} = await uploadPromise;
 										const stream = createReadStream();
-										return await context.ctx.call(actionName, stream, {
+										return context.ctx.call(actionName, stream, {
 											meta: { $fileInfo },
 										});
 									})
