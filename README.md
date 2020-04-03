@@ -341,7 +341,7 @@ module.exports = {
                 }
                 const fileContents = Buffer.concat(fileChunks);
                 // Do something with file contents
-                return ctx.params.$fileInfo;
+                return ctx.meta.$fileInfo;
             }
         }
     }
