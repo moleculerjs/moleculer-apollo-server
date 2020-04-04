@@ -5,7 +5,6 @@ declare module "moleculer-apollo-server" {
 	import { SchemaDirectiveVisitor, IResolvers } from "graphql-tools";
 
 	export {
-		GraphQLUpload,
 		GraphQLExtension,
 		gql,
 		ApolloError,
@@ -17,6 +16,8 @@ declare module "moleculer-apollo-server" {
 		UserInputError,
 		defaultPlaygroundOptions,
 	} from "apollo-server-core";
+
+	export { GraphQLUpload } from 'graphql-upload';
 
 	export * from "graphql-tools";
 

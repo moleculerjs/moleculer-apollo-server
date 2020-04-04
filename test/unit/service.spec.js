@@ -436,7 +436,7 @@ describe("Test Service", () => {
 		});
 	});
 
-	describe("Test 'createActionResolver' without DataLoader", () => {
+	describe("Test 'createActionResolver' without DataLoader or Upload", () => {
 		let broker, svc, stop;
 
 		beforeAll(async () => {
@@ -530,6 +530,105 @@ describe("Test Service", () => {
 					code: "Moleculer",
 				},
 				a: 5,
+			});
+		});
+	});
+
+	describe("Test 'createActionResolver' with File Upload", () => {
+		let broker, svc, stop;
+
+		beforeAll(async () => {
+			const res = await startService();
+			broker = res.broker;
+			svc = res.svc;
+			stop = res.stop;
+		});
+
+		afterAll(async () => await stop());
+
+		it("should create a stream and pass to call", async () => {
+			const resolver = svc.createActionResolver("posts.uploadSingle", {
+				fileUploadArg: "file",
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn(() => "response from action");
+
+			const fakeRoot = {};
+
+			const file = {
+				filename: "filename.txt",
+				encoding: "7bit",
+				mimetype: "text/plain",
+				createReadStream: () => "fake read stream",
+			};
+
+			const res = await resolver(fakeRoot, { file }, { ctx });
+
+			expect(res).toBe("response from action");
+
+			expect(ctx.call).toBeCalledTimes(1);
+			expect(ctx.call).toBeCalledWith("posts.uploadSingle", "fake read stream", {
+				meta: {
+					$fileInfo: {
+						filename: "filename.txt",
+						encoding: "7bit",
+						mimetype: "text/plain",
+					},
+				},
+			});
+		});
+
+		it("should invoke call once per file when handling an array of file uploads", async () => {
+			const resolver = svc.createActionResolver("posts.uploadMulti", {
+				fileUploadArg: "files",
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn((_, stream) => `response for ${stream}`);
+
+			const fakeRoot = {};
+
+			const files = [
+				{
+					filename: "filename1.txt",
+					encoding: "7bit",
+					mimetype: "text/plain",
+					createReadStream: () => "fake read stream 1",
+				},
+				{
+					filename: "filename2.txt",
+					encoding: "7bit",
+					mimetype: "text/plain",
+					createReadStream: () => "fake read stream 2",
+				},
+			];
+
+			const res = await resolver(fakeRoot, { files }, { ctx });
+
+			expect(res).toEqual([
+				"response for fake read stream 1",
+				"response for fake read stream 2",
+			]);
+
+			expect(ctx.call).toBeCalledTimes(2);
+			expect(ctx.call).toBeCalledWith("posts.uploadMulti", "fake read stream 1", {
+				meta: {
+					$fileInfo: {
+						filename: "filename1.txt",
+						encoding: "7bit",
+						mimetype: "text/plain",
+					},
+				},
+			});
+			expect(ctx.call).toBeCalledWith("posts.uploadMulti", "fake read stream 2", {
+				meta: {
+					$fileInfo: {
+						filename: "filename2.txt",
+						encoding: "7bit",
+						mimetype: "text/plain",
+					},
+				},
 			});
 		});
 	});
