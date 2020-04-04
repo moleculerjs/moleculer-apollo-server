@@ -1,8 +1,19 @@
 scalar Date
 
+scalar Timestamp
+
+type Query {
+  posts(limit: Int): [Post]
+  users(limit: Int): [User]
+}
+
 type Mutation {
   upvote(id: Int!, userID: Int!): Post
   downvote(id: Int!, userID: Int!): Post
+}
+
+type Subscription {
+  vote(userID: Int!): String!
 }
 
 """This type describes a post entity."""
@@ -15,17 +26,6 @@ type Post {
   createdAt: Timestamp
   error: String
 }
-
-type Query {
-  posts(limit: Int): [Post]
-  users(limit: Int): [User]
-}
-
-type Subscription {
-  vote(userID: Int!): String!
-}
-
-scalar Timestamp
 
 """This type describes a user entity."""
 type User {

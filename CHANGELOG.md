@@ -1,4 +1,14 @@
 --------------------------------------------------
+<a name="0.3.0"></a>
+# 0.3.0 (2020-04-04)
+
+## Breaking changes
+- transform Uploads to `Stream`s before calling action by [@dylanwulf](https://github.com/dylanwulf). [#71](https://github.com/moleculerjs/moleculer-apollo-server/pull/71)
+ 
+## Changes
+- update dependencies
+
+--------------------------------------------------
 <a name="0.2.2"></a>
 # 0.2.2 (2020-03-04)
 
