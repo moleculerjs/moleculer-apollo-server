@@ -7,7 +7,8 @@
 "use strict";
 
 const _ = require("lodash");
-const { MoleculerServerError } = require("moleculer").Errors;
+const { Context, Errors } = require("moleculer");
+const { MoleculerServerError } = Errors;
 const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
 const { makeExecutableSchema } = require("graphql-tools");
@@ -595,6 +596,7 @@ module.exports = function(mixinOptions) {
 											dataLoaders: new Map(), // create an empty map to load DataLoader instances into
 									  }
 									: {
+											ctx: Context.create(this.broker),
 											service: connection.$service,
 									  };
 							},
