@@ -7,8 +7,7 @@
 "use strict";
 
 const _ = require("lodash");
-const { Context, Errors } = require("moleculer");
-const { MoleculerServerError } = Errors;
+const { MoleculerServerError } = require("moleculer").Errors;
 const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
 const { makeExecutableSchema } = require("graphql-tools");

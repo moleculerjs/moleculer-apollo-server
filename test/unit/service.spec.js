@@ -965,11 +965,12 @@ describe("Test Service", () => {
 
 			// Test resolve
 			const ctx = new Context(broker);
-			const res3 = await res.resolve({ a: 5 }, { b: "John" }, ctx);
+			ctx.call = jest.fn(async () => "action response");
+			const res3 = await res.resolve({ a: 5 }, { b: "John" }, { ctx });
 
 			expect(res3).toBe("action response");
-			expect(broker.call).toBeCalledTimes(1);
-			expect(broker.call).toBeCalledWith("posts.find", { b: "John", payload: { a: 5 } }, ctx);
+			expect(ctx.call).toBeCalledTimes(1);
+			expect(ctx.call).toBeCalledWith("posts.find", { b: "John", payload: { a: 5 } });
 		});
 
 		it("should create resolver with tags", async () => {
@@ -1003,24 +1004,23 @@ describe("Test Service", () => {
 			});
 
 			// Test first function
-			expect(res.subscribe[0]()).toBe("iterator-result");
+			const ctx = new Context(broker);
+			expect(res.subscribe[0](undefined, undefined, { ctx })).toBe("iterator-result");
 
 			expect(svc.pubsub.asyncIterator).toBeCalledTimes(1);
 			expect(svc.pubsub.asyncIterator).toBeCalledWith(["a", "b"]);
 
 			// Test second function without payload
-			expect(await res.subscribe[1]()).toBe(false);
+			expect(await res.subscribe[1](undefined, undefined, { ctx })).toBe(false);
 
 			// Test second function with payload
-			const ctx = new Context(broker);
-			expect(await res.subscribe[1]({ a: 5 }, { b: "John" }, ctx)).toBe("action response");
-
-			expect(broker.call).toBeCalledTimes(1);
-			expect(broker.call).toBeCalledWith(
-				"posts.filter",
-				{ b: "John", payload: { a: 5 } },
-				ctx
+			ctx.call = jest.fn(async () => "action response");
+			expect(await res.subscribe[1]({ a: 5 }, { b: "John" }, { ctx })).toBe(
+				"action response"
 			);
+
+			expect(ctx.call).toBeCalledTimes(1);
+			expect(ctx.call).toBeCalledWith("posts.filter", { b: "John", payload: { a: 5 } });
 		});
 	});
 
@@ -1442,10 +1442,21 @@ describe("Test Service", () => {
 			expect(
 				contextFn({
 					connection: {
-						$service: "service",
+						context: {
+							$service: "service",
+							socket: {
+								$ctx: "context",
+								$params: { a: 5 },
+							},
+						},
 					},
 				})
 			).toEqual({
+				ctx: "context",
+				dataLoaders: new Map(),
+				params: {
+					a: 5,
+				},
 				service: "service",
 			});
 
@@ -1474,11 +1485,14 @@ describe("Test Service", () => {
 			const onConnect = ApolloServer.mock.calls[0][0].subscriptions.onConnect;
 
 			const connectionParams = { b: 100 };
+			const socket = { connectionParams, upgradeReq: { query: 101 } };
+			const connect = await onConnect(connectionParams, socket);
 
-			expect(onConnect(connectionParams)).toEqual({
-				b: 100,
-				$service: svc,
-			});
+			expect(connect.$service).toEqual(svc);
+			expect(connect.b).toEqual(100);
+			expect(socket.$ctx).toBeDefined();
+			expect(socket.$params.body).toEqual(connectionParams);
+			expect(socket.$params.query).toEqual(socket.upgradeReq.query);
 
 			await stop();
 		});
