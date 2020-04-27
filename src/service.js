@@ -29,6 +29,26 @@ module.exports = function(mixinOptions) {
 	});
 
 	const serviceSchema = {
+		actions: {
+			ws: {
+				visibility: "private",
+				tracing: {
+					tags: {
+						params: [
+							"socket.upgradeReq.url"
+						]
+					},
+					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq}`
+				},
+				handler(ctx) {
+					const { socket, connectionParams } = ctx.params
+					socket.$ctx = ctx;
+					socket.$params = { body: connectionParams, query: socket.upgradeReq.query };
+					return connectionParams;
+				}
+			}
+		},
+
 		events: {
 			"$services.changed"() {
 				if (mixinOptions.autoUpdateSchema) {
@@ -587,23 +607,23 @@ module.exports = function(mixinOptions) {
 					this.apolloServer = new ApolloServer({
 						schema,
 						..._.defaultsDeep({}, mixinOptions.serverOptions, {
-							context: ({ req, connection }) => {
-								return req
-									? {
-											ctx: req.$ctx,
-											service: req.$service,
-											params: req.$params,
-											dataLoaders: new Map(), // create an empty map to load DataLoader instances into
-									  }
-									: {
-											ctx: Context.create(this.broker),
-											service: connection.$service,
-									  };
-							},
+							context: ({ req, connection }) => ({
+								...(req ? {
+									ctx: req.$ctx,
+									service: req.$service,
+									params: req.$params,
+								} : {
+									ctx: connection.context.socket.$ctx,
+									service: connection.context.$service,
+									params: connection.context.socket.$params,
+								}),
+								dataLoaders: new Map(), // create an empty map to load DataLoader instances into
+							}),
 							subscriptions: {
-								onConnect: connectionParams => ({
-									...connectionParams,
-									$service: this,
+								onConnect: async (connectionParams, socket) => ({
+									...await this.actions.ws({ connectionParams, socket }),
+									socket,
+									$service: this
 								}),
 							},
 						}),
@@ -726,6 +746,7 @@ module.exports = function(mixinOptions) {
 
 	if (mixinOptions.createAction) {
 		serviceSchema.actions = {
+			...serviceSchema.actions,
 			graphql: {
 				params: {
 					query: { type: "string" },
