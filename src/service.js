@@ -33,19 +33,17 @@ module.exports = function(mixinOptions) {
 				visibility: "private",
 				tracing: {
 					tags: {
-						params: [
-							"socket.upgradeReq.url"
-						]
+						params: ["socket.upgradeReq.url"],
 					},
-					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq}`
+					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq.url}`,
 				},
 				handler(ctx) {
-					const { socket, connectionParams } = ctx.params
+					const { socket, connectionParams } = ctx.params;
 					socket.$ctx = ctx;
 					socket.$params = { body: connectionParams, query: socket.upgradeReq.query };
 					return connectionParams;
-				}
-			}
+				},
+			},
 		},
 
 		events: {
@@ -329,7 +327,8 @@ module.exports = function(mixinOptions) {
 										: false
 						  )
 						: () => this.pubsub.asyncIterator(tags),
-					resolve: async (payload, params, { ctx }) => ctx.call(actionName, { ...params, payload })
+					resolve: (payload, params, { ctx }) =>
+						ctx.call(actionName, { ...params, payload }),
 				};
 			},
 
@@ -606,22 +605,24 @@ module.exports = function(mixinOptions) {
 						schema,
 						..._.defaultsDeep({}, mixinOptions.serverOptions, {
 							context: ({ req, connection }) => ({
-								...(req ? {
-									ctx: req.$ctx,
-									service: req.$service,
-									params: req.$params,
-								} : {
-									ctx: connection.context.socket.$ctx,
-									service: connection.context.$service,
-									params: connection.context.socket.$params,
-								}),
+								...(req
+									? {
+											ctx: req.$ctx,
+											service: req.$service,
+											params: req.$params,
+									  }
+									: {
+											ctx: connection.context.socket.$ctx,
+											service: connection.context.$service,
+											params: connection.context.socket.$params,
+									  }),
 								dataLoaders: new Map(), // create an empty map to load DataLoader instances into
 							}),
 							subscriptions: {
 								onConnect: async (connectionParams, socket) => ({
-									...await this.actions.ws({ connectionParams, socket }),
+									...(await this.actions.ws({ connectionParams, socket })),
 									socket,
-									$service: this
+									$service: this,
 								}),
 							},
 						}),
