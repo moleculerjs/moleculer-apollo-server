@@ -1328,6 +1328,44 @@ describe("Test Service", () => {
 
 		GraphQL.printSchema.mockImplementation(() => "printed schema");
 
+		const services = [
+			{
+				name: "test-svc-1",
+				actions: [
+					{
+						name: "test-action-1",
+						graphql: {
+							dataLoaderOptions: { option1: "option-value-1" },
+							dataLoaderBatchParam: "batch-param-1",
+						},
+					},
+					{ name: "test-action-2" },
+				],
+			},
+			{
+				name: "test-svc-2",
+				version: 1,
+				actions: [
+					{
+						name: "test-action-3",
+						graphql: {
+							dataLoaderOptions: { option2: "option-value-2" },
+							dataLoaderBatchParam: "batch-param-2",
+						},
+					},
+					{ name: "test-action-4" },
+				],
+			},
+		];
+
+		beforeEach(() => {
+			createHandler.mockClear();
+			installSubscriptionHandlers.mockClear();
+
+			ApolloServer.mockClear();
+			GraphQL.printSchema.mockClear();
+		});
+
 		it("should create local variables", async () => {
 			const { broker, svc, stop } = await startService({
 				serverOptions: {
@@ -1338,35 +1376,6 @@ describe("Test Service", () => {
 
 			svc.server = "server";
 			broker.broadcast = jest.fn();
-			const services = [
-				{
-					name: "test-svc-1",
-					actions: [
-						{
-							name: "test-action-1",
-							graphql: {
-								dataLoaderOptions: { option1: "option-value-1" },
-								dataLoaderBatchParam: "batch-param-1",
-							},
-						},
-						{ name: "test-action-2" },
-					],
-				},
-				{
-					name: "test-svc-2",
-					version: 1,
-					actions: [
-						{
-							name: "test-action-3",
-							graphql: {
-								dataLoaderOptions: { option2: "option-value-2" },
-								dataLoaderBatchParam: "batch-param-2",
-							},
-						},
-						{ name: "test-action-4" },
-					],
-				},
-			];
 			broker.registry.getServiceList = jest.fn(() => services);
 			svc.generateGraphQLSchema = jest.fn(() => "graphql schema");
 
@@ -1479,6 +1488,39 @@ describe("Test Service", () => {
 				b: 100,
 				$service: svc,
 			});
+
+			await stop();
+		});
+
+		it("Should avoid binding apollo subscription handlers if the server config has them disabled", async () => {
+			const { broker, svc, stop } = await startService({
+				serverOptions: {
+					path: "/my-graphql",
+					subscriptions: false,
+				},
+			});
+
+			svc.server = "server";
+			broker.broadcast = jest.fn();
+
+			broker.registry.getServiceList = jest.fn(() => services);
+			svc.generateGraphQLSchema = jest.fn(() => "graphql schema");
+
+			expect(svc.pubsub).toBeNull();
+			expect(svc.apolloServer).toBeNull();
+			expect(svc.graphqlHandler).toBeNull();
+			expect(svc.graphqlSchema).toBeNull();
+			expect(svc.shouldUpdateGraphqlSchema).toBe(true);
+
+			svc.prepareGraphQLSchema();
+
+			expect(installSubscriptionHandlers).not.toHaveBeenCalled();
+
+			expect(svc.generateGraphQLSchema).toBeCalledTimes(1);
+			expect(svc.generateGraphQLSchema).toBeCalledWith(services);
+
+			expect(svc.shouldUpdateGraphqlSchema).toBe(false);
+			expect(svc.graphqlSchema).toBe("graphql schema");
 
 			await stop();
 		});

@@ -610,7 +610,12 @@ module.exports = function(mixinOptions) {
 					this.graphqlHandler = this.apolloServer.createHandler(
 						mixinOptions.serverOptions
 					);
-					this.apolloServer.installSubscriptionHandlers(this.server);
+
+					if (mixinOptions.serverOptions.subscriptions !== false) {
+						// Avoid installing the subscription handlers if they have been disabled
+						this.apolloServer.installSubscriptionHandlers(this.server);
+					}
+
 					this.graphqlSchema = schema;
 
 					this.buildLoaderOptionMap(services); // rebuild the options for DataLoaders
