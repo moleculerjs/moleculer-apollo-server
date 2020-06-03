@@ -1,4 +1,12 @@
 --------------------------------------------------
+<a name="0.3.1"></a>
+# 0.3.1 (2020-06-03)
+
+## Changes
+- update dependencies
+- No longer installing subscription handlers when disabled by [@Kauabunga](https://github.com/Kauabunga). [#64](https://github.com/moleculerjs/moleculer-apollo-server/pull/64)
+
+--------------------------------------------------
 <a name="0.3.0"></a>
 # 0.3.0 (2020-04-04)
 
