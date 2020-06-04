@@ -39,9 +39,12 @@ module.exports = function(mixinOptions) {
 				},
 				handler(ctx) {
 					const { socket, connectionParams } = ctx.params;
-					socket.$ctx = ctx;
-					socket.$params = { body: connectionParams, query: socket.upgradeReq.query };
-					return connectionParams;
+					return {
+						$ctx: ctx,
+						$socket: socket,
+						$service: this,
+						$params: { body: connectionParams, query: socket.upgradeReq.query },
+					};
 				},
 			},
 		},
@@ -612,18 +615,15 @@ module.exports = function(mixinOptions) {
 											params: req.$params,
 									  }
 									: {
-											ctx: connection.context.socket.$ctx,
+											ctx: connection.context.$ctx,
 											service: connection.context.$service,
-											params: connection.context.socket.$params,
+											params: connection.context.$params,
 									  }),
 								dataLoaders: new Map(), // create an empty map to load DataLoader instances into
 							}),
 							subscriptions: {
-								onConnect: async (connectionParams, socket) => ({
-									...(await this.actions.ws({ connectionParams, socket })),
-									socket,
-									$service: this,
-								}),
+								onConnect: (connectionParams, socket) =>
+									this.actions.ws({ connectionParams, socket }),
 							},
 						}),
 					});

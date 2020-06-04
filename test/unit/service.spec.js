@@ -1444,10 +1444,8 @@ describe("Test Service", () => {
 					connection: {
 						context: {
 							$service: "service",
-							socket: {
-								$ctx: "context",
-								$params: { a: 5 },
-							},
+							$ctx: "context",
+							$params: { a: 5 },
 						},
 					},
 				})
@@ -1489,10 +1487,9 @@ describe("Test Service", () => {
 			const connect = await onConnect(connectionParams, socket);
 
 			expect(connect.$service).toEqual(svc);
-			expect(connect.b).toEqual(100);
-			expect(socket.$ctx).toBeDefined();
-			expect(socket.$params.body).toEqual(connectionParams);
-			expect(socket.$params.query).toEqual(socket.upgradeReq.query);
+			expect(connect.$ctx).toBeDefined();
+			expect(connect.$params.body).toEqual(connectionParams);
+			expect(connect.$params.query).toEqual(socket.upgradeReq.query);
 
 			await stop();
 		});
