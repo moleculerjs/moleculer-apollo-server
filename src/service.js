@@ -28,6 +28,27 @@ module.exports = function(mixinOptions) {
 	});
 
 	const serviceSchema = {
+		actions: {
+			ws: {
+				visibility: "private",
+				tracing: {
+					tags: {
+						params: ["socket.upgradeReq.url"],
+					},
+					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq.url}`,
+				},
+				handler(ctx) {
+					const { socket, connectionParams } = ctx.params;
+					return {
+						$ctx: ctx,
+						$socket: socket,
+						$service: this,
+						$params: { body: connectionParams, query: socket.upgradeReq.query },
+					};
+				},
+			},
+		},
+
 		events: {
 			"$services.changed"() {
 				if (mixinOptions.autoUpdateSchema) {
@@ -303,14 +324,14 @@ module.exports = function(mixinOptions) {
 					subscribe: filter
 						? withFilter(
 								() => this.pubsub.asyncIterator(tags),
-								async (payload, params, ctx) =>
+								async (payload, params, { ctx }) =>
 									payload !== undefined
-										? this.broker.call(filter, { ...params, payload }, ctx)
+										? ctx.call(filter, { ...params, payload })
 										: false
 						  )
 						: () => this.pubsub.asyncIterator(tags),
-					resolve: async (payload, params, ctx) =>
-						this.broker.call(actionName, { ...params, payload }, ctx),
+					resolve: (payload, params, { ctx }) =>
+						ctx.call(actionName, { ...params, payload }),
 				};
 			},
 
@@ -586,23 +607,23 @@ module.exports = function(mixinOptions) {
 					this.apolloServer = new ApolloServer({
 						schema,
 						..._.defaultsDeep({}, mixinOptions.serverOptions, {
-							context: ({ req, connection }) => {
-								return req
+							context: ({ req, connection }) => ({
+								...(req
 									? {
 											ctx: req.$ctx,
 											service: req.$service,
 											params: req.$params,
-											dataLoaders: new Map(), // create an empty map to load DataLoader instances into
 									  }
 									: {
-											service: connection.$service,
-									  };
-							},
+											ctx: connection.context.$ctx,
+											service: connection.context.$service,
+											params: connection.context.$params,
+									  }),
+								dataLoaders: new Map(), // create an empty map to load DataLoader instances into
+							}),
 							subscriptions: {
-								onConnect: connectionParams => ({
-									...connectionParams,
-									$service: this,
-								}),
+								onConnect: (connectionParams, socket) =>
+									this.actions.ws({ connectionParams, socket }),
 							},
 						}),
 					});
@@ -729,6 +750,7 @@ module.exports = function(mixinOptions) {
 
 	if (mixinOptions.createAction) {
 		serviceSchema.actions = {
+			...serviceSchema.actions,
 			graphql: {
 				params: {
 					query: { type: "string" },
