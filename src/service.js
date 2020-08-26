@@ -15,7 +15,7 @@ const GraphQL = require("graphql");
 const { PubSub, withFilter } = require("graphql-subscriptions");
 const hash = require("object-hash");
 
-module.exports = function(mixinOptions) {
+module.exports = function (mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
 		routeOptions: {
 			path: "/graphql",
@@ -573,7 +573,7 @@ module.exports = function(mixinOptions) {
 						typeDefs.push(str);
 					}
 
-					return makeExecutableSchema({ typeDefs, resolvers, schemaDirectives });
+					return this.makeExecutableSchema({ typeDefs, resolvers, schemaDirectives });
 				} catch (err) {
 					throw new MoleculerServerError(
 						"Unable to compile GraphQL schema",
@@ -582,6 +582,16 @@ module.exports = function(mixinOptions) {
 						{ err }
 					);
 				}
+			},
+
+			/**
+			 * Call the `makeExecutableSchema`. If you would like
+			 * to manipulate the concatenated typeDefs, or the generated schema,
+			 * just overwrite it in your service file.
+			 * @param {Object} schemaDef
+			 */
+			makeExecutableSchema(schemaDef) {
+				return makeExecutableSchema(schemaDef);
 			},
 
 			prepareGraphQLSchema() {
