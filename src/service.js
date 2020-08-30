@@ -15,7 +15,7 @@ const GraphQL = require("graphql");
 const { PubSub, withFilter } = require("graphql-subscriptions");
 const hash = require("object-hash");
 
-module.exports = function (mixinOptions) {
+module.exports = function(mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
 		routeOptions: {
 			path: "/graphql",
@@ -594,6 +594,16 @@ module.exports = function (mixinOptions) {
 				return makeExecutableSchema(schemaDef);
 			},
 
+			/**
+			 * Create PubSub instance.
+			 */
+			createPubSub() {
+				return new PubSub();
+			},
+
+			/**
+			 * Prepare GraphQL schemas based on Moleculer services.
+			 */
 			prepareGraphQLSchema() {
 				// Schema is up-to-date
 				if (!this.shouldUpdateGraphqlSchema && this.graphqlHandler) {
@@ -606,7 +616,7 @@ module.exports = function (mixinOptions) {
 				);
 
 				try {
-					this.pubsub = new PubSub();
+					this.pubsub = this.createPubSub();
 					const services = this.broker.registry.getServiceList({ withActions: true });
 					const schema = this.generateGraphQLSchema(services);
 
