@@ -1,4 +1,13 @@
 --------------------------------------------------
+<a name="0.3.2"></a>
+# 0.3.2 (2020-08-30)
+
+## Changes
+- update dependencies
+- new `createPubSub` & `makeExecutableSchema` methods
+- fix context in WS by [@Hugome](https://github.com/Hugome). [#64](https://github.com/moleculerjs/moleculer-apollo-server/pull/73)
+
+--------------------------------------------------
 <a name="0.3.1"></a>
 # 0.3.1 (2020-06-03)
 
