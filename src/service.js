@@ -15,7 +15,7 @@ const GraphQL = require("graphql");
 const { PubSub, withFilter } = require("graphql-subscriptions");
 const hash = require("object-hash");
 
-module.exports = function(mixinOptions) {
+module.exports = function (mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
 		routeOptions: {
 			path: "/graphql",
@@ -212,6 +212,8 @@ module.exports = function(mixinOptions) {
 								? await dataLoader.loadMany(dataLoaderKey)
 								: await dataLoader.load(dataLoaderKey);
 						} else if (fileUploadArg != null && args[fileUploadArg] != null) {
+							const additionalArgs = _.omit(args, [fileUploadArg]);
+
 							if (Array.isArray(args[fileUploadArg])) {
 								return await Promise.all(
 									args[fileUploadArg].map(async uploadPromise => {
@@ -221,7 +223,7 @@ module.exports = function(mixinOptions) {
 										} = await uploadPromise;
 										const stream = createReadStream();
 										return context.ctx.call(actionName, stream, {
-											meta: { $fileInfo },
+											meta: { $fileInfo, $args: additionalArgs },
 										});
 									})
 								);
@@ -230,7 +232,7 @@ module.exports = function(mixinOptions) {
 							const { createReadStream, ...$fileInfo } = await args[fileUploadArg];
 							const stream = createReadStream();
 							return await context.ctx.call(actionName, stream, {
-								meta: { $fileInfo },
+								meta: { $fileInfo, $args: additionalArgs },
 							});
 						} else {
 							const params = {};

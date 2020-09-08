@@ -66,7 +66,7 @@ broker.createService({
 		},
 		singleUpload: {
 			graphql: {
-				mutation: "singleUpload(file: Upload!): File!",
+				mutation: "singleUpload(file: Upload!, other: String): File!",
 				fileUploadArg: "file",
 			},
 			async handler(ctx) {
@@ -75,8 +75,8 @@ broker.createService({
 					fileChunks.push(chunk);
 				}
 				const fileContents = Buffer.concat(fileChunks);
-				ctx.broker.logger.info("Uploaded File Contents:");
-				ctx.broker.logger.info(fileContents.toString());
+				ctx.broker.logger.info("Uploaded File Contents:", fileContents.toString());
+				ctx.broker.logger.info("Additional arguments:", ctx.meta.$args);
 				return ctx.meta.$fileInfo;
 			},
 		},

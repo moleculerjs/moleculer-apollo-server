@@ -563,7 +563,7 @@ describe("Test Service", () => {
 				createReadStream: () => "fake read stream",
 			};
 
-			const res = await resolver(fakeRoot, { file }, { ctx });
+			const res = await resolver(fakeRoot, { file, other: "something" }, { ctx });
 
 			expect(res).toBe("response from action");
 
@@ -575,6 +575,7 @@ describe("Test Service", () => {
 						encoding: "7bit",
 						mimetype: "text/plain",
 					},
+					$args: { other: "something" },
 				},
 			});
 		});
@@ -604,7 +605,7 @@ describe("Test Service", () => {
 				},
 			];
 
-			const res = await resolver(fakeRoot, { files }, { ctx });
+			const res = await resolver(fakeRoot, { files, other: "something" }, { ctx });
 
 			expect(res).toEqual([
 				"response for fake read stream 1",
@@ -619,6 +620,7 @@ describe("Test Service", () => {
 						encoding: "7bit",
 						mimetype: "text/plain",
 					},
+					$args: { other: "something" },
 				},
 			});
 			expect(ctx.call).toBeCalledWith("posts.uploadMulti", "fake read stream 2", {
@@ -628,6 +630,7 @@ describe("Test Service", () => {
 						encoding: "7bit",
 						mimetype: "text/plain",
 					},
+					$args: { other: "something" },
 				},
 			});
 		});
