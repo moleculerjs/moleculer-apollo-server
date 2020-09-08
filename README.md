@@ -341,6 +341,10 @@ module.exports = {
                 }
                 const fileContents = Buffer.concat(fileChunks);
                 // Do something with file contents
+                
+                // Additional arguments:
+                this.logger.info("Additional arguments:", ctx.meta.$args);
+
                 return ctx.meta.$fileInfo;
             }
         }
