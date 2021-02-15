@@ -30,6 +30,7 @@ module.exports = function (mixinOptions) {
 	const serviceSchema = {
 		actions: {
 			ws: {
+				timeout: 0,
 				visibility: "private",
 				tracing: {
 					tags: {
