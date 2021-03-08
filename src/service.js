@@ -612,6 +612,10 @@ module.exports = function (mixinOptions) {
 				if (!this.shouldUpdateGraphqlSchema && this.graphqlHandler) {
 					return;
 				}
+				
+				if (this.apolloServer) {
+					this.apolloServer.stop();
+				}
 
 				// Create new server & regenerate GraphQL schema
 				this.logger.info(
