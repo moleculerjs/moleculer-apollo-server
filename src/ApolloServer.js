@@ -6,13 +6,19 @@ const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html
 const accept = require("@hapi/accept");
 const moleculerApollo = require("./moleculerApollo");
 
-function send(req, res, statusCode, data, responseType = "application/json") {
+async function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
 
 	const ctx = res.$ctx;
 	if (!ctx.meta.$responseType) {
 		ctx.meta.$responseType = responseType;
 	}
+
+	const route = res.$route;
+	if (route.onAfterCall) {
+		data = await route.onAfterCall.call(this, ctx, route, req, res, data);
+	}
+	
 
 	const service = res.$service;
 	service.sendResponse(req, res, data);
