@@ -17,17 +17,17 @@ const ApolloServer = require("../../src/ApolloServer").ApolloServer;
 //ApolloServerCore.convertNodeHttpToRequest.mockImplementation(() => "convertedRequest");
 
 describe("Test ApolloServer", () => {
-	it("should support Uploads", () => {
+	test("should support Uploads", () => {
 		const apolloServer = new ApolloServer({});
 		expect(apolloServer.supportsUploads()).toBe(true);
 	});
 
-	it("should support subscriptions", () => {
+	test("should support subscriptions", () => {
 		const apolloServer = new ApolloServer({});
 		expect(apolloServer.supportsSubscriptions()).toBe(true);
 	});
 
-	it("should call super graphQLServerOptions", () => {
+	test("should call super graphQLServerOptions", () => {
 		const apolloServer = new ApolloServer({});
 		ApolloServerBase.prototype.graphQLServerOptions = jest.fn();
 
@@ -54,9 +54,10 @@ describe("Test ApolloServer", () => {
 		const fakeRes = {
 			$ctx: fakeCtx,
 			$service: fakeService,
+			$route: {},
 		};
 
-		it("should return 200 'pass'", async () => {
+		test("should return 200 'pass'", async () => {
 			const onHealthCheck = jest.fn(() => "Everything OK");
 
 			await apolloServer.handleHealthCheck({ req: fakeReq, res: fakeRes, onHealthCheck });
@@ -75,7 +76,7 @@ describe("Test ApolloServer", () => {
 			expect(fakeCtx.meta.$responseType).toBe("application/health+json");
 		});
 
-		it("should return 503 'fail'", async () => {
+		test("should return 503 'fail'", async () => {
 			fakeService.sendResponse.mockClear();
 
 			const onHealthCheck = jest.fn(() => Promise.reject(new Error("Something wrong")));
@@ -96,7 +97,7 @@ describe("Test ApolloServer", () => {
 			expect(fakeCtx.meta.$responseType).toBe("application/health+json");
 		});
 
-		it("should call an empty healthcheck function", async () => {
+		test("should call an empty healthcheck function", async () => {
 			fakeService.sendResponse.mockClear();
 			fakeCtx.meta.$responseType = "application/json";
 
@@ -130,15 +131,21 @@ describe("Test ApolloServer", () => {
 			sendResponse: jest.fn(),
 		};
 
-		let fakeReq = {
-			headers: {},
-		};
-		let fakeRes = {
-			$ctx: fakeCtx,
-			$service: fakeService,
-		};
+		let fakeReq;
+		let fakeRes;
 
-		it("should handle as a request", async () => {
+		beforeEach(() => {
+			fakeReq = {
+				headers: {},
+			};
+			fakeRes = {
+				$ctx: fakeCtx,
+				$service: fakeService,
+				$route: {},
+			};
+		});
+
+		test("should handle as a request", async () => {
 			const handler = apolloServer.createHandler();
 
 			await handler(fakeReq, fakeRes);
@@ -155,7 +162,7 @@ describe("Test ApolloServer", () => {
 			expect(fakeService.sendResponse).toBeCalledWith(
 				fakeReq,
 				fakeRes,
-				"GraphQL Response Data",
+				"GraphQL Response Data"
 			);
 
 			expect(fakeCtx.meta.$responseType).toBe("application/json");
@@ -166,7 +173,25 @@ describe("Test ApolloServer", () => {
 			expect(apolloServer.createGraphQLServerOptions).toBeCalledWith(fakeReq, fakeRes);
 		});
 
-		it("should handle as a file upload request", async () => {
+		test("should call onAfterCall function", async () => {
+			const handler = apolloServer.createHandler();
+			const onAfterCall = jest.fn();
+			const $route = { onAfterCall };
+			fakeRes.$route = $route;
+
+			await handler(fakeReq, fakeRes);
+
+			expect(onAfterCall).toHaveBeenCalledTimes(1);
+			expect(onAfterCall).toHaveBeenCalledWith(
+				fakeCtx,
+				$route,
+				fakeReq,
+				fakeRes,
+				"GraphQL Response Data"
+			);
+		});
+
+		test("should handle as a file upload request", async () => {
 			// Clear mocks
 			moleculerApollo.mockClear();
 			fakeGraphqlHandler.mockClear();
@@ -190,7 +215,7 @@ describe("Test ApolloServer", () => {
 			expect(GraphqlUpload.processRequest).toBeCalledWith(
 				fakeReq,
 				fakeRes,
-				apolloServer.uploadsConfig,
+				apolloServer.uploadsConfig
 			);
 
 			expect(moleculerApollo).toBeCalledTimes(1);
@@ -205,13 +230,13 @@ describe("Test ApolloServer", () => {
 			expect(fakeService.sendResponse).toBeCalledWith(
 				fakeReq,
 				fakeRes,
-				"GraphQL Response Data",
+				"GraphQL Response Data"
 			);
 
 			expect(fakeCtx.meta.$responseType).toBe("application/json");
 		});
 
-		it("should handle as health-check request", async () => {
+		test("should handle as health-check request", async () => {
 			// Clear mocks
 			moleculerApollo.mockClear();
 			fakeGraphqlHandler.mockClear();
@@ -241,7 +266,7 @@ describe("Test ApolloServer", () => {
 			expect(moleculerApollo).toBeCalledTimes(0);
 		});
 
-		it("should not handle as health-check request if disabled", async () => {
+		test("should not handle as health-check request if disabled", async () => {
 			// Clear mocks
 			moleculerApollo.mockClear();
 			fakeGraphqlHandler.mockClear();
@@ -265,7 +290,7 @@ describe("Test ApolloServer", () => {
 			expect(moleculerApollo).toBeCalledTimes(1);
 		});
 
-		it("should handle as playground request", async () => {
+		test("should handle as playground request", async () => {
 			// Clear mocks
 			moleculerApollo.mockClear();
 			fakeService.sendResponse.mockClear();

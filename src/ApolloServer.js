@@ -18,7 +18,6 @@ async function send(req, res, statusCode, data, responseType = "application/json
 	if (route.onAfterCall) {
 		data = await route.onAfterCall.call(this, ctx, route, req, res, data);
 	}
-	
 
 	const service = res.$service;
 	service.sendResponse(req, res, data);
@@ -69,14 +68,14 @@ class ApolloServer extends ApolloServerBase {
 							endpoint: this.graphqlPath,
 							subscriptionEndpoint: this.subscriptionsPath,
 						},
-						this.playgroundOptions,
+						this.playgroundOptions
 					);
 					return send(
 						req,
 						res,
 						200,
 						renderPlaygroundPage(middlewareOptions),
-						"text/html",
+						"text/html"
 					);
 				}
 			}
@@ -84,7 +83,7 @@ class ApolloServer extends ApolloServerBase {
 			// Handle incoming GraphQL requests using Apollo Server.
 			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
 			const responseData = await graphqlHandler(req, res);
-			send(req, res, 200, responseData);
+			return send(req, res, 200, responseData);
 		};
 	}
 
@@ -102,10 +101,10 @@ class ApolloServer extends ApolloServerBase {
 		onHealthCheck = onHealthCheck || (() => undefined);
 		try {
 			const result = await onHealthCheck(req);
-			send(req, res, 200, { status: "pass", result }, "application/health+json");
+			return send(req, res, 200, { status: "pass", result }, "application/health+json");
 		} catch (error) {
 			const result = error instanceof Error ? error.toString() : error;
-			send(req, res, 503, { status: "fail", result }, "application/health+json");
+			return send(req, res, 503, { status: "fail", result }, "application/health+json");
 		}
 	}
 }
