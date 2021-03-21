@@ -35,7 +35,7 @@ async function startService(mixinOptions, baseSchema) {
 describe("Test Service", () => {
 	describe("Test created handler", () => {
 		it("should register a route with default options", async () => {
-			const { broker, svc, stop } = await startService();
+			const { svc, stop } = await startService();
 
 			expect(svc.shouldUpdateGraphqlSchema).toBe(true);
 
@@ -59,7 +59,7 @@ describe("Test Service", () => {
 
 		describe("Test `/` route handler", () => {
 			it("should prepare graphql schema & call handler", async () => {
-				const { broker, svc, stop } = await startService();
+				const { svc, stop } = await startService();
 
 				// Test `/` alias
 				svc.prepareGraphQLSchema = jest.fn();
@@ -67,7 +67,7 @@ describe("Test Service", () => {
 				const fakeReq = { req: 1 };
 				const fakeRes = { res: 1 };
 
-				const res = svc.settings.routes[0].aliases["/"].call(svc, fakeReq, fakeRes);
+				const res = await svc.settings.routes[0].aliases["/"].call(svc, fakeReq, fakeRes);
 
 				expect(res).toBe("result");
 				expect(svc.prepareGraphQLSchema).toBeCalledTimes(1);
@@ -78,7 +78,7 @@ describe("Test Service", () => {
 			});
 
 			it("should call sendError if error occured", async () => {
-				const { broker, svc, stop } = await startService();
+				const { svc, stop } = await startService();
 
 				const err = new Error("Something happened");
 				svc.sendError = jest.fn();
@@ -89,7 +89,7 @@ describe("Test Service", () => {
 				const fakeReq = { req: 1 };
 				const fakeRes = { res: 1 };
 
-				const res = svc.settings.routes[0].aliases["/"].call(svc, fakeReq, fakeRes);
+				const res = await svc.settings.routes[0].aliases["/"].call(svc, fakeReq, fakeRes);
 
 				expect(res).toBeUndefined();
 				expect(svc.prepareGraphQLSchema).toBeCalledTimes(1);
@@ -103,7 +103,7 @@ describe("Test Service", () => {
 
 		describe("Test `GET /.well-known/apollo/server-health` route handler", () => {
 			it("should prepare graphql schema & call handler", async () => {
-				const { broker, svc, stop } = await startService();
+				const { svc, stop } = await startService();
 
 				// Test `/` alias
 				svc.prepareGraphQLSchema = jest.fn();
@@ -111,7 +111,7 @@ describe("Test Service", () => {
 				const fakeReq = { req: 1 };
 				const fakeRes = { res: 1 };
 
-				const res = svc.settings.routes[0].aliases[
+				const res = await svc.settings.routes[0].aliases[
 					"GET /.well-known/apollo/server-health"
 				].call(svc, fakeReq, fakeRes);
 
@@ -124,7 +124,7 @@ describe("Test Service", () => {
 			});
 
 			it("should call sendError if error occured", async () => {
-				const { broker, svc, stop } = await startService();
+				const { svc, stop } = await startService();
 
 				const err = new Error("Something happened");
 				svc.sendResponse = jest.fn();
@@ -135,7 +135,7 @@ describe("Test Service", () => {
 				const fakeReq = { req: 1 };
 				const fakeRes = { res: 1 };
 
-				const res = svc.settings.routes[0].aliases[
+				const res = await svc.settings.routes[0].aliases[
 					"GET /.well-known/apollo/server-health"
 				].call(svc, fakeReq, fakeRes);
 
@@ -160,7 +160,7 @@ describe("Test Service", () => {
 		});
 
 		it("should register a route with custom options", async () => {
-			const { broker, svc, stop } = await startService({
+			const { svc, stop } = await startService({
 				routeOptions: {
 					path: "/apollo-server",
 
@@ -314,7 +314,7 @@ describe("Test Service", () => {
 	describe("Test methods", () => {
 		describe("Test 'invalidateGraphQLSchema'", () => {
 			it("should create the 'graphql' action", async () => {
-				const { broker, svc, stop } = await startService();
+				const { svc, stop } = await startService();
 
 				svc.shouldUpdateGraphqlSchema = false;
 
@@ -395,7 +395,7 @@ describe("Test Service", () => {
 		it("should call actionResolvers", async () => {
 			const { svc, stop } = await startService();
 
-			svc.createActionResolver = jest.fn((name, r) => jest.fn());
+			svc.createActionResolver = jest.fn(() => jest.fn());
 
 			const resolvers = {
 				author: {
@@ -1030,7 +1030,7 @@ describe("Test Service", () => {
 	describe("Test 'generateGraphQLSchema'", () => {
 		it("should create an empty schema", async () => {
 			makeExecutableSchema.mockImplementation(() => "generated-schema");
-			const { broker, svc, stop } = await startService();
+			const { svc, stop } = await startService();
 
 			const res = svc.generateGraphQLSchema([]);
 			expect(res).toBe("generated-schema");
@@ -1048,7 +1048,7 @@ describe("Test Service", () => {
 		it("should create a schema with schemaDirectives", async () => {
 			makeExecutableSchema.mockClear();
 			const UniqueIdDirective = jest.fn();
-			const { broker, svc, stop } = await startService({
+			const { svc, stop } = await startService({
 				schemaDirectives: {
 					uid: UniqueIdDirective,
 				},
@@ -1081,7 +1081,7 @@ describe("Test Service", () => {
 					},
 				},
 			};
-			const { broker, svc, stop } = await startService({
+			const { svc, stop } = await startService({
 				typeDefs: `
 					scalar Date
 				`,
@@ -1310,7 +1310,7 @@ describe("Test Service", () => {
 			makeExecutableSchema.mockImplementation(() => {
 				throw new Error("Something is wrong");
 			});
-			const { broker, svc, stop } = await startService();
+			const { svc, stop } = await startService();
 
 			expect(() => svc.generateGraphQLSchema([])).toThrow(Errors.MoleculerServerError);
 
