@@ -1,3 +1,11 @@
+<a name="0.3.4"></a>
+# 0.3.4 (2021-04-09)
+
+## Changes
+- disable timeout for `ws`.
+- gracefully stop Apollo Server.
+- add `onAfterCall` support.
+
 --------------------------------------------------
 <a name="0.3.3"></a>
 # 0.3.3 (2020-09-08)
