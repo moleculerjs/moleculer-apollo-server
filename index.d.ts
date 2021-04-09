@@ -81,7 +81,7 @@ declare module "moleculer-apollo-server" {
 			fallbackResponse?: any;
 		};
 		onBeforeCall?: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
-		onAfterCall?: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
+		onAfterCall?: (ctx: Context, route: any, req: any, res: any, data: any) => Promise<any>;
 	}
 
 	export interface ApolloServiceOptions {
