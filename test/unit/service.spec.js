@@ -411,7 +411,7 @@ describe("Test Service", () => {
 			expect(await svc.prepareContextParams(params)).toEqual({ a: 5 });
 		});
 
-		it("should return the context params", async () => {
+		it("should return the modified params", async () => {
 			svc.prepareContextParams = jest.fn(params => {
 				return {
 					...params,
@@ -424,6 +424,19 @@ describe("Test Service", () => {
 			};
 
 			expect(await svc.prepareContextParams(params)).toEqual({ a: 5, b: 10 });
+
+			expect(svc.prepareContextParams).toBeCalledTimes(1);
+			expect(svc.prepareContextParams).toBeCalledWith(params);
+		});
+
+		it("should return the unwrapped params", async () => {
+			svc.prepareContextParams = jest.fn(async params => params.input);
+
+			const params = {
+				input: { a: 5 },
+			};
+
+			expect(await svc.prepareContextParams(params)).toEqual({ a: 5 });
 
 			expect(svc.prepareContextParams).toBeCalledTimes(1);
 			expect(svc.prepareContextParams).toBeCalledWith(params);
