@@ -15,7 +15,7 @@ const GraphQL = require("graphql");
 const { PubSub, withFilter } = require("graphql-subscriptions");
 const hash = require("object-hash");
 
-module.exports = function(mixinOptions) {
+module.exports = function (mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
 		routeOptions: {
 			path: "/graphql",
@@ -267,17 +267,6 @@ module.exports = function(mixinOptions) {
 			},
 
 			/**
-			 * Prepare the context params before calling the action
-			 * @param {Object} params
-			 * @param {String} actionName
-			 * @param {Context} context
-			 * @returns {Promise<Object>}
-			 */
-			prepareContextParams(params, actionName, context) {
-				return Promise.resolve(params);
-			},
-
-			/**
 			 * Get the unique key assigned to the DataLoader map
 			 * @param {string} actionName - Fully qualified action name to bind to dataloader
 			 * @param {Object.<string, any>} staticParams - Static parameters to use in dataloader
@@ -361,6 +350,7 @@ module.exports = function(mixinOptions) {
 			 * @returns {Object} Generated schema
 			 */
 			generateGraphQLSchema(services) {
+				let str;
 				try {
 					let typeDefs = [];
 					let resolvers = {};
@@ -533,7 +523,7 @@ module.exports = function(mixinOptions) {
 						enums.length > 0 ||
 						inputs.length > 0
 					) {
-						let str = "";
+						str = "";
 						if (queries.length > 0) {
 							str += `
 								type Query {
@@ -597,7 +587,7 @@ module.exports = function(mixinOptions) {
 						"Unable to compile GraphQL schema",
 						500,
 						"UNABLE_COMPILE_GRAPHQL_SCHEMA",
-						{ err }
+						{ err, str }
 					);
 				}
 			},

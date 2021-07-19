@@ -391,58 +391,6 @@ describe("Test Service", () => {
 		});
 	});
 
-	describe("Test 'prepareContextParams' method", () => {
-		let broker, svc, stop;
-
-		beforeAll(async () => {
-			const res = await startService();
-			broker = res.broker;
-			svc = res.svc;
-			stop = res.stop;
-		});
-
-		afterAll(async () => await stop());
-
-		it("should return the context params", async () => {
-			const params = {
-				a: 5,
-			};
-
-			expect(await svc.prepareContextParams(params)).toEqual({ a: 5 });
-		});
-
-		it("should return the modified params", async () => {
-			svc.prepareContextParams = jest.fn(params => {
-				return {
-					...params,
-					b: 10,
-				};
-			});
-
-			const params = {
-				a: 5,
-			};
-
-			expect(await svc.prepareContextParams(params)).toEqual({ a: 5, b: 10 });
-
-			expect(svc.prepareContextParams).toBeCalledTimes(1);
-			expect(svc.prepareContextParams).toBeCalledWith(params);
-		});
-
-		it("should return the unwrapped params", async () => {
-			svc.prepareContextParams = jest.fn(async params => params.input);
-
-			const params = {
-				input: { a: 5 },
-			};
-
-			expect(await svc.prepareContextParams(params)).toEqual({ a: 5 });
-
-			expect(svc.prepareContextParams).toBeCalledTimes(1);
-			expect(svc.prepareContextParams).toBeCalledWith(params);
-		});
-	});
-
 	describe("Test 'createServiceResolvers'", () => {
 		it("should call actionResolvers", async () => {
 			const { svc, stop } = await startService();
