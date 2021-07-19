@@ -15,7 +15,7 @@ const GraphQL = require("graphql");
 const { PubSub, withFilter } = require("graphql-subscriptions");
 const hash = require("object-hash");
 
-module.exports = function (mixinOptions) {
+module.exports = function(mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
 		routeOptions: {
 			path: "/graphql",
@@ -218,10 +218,8 @@ module.exports = function (mixinOptions) {
 							if (Array.isArray(args[fileUploadArg])) {
 								return await Promise.all(
 									args[fileUploadArg].map(async uploadPromise => {
-										const {
-											createReadStream,
-											...$fileInfo
-										} = await uploadPromise;
+										const { createReadStream, ...$fileInfo } =
+											await uploadPromise;
 										const stream = createReadStream();
 										return context.ctx.call(actionName, stream, {
 											meta: { $fileInfo, $args: additionalArgs },
@@ -243,10 +241,17 @@ module.exports = function (mixinOptions) {
 								});
 							}
 
-							return await context.ctx.call(
-								actionName,
-								_.defaultsDeep({}, args, params, staticParams)
-							);
+							let mergedParams = _.defaultsDeep({}, args, params, staticParams);
+
+							if (this.prepareContextParams) {
+								mergedParams = await this.prepareContextParams(
+									mergedParams,
+									actionName,
+									context
+								);
+							}
+
+							return await context.ctx.call(actionName, mergedParams);
 						}
 					} catch (err) {
 						if (nullIfError) {
@@ -259,6 +264,17 @@ module.exports = function (mixinOptions) {
 						throw err;
 					}
 				};
+			},
+
+			/**
+			 * Prepare the context params before calling the action
+			 * @param {Object} params
+			 * @param {String} actionName
+			 * @param {Context} context
+			 * @returns {Promise<Object>}
+			 */
+			prepareContextParams(params, actionName, context) {
+				return Promise.resolve(params);
 			},
 
 			/**
@@ -471,13 +487,12 @@ module.exports = function (mixinOptions) {
 									_.castArray(def.subscription).forEach(subscription => {
 										const name = this.getFieldName(subscription);
 										subscriptions.push(subscription);
-										resolver.Subscription[
-											name
-										] = this.createAsyncIteratorResolver(
-											action.name,
-											def.tags,
-											def.filter
-										);
+										resolver.Subscription[name] =
+											this.createAsyncIteratorResolver(
+												action.name,
+												def.tags,
+												def.filter
+											);
 									});
 								}
 

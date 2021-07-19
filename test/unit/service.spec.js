@@ -26,7 +26,7 @@ async function startService(mixinOptions, baseSchema) {
 		},
 	};
 
-	const svc = broker.createService(baseSchema, ApolloServerService(mixinOptions));
+	const svc = broker.createService(ApolloServerService(mixinOptions), baseSchema);
 	await broker.start();
 
 	return { broker, svc, stop: () => broker.stop() };
@@ -391,6 +391,45 @@ describe("Test Service", () => {
 		});
 	});
 
+	describe("Test 'prepareContextParams' method", () => {
+		let broker, svc, stop;
+
+		beforeAll(async () => {
+			const res = await startService();
+			broker = res.broker;
+			svc = res.svc;
+			stop = res.stop;
+		});
+
+		afterAll(async () => await stop());
+
+		it("should return the context params", async () => {
+			const params = {
+				a: 5,
+			};
+
+			expect(await svc.prepareContextParams(params)).toEqual({ a: 5 });
+		});
+
+		it("should return the context params", async () => {
+			svc.prepareContextParams = jest.fn(params => {
+				return {
+					...params,
+					b: 10,
+				};
+			});
+
+			const params = {
+				a: 5,
+			};
+
+			expect(await svc.prepareContextParams(params)).toEqual({ a: 5, b: 10 });
+
+			expect(svc.prepareContextParams).toBeCalledTimes(1);
+			expect(svc.prepareContextParams).toBeCalledWith(params);
+		});
+	});
+
 	describe("Test 'createServiceResolvers'", () => {
 		it("should call actionResolvers", async () => {
 			const { svc, stop } = await startService();
@@ -494,7 +533,12 @@ describe("Test Service", () => {
 
 			const fakeRoot = { author: 12345 };
 
-			expect(resolver(fakeRoot, { a: 5 }, { ctx })).rejects.toThrow("Something happened");
+			expect.assertions(3);
+			try {
+				await resolver(fakeRoot, { a: 5 }, { ctx });
+			} catch (err) {
+				expect(err.message).toBe("Something happened");
+			}
 
 			expect(ctx.call).toBeCalledTimes(1);
 			expect(ctx.call).toBeCalledWith("posts.find", {
