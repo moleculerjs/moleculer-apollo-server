@@ -14,7 +14,6 @@ module.exports = {
 	},
 	plugins: ["node", "promise", "security"],
 	rules: {
-		quotes: ["warn", "double"],
 		semi: ["error", "always"],
 		"no-var": ["error"],
 		"no-console": ["error"],
@@ -28,14 +27,5 @@ module.exports = {
 		"no-process-exit": ["off"],
 		"node/no-unpublished-require": 0,
 		"require-atomic-updates": 0,
-		"space-before-function-paren": [
-			"warn",
-			{
-				anonymous: "never",
-				named: "never",
-				asyncArrow: "always",
-			},
-		],
-		"object-curly-spacing": ["warn", "always"],
 	},
 };

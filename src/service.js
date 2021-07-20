@@ -218,10 +218,8 @@ module.exports = function (mixinOptions) {
 							if (Array.isArray(args[fileUploadArg])) {
 								return await Promise.all(
 									args[fileUploadArg].map(async uploadPromise => {
-										const {
-											createReadStream,
-											...$fileInfo
-										} = await uploadPromise;
+										const { createReadStream, ...$fileInfo } =
+											await uploadPromise;
 										const stream = createReadStream();
 										return context.ctx.call(actionName, stream, {
 											meta: { $fileInfo, $args: additionalArgs },
@@ -243,10 +241,17 @@ module.exports = function (mixinOptions) {
 								});
 							}
 
-							return await context.ctx.call(
-								actionName,
-								_.defaultsDeep({}, args, params, staticParams)
-							);
+							let mergedParams = _.defaultsDeep({}, args, params, staticParams);
+
+							if (this.prepareContextParams) {
+								mergedParams = await this.prepareContextParams(
+									mergedParams,
+									actionName,
+									context
+								);
+							}
+
+							return await context.ctx.call(actionName, mergedParams);
 						}
 					} catch (err) {
 						if (nullIfError) {
@@ -345,6 +350,7 @@ module.exports = function (mixinOptions) {
 			 * @returns {Object} Generated schema
 			 */
 			generateGraphQLSchema(services) {
+				let str;
 				try {
 					let typeDefs = [];
 					let resolvers = {};
@@ -471,13 +477,12 @@ module.exports = function (mixinOptions) {
 									_.castArray(def.subscription).forEach(subscription => {
 										const name = this.getFieldName(subscription);
 										subscriptions.push(subscription);
-										resolver.Subscription[
-											name
-										] = this.createAsyncIteratorResolver(
-											action.name,
-											def.tags,
-											def.filter
-										);
+										resolver.Subscription[name] =
+											this.createAsyncIteratorResolver(
+												action.name,
+												def.tags,
+												def.filter
+											);
 									});
 								}
 
@@ -518,7 +523,7 @@ module.exports = function (mixinOptions) {
 						enums.length > 0 ||
 						inputs.length > 0
 					) {
-						let str = "";
+						str = "";
 						if (queries.length > 0) {
 							str += `
 								type Query {
@@ -582,7 +587,7 @@ module.exports = function (mixinOptions) {
 						"Unable to compile GraphQL schema",
 						500,
 						"UNABLE_COMPILE_GRAPHQL_SCHEMA",
-						{ err }
+						{ err, str }
 					);
 				}
 			},

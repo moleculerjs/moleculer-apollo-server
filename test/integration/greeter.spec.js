@@ -34,6 +34,15 @@ describe("Integration test for greeter service", () => {
 		settings: {
 			port: 0, // Random
 		},
+
+		methods: {
+			prepareContextParams(params, actionName) {
+				if (actionName === "greeter.replace" && params.input) {
+					return params.input;
+				}
+				return params;
+			},
+		},
 	});
 
 	broker.createService({
@@ -67,6 +76,21 @@ describe("Integration test for greeter service", () => {
 					return ctx.params.payload;
 				},
 			},*/
+
+			replace: {
+				graphql: {
+					input: `input GreeterInput {
+						name: String!
+					}`,
+					type: `type GreeterOutput {
+						name: String
+					}`,
+					mutation: "replace(input: GreeterInput!): GreeterOutput",
+				},
+				handler(ctx) {
+					return ctx.params;
+				},
+			},
 
 			danger: {
 				graphql: {
@@ -142,6 +166,27 @@ describe("Integration test for greeter service", () => {
 		expect(await res.json()).toStrictEqual({
 			data: {
 				welcome: "Hello Moleculer GraphQL",
+			},
+		});
+	});
+
+	it("should call the greeter.welcome action with wrapped input params", async () => {
+		const res = await fetch(`http://localhost:${port}/graphql`, {
+			method: "post",
+			body: JSON.stringify({
+				operationName: null,
+				variables: { name: "Moleculer GraphQL" },
+				query: "mutation ($name: String!) { replace(input: { name: $name }) { name } }",
+			}),
+			headers: { "Content-Type": "application/json" },
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toStrictEqual({
+			data: {
+				replace: {
+					name: "Moleculer GraphQL",
+				},
 			},
 		});
 	});

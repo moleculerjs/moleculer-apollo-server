@@ -26,7 +26,7 @@ async function startService(mixinOptions, baseSchema) {
 		},
 	};
 
-	const svc = broker.createService(baseSchema, ApolloServerService(mixinOptions));
+	const svc = broker.createService(ApolloServerService(mixinOptions), baseSchema);
 	await broker.start();
 
 	return { broker, svc, stop: () => broker.stop() };
@@ -494,7 +494,12 @@ describe("Test Service", () => {
 
 			const fakeRoot = { author: 12345 };
 
-			expect(resolver(fakeRoot, { a: 5 }, { ctx })).rejects.toThrow("Something happened");
+			expect.assertions(3);
+			try {
+				await resolver(fakeRoot, { a: 5 }, { ctx });
+			} catch (err) {
+				expect(err.message).toBe("Something happened");
+			}
 
 			expect(ctx.call).toBeCalledTimes(1);
 			expect(ctx.call).toBeCalledWith("posts.find", {
