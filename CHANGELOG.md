@@ -1,3 +1,11 @@
+<a name="0.3.5"></a>
+# 0.3.5 (2021-11-30)
+
+## Changes
+- Prepare params before action calling. [#98](https://github.com/moleculerjs/moleculer-apollo-server/pull/98)
+- update dependencies
+
+--------------------------------------------------
 <a name="0.3.4"></a>
 # 0.3.4 (2021-04-09)
 
@@ -20,7 +28,7 @@
 ## Changes
 - update dependencies
 - new `createPubSub` & `makeExecutableSchema` methods
-- fix context in WS by [@Hugome](https://github.com/Hugome). [#64](https://github.com/moleculerjs/moleculer-apollo-server/pull/73)
+- fix context in WS by [@Hugome](https://github.com/Hugome). [#73](https://github.com/moleculerjs/moleculer-apollo-server/pull/73)
 
 --------------------------------------------------
 <a name="0.3.1"></a>
