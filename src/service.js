@@ -737,6 +737,15 @@ module.exports = function (mixinOptions) {
 			this.dataLoaderOptions = new Map();
 			this.dataLoaderBatchParams = new Map();
 
+			// Bind service to onConnect method
+			if (
+				mixinOptions.serverOptions.subscriptions &&
+				_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)
+			) {
+				mixinOptions.serverOptions.subscriptions.onConnect =
+					mixinOptions.serverOptions.subscriptions.onConnect.bind(this);
+			}
+
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {
 					async "/"(req, res) {
