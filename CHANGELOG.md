@@ -1,3 +1,11 @@
+<a name="0.3.6"></a>
+# 0.3.6 (2022-01-17)
+
+## Changes
+- custom `onConnect` issue fixed. [#105](https://github.com/moleculerjs/moleculer-apollo-server/pull/105)
+- update dependencies
+
+--------------------------------------------------
 <a name="0.3.5"></a>
 # 0.3.5 (2021-11-30)
 
