@@ -52,7 +52,7 @@ declare module "moleculer-apollo-server" {
 
 	export interface ServiceRouteCorsOptions {
 		origin?: string | string[];
-		methods?: "GET" | "POST" | "PUT" | "DELETE" | "OPTIONS"[];
+		methods?: ("GET" | "POST" | "PUT" | "DELETE" | "OPTIONS")[];
 		allowedHeaders?: string[];
 		exposedHeaders?: string[];
 		credentials?: boolean;
