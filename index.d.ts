@@ -17,7 +17,7 @@ declare module "moleculer-apollo-server" {
 		defaultPlaygroundOptions,
 	} from "apollo-server-core";
 
-	export { GraphQLUpload } from 'graphql-upload';
+	export { GraphQLUpload } from "graphql-upload";
 
 	export * from "graphql-tools";
 
@@ -50,9 +50,11 @@ declare module "moleculer-apollo-server" {
 		};
 	}
 
+	type CorsMethods = "GET" | "POST" | "PUT" | "DELETE" | "OPTIONS";
+
 	export interface ServiceRouteCorsOptions {
 		origin?: string | string[];
-		methods?: ("GET" | "POST" | "PUT" | "DELETE" | "OPTIONS")[];
+		methods?: CorsMethods | CorsMethods[];
 		allowedHeaders?: string[];
 		exposedHeaders?: string[];
 		credentials?: boolean;
