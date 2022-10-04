@@ -537,6 +537,49 @@ describe("Test Service", () => {
 				a: 5,
 			});
 		});
+
+		it("should use null value if skipNullKeys is false", async () => {
+			const resolver = svc.createActionResolver("posts.find", {
+				rootParams: {
+					author: "id",
+				},
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn(() => "response from action");
+
+			const fakeRoot = {};
+
+			const res = await resolver(fakeRoot, { a: 5 }, { ctx });
+
+			expect(res).toBe("response from action");
+
+			expect(ctx.call).toBeCalledTimes(1);
+			expect(ctx.call).toBeCalledWith("posts.find", {
+				id: undefined,
+				a: 5,
+			});
+		});
+
+		it("should not call action if id is null and skipNullKeys is true", async () => {
+			const resolver = svc.createActionResolver("posts.find", {
+				skipNullKeys: true,
+				rootParams: {
+					author: "id",
+				},
+			});
+
+			const ctx = new Context(broker);
+			ctx.call = jest.fn(() => "response from action");
+
+			const fakeRoot = {};
+
+			const res = await resolver(fakeRoot, { a: 5 }, { ctx });
+
+			expect(res).toBe(null);
+
+			expect(ctx.call).toBeCalledTimes(0);
+		});
 	});
 
 	describe("Test 'createActionResolver' with File Upload", () => {
