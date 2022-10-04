@@ -1,3 +1,13 @@
+<a name="0.3.7"></a>
+# 0.3.7 (2022-10-04)
+
+## Changes
+- update dependencies
+- fix CORS methods type definition. [#115](https://github.com/moleculerjs/moleculer-apollo-server/pull/115)
+- add `skipNullKeys` resolver option. [#116](https://github.com/moleculerjs/moleculer-apollo-server/pull/116)
+- add `checkActionVisibility` option. [#117](https://github.com/moleculerjs/moleculer-apollo-server/pull/117)
+
+--------------------------------------------------
 <a name="0.3.6"></a>
 # 0.3.6 (2022-01-17)
 
