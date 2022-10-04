@@ -41,6 +41,7 @@ declare module "moleculer-apollo-server" {
 		};
 		dataLoader?: boolean;
 		nullIfError?: boolean;
+		skipNullKeys?: boolean;
 		params?: { [key: string]: any };
 	}
 
@@ -94,6 +95,7 @@ declare module "moleculer-apollo-server" {
 		};
 		routeOptions?: ServiceRouteOptions;
 		serverOptions?: Config;
+		checkActionVisibility?: boolean;
 		autoUpdateSchema?: boolean;
 	}
 

@@ -24,6 +24,8 @@ broker.createService({
 				mappingPolicy: "restrict",
 			},
 
+			checkActionVisibility: true,
+
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
 			serverOptions: {},
 		}),
@@ -76,6 +78,26 @@ broker.createService({
 			},
 			async handler() {
 				throw new MoleculerClientError("I've said it's a danger action!", 422, "DANGER");
+			},
+		},
+
+		secret: {
+			visibility: "protected",
+			graphql: {
+				query: "secret: String!",
+			},
+			async handler() {
+				return "! TOP SECRET !";
+			},
+		},
+
+		visible: {
+			visibility: "published",
+			graphql: {
+				query: "visible: String!",
+			},
+			async handler() {
+				return "Not secret";
 			},
 		},
 	},

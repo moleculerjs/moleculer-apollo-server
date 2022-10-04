@@ -25,6 +25,7 @@ module.exports = function (mixinOptions) {
 		createAction: true,
 		subscriptionEventName: "graphql.publish",
 		autoUpdateSchema: true,
+		checkActionVisibility: false,
 	});
 
 	const serviceSchema = {
@@ -450,6 +451,13 @@ module.exports = function (mixinOptions) {
 
 						Object.values(service.actions).forEach(action => {
 							const { graphql: def } = action;
+							if (
+								mixinOptions.checkActionVisibility &&
+								action.visibility != null &&
+								action.visibility != "published"
+							)
+								return;
+
 							if (def && _.isObject(def)) {
 								if (def.query) {
 									if (!resolver["Query"]) resolver.Query = {};

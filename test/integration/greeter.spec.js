@@ -26,6 +26,8 @@ describe("Integration test for greeter service", () => {
 					mappingPolicy: "restrict",
 				},
 
+				checkActionVisibility: true,
+
 				// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
 				serverOptions: {},
 			}),
@@ -102,6 +104,16 @@ describe("Integration test for greeter service", () => {
 						422,
 						"DANGER"
 					);
+				},
+			},
+
+			secret: {
+				visibility: "protected",
+				graphql: {
+					query: "secret: String!",
+				},
+				async handler() {
+					return "! TOP SECRET !";
 				},
 			},
 		},
@@ -192,6 +204,43 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.danger and receives an error", async () => {
+		const res = await fetch(`http://localhost:${port}/graphql`, {
+			method: "post",
+			body: JSON.stringify({
+				operationName: null,
+				variables: {},
+				query: "query { danger }",
+			}),
+			headers: { "Content-Type": "application/json" },
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toStrictEqual({
+			data: null,
+			errors: [
+				{
+					extensions: {
+						code: "INTERNAL_SERVER_ERROR",
+						exception: {
+							code: 422,
+							retryable: false,
+							type: "DANGER",
+						},
+					},
+					locations: [
+						{
+							column: 9,
+							line: 1,
+						},
+					],
+					message: "I've said it's a danger action!",
+					path: ["danger"],
+				},
+			],
+		});
+	});
+
+	it("should not call the greeter.secret", async () => {
 		const res = await fetch(`http://localhost:${port}/graphql`, {
 			method: "post",
 			body: JSON.stringify({
