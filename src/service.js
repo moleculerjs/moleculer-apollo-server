@@ -235,10 +235,17 @@ module.exports = function (mixinOptions) {
 							});
 						} else {
 							const params = {};
+							let hasRootKeyValue = false;
 							if (root && rootKeys) {
 								rootKeys.forEach(key => {
-									_.set(params, rootParams[key], _.get(root, key));
+									const v = _.get(root, key);
+									_.set(params, rootParams[key], v);
+									if (v != null) hasRootKeyValue = true;
 								});
+
+								if (def.skipNullKeys && !hasRootKeyValue) {
+									return null;
+								}
 							}
 
 							let mergedParams = _.defaultsDeep({}, args, params, staticParams);
