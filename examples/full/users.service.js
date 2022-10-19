@@ -64,6 +64,15 @@ module.exports = {
 		},
 	},
 	actions: {
+		hello: {
+			graphql: {
+				query: "hello: String!",
+			},
+			handler() {
+				return "Hello Moleculer! 3";
+			},
+		},
+
 		find: {
 			//cache: true,
 			params: {

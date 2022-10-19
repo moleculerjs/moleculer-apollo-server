@@ -5,8 +5,10 @@ const { Kind } = require("graphql");
 const { ServiceBroker } = require("moleculer");
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
+const E = require("moleculer-web").Errors;
 
 const broker = new ServiceBroker({
+	hotReload: true,
 	logLevel: process.env.LOGLEVEL || "info" /*, transporter: "NATS"*/,
 });
 
@@ -59,8 +61,14 @@ broker.createService({
 			// API Gateway route options
 			routeOptions: {
 				path: "/graphql",
-				cors: true,
+				cors: {
+					origin: ["http://localhost:3001", "http://localhost:3000"], //["http://localhost:3001", "*", "localhost", "localhost:3001"],
+					methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
+					credentials: true,
+				},
 				mappingPolicy: "restrict",
+				authentication: true,
+				authorization: true,
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
@@ -74,10 +82,31 @@ broker.createService({
 		}),
 	],
 
+	settings: {
+		cors: {
+			origin: ["http://localhost:3001", "http://localhost:3000"],
+			credentials: false,
+			// Configures the Access-Control-Allow-Methods CORS header.
+			methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
+		},
+
+		port: 3000,
+	},
+
+	methods: {
+		async authenticate(ctx, route, req, res) {
+			return { token: "1234" };
+		},
+		async authorize(ctx, route, req, res) {
+			if (ctx.meta.user.token !== "1234")
+				return this.Promise.reject(new E.UnAuthorizedError("ef"));
+		},
+	},
+
 	events: {
 		"graphql.schema.updated"({ schema }) {
 			fs.writeFileSync(__dirname + "/generated-schema.gql", schema, "utf8");
-			this.logger.info("Generated GraphQL schema:\n\n" + schema);
+			// this.logger.info("Generated GraphQL schema:\n\n" + schema);
 		},
 	},
 });

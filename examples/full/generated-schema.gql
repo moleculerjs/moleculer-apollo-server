@@ -4,6 +4,7 @@ scalar Timestamp
 
 type Query {
   posts(limit: Int): [Post]
+  hello: String!
   users(limit: Int): [User]
 }
 

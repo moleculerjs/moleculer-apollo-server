@@ -1,7 +1,7 @@
 "use strict";
 
 const { ApolloServerBase } = require("apollo-server-core");
-const { processRequest } = require("graphql-upload");
+// const { processRequest } = require("graphql-upload");
 const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
 const accept = require("@hapi/accept");
 const moleculerApollo = require("./moleculerApollo");
@@ -32,19 +32,19 @@ class ApolloServer extends ApolloServerBase {
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
 	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
-		const promiseWillStart = this.willStart();
+		// const promiseWillStart = this.willStart();
 
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
 
-			await promiseWillStart;
+			// await promiseWillStart;
 
 			// If file uploads are detected, prepare them for easier handling with
 			// the help of `graphql-upload`.
 			if (this.uploadsConfig) {
 				const contentType = req.headers["content-type"];
 				if (contentType && contentType.startsWith("multipart/form-data")) {
-					req.filePayload = await processRequest(req, res, this.uploadsConfig);
+					// req.filePayload = await processRequest(req, res, this.uploadsConfig);
 				}
 			}
 
@@ -56,7 +56,7 @@ class ApolloServer extends ApolloServerBase {
 			// If the `playgroundOptions` are set, register a `graphql-playground` instance
 			// (not available in production) that is then used to handle all
 			// incoming GraphQL requests.
-			if (this.playgroundOptions && req.method === "GET") {
+			if (/*this.playgroundOptions &&*/ req.method === "GET") {
 				const { mediaTypes } = accept.parseAll(req.headers);
 				const prefersHTML =
 					mediaTypes.find(x => x === "text/html" || x === "application/json") ===

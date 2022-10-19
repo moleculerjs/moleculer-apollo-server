@@ -185,6 +185,7 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const post = this.findByID(ctx.params.id);
+				/*
 				if (!post) {
 					throw new MoleculerClientError("Post is not found");
 				}
@@ -196,7 +197,7 @@ module.exports = {
 
 				post.voters = post.voters.filter(voter => voter != ctx.params.userID);
 				post.votes = post.voters.length;
-
+                */
 				await ctx.broadcast("graphql.publish", {
 					tag: "VOTE",
 					payload: { type: "down", userID: ctx.params.userID },
@@ -217,13 +218,15 @@ module.exports = {
 				filter: "posts.vote.filter",
 			},
 			handler(ctx) {
+				console.log("HANDLER !", ctx.params);
 				return ctx.params.payload.type;
 			},
 		},
 		"vote.filter": {
 			params: { userID: "number", payload: "object" },
 			handler(ctx) {
-				return ctx.params.payload.userID === ctx.params.userID;
+				console.log("FILTER !", ctx.params);
+				return true; //ctx.params.payload.userID === ctx.params.userID;
 			},
 		},
 		error: {
