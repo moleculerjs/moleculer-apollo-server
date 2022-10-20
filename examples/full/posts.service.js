@@ -222,6 +222,7 @@ module.exports = {
 		"vote.filter": {
 			params: { userID: "number", payload: "object" },
 			handler(ctx) {
+				console.log("filter", ctx.meta);
 				return ctx.params.payload.userID === ctx.params.userID;
 			},
 		},

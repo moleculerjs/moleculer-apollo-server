@@ -16,7 +16,7 @@ const {
 } = require("apollo-server-core");
 const { makeExecutableSchema } = require("@graphql-tools/schema");
 const GraphQL = require("graphql");
-const { PubSub, withFilter } = require("graphql-subscriptions");
+const { PubSub, withFilter, PubSubEngine } = require("graphql-subscriptions");
 const hash = require("object-hash");
 const { WebSocketServer } = require("ws");
 const { useServer } = require("graphql-ws/lib/use/ws");
@@ -62,8 +62,8 @@ module.exports = function (mixinOptions) {
 				},
 				async handler(ctx){
 					if ( mixinOptions.serverOptions.subscriptions.context ) {
-						const context = mixinOptions.serverOptions.subscriptions.context(ctx);
-						return {$ctx:ctx,...context}
+						const user = await mixinOptions.serverOptions.subscriptions.context(ctx);
+						ctx.meta.user = user;
 					}
 					return {$ctx:ctx}
 				}
@@ -642,6 +642,13 @@ module.exports = function (mixinOptions) {
 			 * Create PubSub instance.
 			 */
 			createPubSub() {
+				if ( _.isFunction(mixinOptions.serverOptions.subscriptions.createPubSub) ) {
+					const engine = mixinOptions.serverOptions.subscriptions.createPubSub();
+					if ( !(engine instanceof PubSubEngine) ) {
+						throw new MoleculerServerError("createPubSub should return PubSubEngine derived instance....");
+					}
+					return engine;
+				}
 				return new PubSub();
 			},
 
@@ -706,14 +713,18 @@ module.exports = function (mixinOptions) {
 						
 					}, wsServer);
 
+					//const {subscriptions,...restServerOptions} = mixinOptions.serverOptions; 
+					const serverOptions = _.omit(mixinOptions.serverOptions,["subscriptions"]);
+
 					this.apolloServer = new ApolloServer({
 						schema,
-						..._.defaultsDeep({}, mixinOptions.serverOptions, {
+						..._.defaultsDeep({}, serverOptions, {
 							context:async ({ req, res, }) => {
 								return { 
 									ctx:req.$ctx,
 									params:req.$params,
-									service:req.$service 
+									service:req.$service,
+									dataLoaders:new Map()
 								};
 							},
 							plugins:[
@@ -820,7 +831,6 @@ module.exports = function (mixinOptions) {
 				mixinOptions.serverOptions.subscriptions &&
 				_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)
 			) {
-				console.log("BIND !",mixinOptions.serverOptions.subscriptions.onConnect);
 				mixinOptions.serverOptions.subscriptions.onConnect =
 					mixinOptions.serverOptions.subscriptions.onConnect.bind(this);
 			}
@@ -831,6 +841,14 @@ module.exports = function (mixinOptions) {
 			) {
 				mixinOptions.serverOptions.subscriptions.context =
 					mixinOptions.serverOptions.subscriptions.context.bind(this);
+			}
+
+			if (
+				mixinOptions.serverOptions.subscriptions &&
+				_.isFunction(mixinOptions.serverOptions.subscriptions.createPubSub)
+			) {
+				mixinOptions.serverOptions.subscriptions.context =
+					mixinOptions.serverOptions.subscriptions.createPubSub.bind(this);
 			}
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {

@@ -1,3 +1,16 @@
+<a name="0.3.8"></a>
+# 0.3.8 (2022-10-20)
+
+## Changes
+- Upgrade to Apollo server v3 ( + switch from subscriptions-transport-ws to graphql-ws )
+- Custom PubSub creator ( for use custom PubSubEngine )
+- Playground ( RenderPageOptions ) options in serverOptions.playgroundOptions 
+- serverOptions.subscriptions.onConnect should return acts lile graphql-ws
+- serverOptions.subscriptions.context should return user account ( like "authenticate" method )
+- CAUTION: with new graphql-ws subscriptions are not available in build-in playground
+- Not tested - graphql-upload, DataLoader
+
+--------------------------------------------------
 <a name="0.3.7"></a>
 # 0.3.7 (2022-10-04)
 

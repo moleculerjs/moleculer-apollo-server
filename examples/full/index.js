@@ -6,6 +6,7 @@ const { ServiceBroker } = require("moleculer");
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 const E = require("moleculer-web").Errors;
+const { PubSub } = require("graphql-subscriptions");
 
 const broker = new ServiceBroker({
 	hotReload: true,
@@ -75,20 +76,31 @@ broker.createService({
 			serverOptions: {
 				tracing: false,
 
+				playgroundOptions:{
+					settings:{
+						"editor.theme":"dark"
+					}
+				},
+	
 				engine: {
 					apiKey: process.env.APOLLO_ENGINE_KEY,
 				},
 
 				subscriptions:{
-					onConnect($ctx){
+
+					createPubSub() {
+						return new PubSub();
+					},
+
+					async onConnect($ctx){
 						const {params:{connectionParams,extra:{request}}} = $ctx;
 						return request.headers.cookie.indexOf("logged=1") !== -1;
 					},
-					context($ctx) {
+					async context($ctx) {
 						const {params:{connectionParams,extra:{request}}} = $ctx;
 						return this.graphql_authenticate($ctx,undefined,request)
 							.then(user => {
-								$ctx.meta.user = user;
+								return user;
 							});
 					}
 				}
