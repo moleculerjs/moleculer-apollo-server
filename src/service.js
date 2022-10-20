@@ -46,26 +46,9 @@ module.exports = function (mixinOptions) {
 					spanName: ctx => `UPGRADE ${ctx.params.request.url}`,
 				},
 				async handler(ctx) {
-					const {connectionParams,extra:{request}} = ctx.params;
-					console.log("onConnaext handled");
-					return {
-						$ctx:ctx,
-						$params:{
-							body:{
-								connectionParams,
-								query:request.query
-							}
-						}
+					if ( mixinOptions.serverOptions.subscriptions.onConnect ) {
+						return  mixinOptions.serverOptions.subscriptions.onConnect(ctx);
 					}
-					/*
-					const { socket, connectionParams } = ctx.params;
-					return {
-						$ctx: ctx,
-						$socket: socket,
-						$service: this,
-						$params: { body: connectionParams, query: socket.upgradeReq.query },
-					};
-					*/
 				},
 			},
 			context:{
@@ -77,15 +60,12 @@ module.exports = function (mixinOptions) {
 					},
 					spanName: ctx => `UPGRADE ${ctx.params?.request?.url}`,
 				},
-				handler(ctx){
-					if ( _.isFunction(mixinOptions.subscriptions?.onConnect) ) {
-						return mixinOptions.subscriptions?.context({
-							$ctx:ctx
-						}); 
-						// ctx.meta.user = user;
-						// return { user,$ctx:ctx,$service:this };
+				async handler(ctx){
+					if ( mixinOptions.serverOptions.subscriptions.context ) {
+						const context = mixinOptions.serverOptions.subscriptions.context(ctx);
+						return {$ctx:ctx,...context}
 					}
-					return {$ctx:ctx,user:{hello:"world"}}
+					return {$ctx:ctx}
 				}
 			}
 		},
@@ -98,7 +78,6 @@ module.exports = function (mixinOptions) {
 			},
 			[mixinOptions.subscriptionEventName](event) {
 				if (this.pubsub) {
-					console.log("EVENT",event);
 					this.pubsub.publish(event.tag, event.payload);
 				}
 			},
@@ -382,13 +361,13 @@ module.exports = function (mixinOptions) {
 								() => this.pubsub.asyncIterator(tags),
 								async (payload, params, { $ctx }) => {
 									return payload !== undefined
-										? $ctx.call(filter, { ...params, payload })
+										? $ctx.call(filter, { ...params, payload },{parentCtx:$ctx})
 										: false
 								}
 						  )
 						: () => this.pubsub.asyncIterator(tags),
 					resolve: (payload, params, { $ctx }) => {
-						return $ctx.call(actionName, { ...params, payload })
+						return $ctx.call(actionName, { ...params, payload },{parentCtx:$ctx})
 					},
 				};
 			},
@@ -841,6 +820,7 @@ module.exports = function (mixinOptions) {
 				mixinOptions.serverOptions.subscriptions &&
 				_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)
 			) {
+				console.log("BIND !",mixinOptions.serverOptions.subscriptions.onConnect);
 				mixinOptions.serverOptions.subscriptions.onConnect =
 					mixinOptions.serverOptions.subscriptions.onConnect.bind(this);
 			}

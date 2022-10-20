@@ -67,8 +67,8 @@ broker.createService({
 					credentials: true,
 				},
 				mappingPolicy: "restrict",
-				authentication: true,
-				authorization: true,
+				authentication: "graphql_authenticate",
+				authorization: "graphql_authorize",
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
@@ -78,11 +78,26 @@ broker.createService({
 				engine: {
 					apiKey: process.env.APOLLO_ENGINE_KEY,
 				},
+
+				subscriptions:{
+					onConnect($ctx){
+						const {params:{connectionParams,extra:{request}}} = $ctx;
+						return request.headers.cookie.indexOf("logged=1") !== -1;
+					},
+					context($ctx) {
+						const {params:{connectionParams,extra:{request}}} = $ctx;
+						return this.graphql_authenticate($ctx,undefined,request)
+							.then(user => {
+								$ctx.meta.user = user;
+							});
+					}
+				}
 			},
 		}),
 	],
 
 	settings: {
+		path: "/",
 		cors: {
 			origin: ["http://localhost:3001", "http://localhost:3000"],
 			credentials: false,
@@ -91,15 +106,48 @@ broker.createService({
 		},
 
 		port: 3000,
+
+		routes: [
+			{
+				path: "/",
+				aliases: {
+					"GET /login": "api.login",
+					"GET /logout": "api.logout",
+				},
+			},
+		],
+	},
+
+	actions: {
+		login: {
+			handler(ctx) {
+				ctx.meta.$responseHeaders = {
+					"Set-Cookie": `logged=1`,
+				};
+				ctx.meta.$statusCode = 302;
+				ctx.meta.$location = "/graphql";				
+				return 
+			},
+		},
+		logout: {
+			handler(ctx) {
+				ctx.meta.$responseHeaders = {
+					"Set-Cookie": `logged=0`,
+				};
+				return "Logged out !"; 
+			},
+		},
 	},
 
 	methods: {
-		async authenticate(ctx, route, req, res) {
-			return { token: "1234" };
+		async graphql_authenticate(ctx, route, req, res) {
+			if (req.headers.cookie.indexOf("logged=1") !== -1)
+				return this.Promise.resolve({ username: "john", email: "john.doe@gmail.com" });
+			return this.Promise.resolve(null);
 		},
-		async authorize(ctx, route, req, res) {
-			if (ctx.meta.user.token !== "1234")
-				return this.Promise.reject(new E.UnAuthorizedError("ef"));
+		async graphql_authorize(ctx, route, req, res) {
+			if (ctx.meta.user?.username !== "john")
+				return this.Promise.reject(new E.UnAuthorizedError());
 		},
 	},
 
