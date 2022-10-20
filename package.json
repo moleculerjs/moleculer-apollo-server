@@ -71,7 +71,7 @@
     "@apollographql/graphql-playground-html": "^1.6.29",
     "@graphql-tools/schema": "^9.0.4",
     "@graphql-tools/utils": "^8.12.0",
-    "@hapi/accept": "^3.2.4",
+    "@hapi/accept": "^6.0.0",
     "@types/graphql-upload": "^8.0.11",
     "apollo-server-core": "^3.10.3",
     "apollo-server-errors": "^3.3.1",
