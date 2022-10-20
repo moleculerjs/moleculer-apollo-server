@@ -21,9 +21,9 @@ declare module "moleculer-apollo-server" {
 	} from "apollo-server-core";
 
 	
-	export { GraphQLUpload } from "graphql-upload";
+	// export { GraphQLUpload } from "graphql-upload";
 
-	export * from "graphql-tools";
+	// export * from "graphql-tools";
 
 	export interface ApolloServerOptions {
 		path: string;

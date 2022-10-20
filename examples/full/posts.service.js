@@ -216,13 +216,12 @@ module.exports = {
 				filter: "posts.vote.filter",
 			},
 			handler(ctx) {
-				return ctx.params.payload.type;
+				return `${ctx.meta.user.username} : ${ctx.params.payload.type}`;
 			},
 		},
 		"vote.filter": {
 			params: { userID: "number", payload: "object" },
 			handler(ctx) {
-				console.log("filter", ctx.meta);
 				return ctx.params.payload.userID === ctx.params.userID;
 			},
 		},

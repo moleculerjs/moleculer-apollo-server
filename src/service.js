@@ -10,7 +10,6 @@ const _ = require("lodash");
 const { MoleculerServerError } = require("moleculer").Errors;
 const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
-// const { makeExecutableSchema } = require("graphql-tools");
 const { 
 	ApolloServerPluginDrainHttpServer, AuthenticationError,
 } = require("apollo-server-core");
@@ -41,12 +40,14 @@ module.exports = function (mixinOptions) {
 				visibility: "private",
 				tracing: {
 					tags: {
-						params: ["request.url"],
+						params: ["extra.request.url"],
 					},
-					spanName: ctx => `UPGRADE ${ctx.params.request.url}`,
+					spanName: (ctx) => { 
+						return `PubSub:CONNECT ${ctx.params.extra.request.url}`;
+					}
 				},
 				async handler(ctx) {
-					if ( mixinOptions.serverOptions.subscriptions.onConnect ) {
+					if ( _.isFunction(mixinOptions.serverOptions.subscriptions.onConnect) ) {
 						return  mixinOptions.serverOptions.subscriptions.onConnect(ctx);
 					}
 				},
@@ -56,16 +57,16 @@ module.exports = function (mixinOptions) {
 				visibility: "private",
 				tracing: {
 					tags: {
-						params: ["request.url"],
+						params: ["extra.request.url"],
 					},
-					spanName: ctx => `UPGRADE ${ctx.params?.request?.url}`,
+					spanName: ctx => `PubSub:CONTEXT ${ctx.params.extra.request.url}`,
 				},
 				async handler(ctx){
-					if ( mixinOptions.serverOptions.subscriptions.context ) {
+					if ( _.isFunction(mixinOptions.serverOptions.subscriptions.context) ) {
 						const user = await mixinOptions.serverOptions.subscriptions.context(ctx);
 						ctx.meta.user = user;
 					}
-					return {$ctx:ctx}
+					return {ctx}
 				}
 			}
 		},
@@ -359,15 +360,15 @@ module.exports = function (mixinOptions) {
 					subscribe: filter
 						? withFilter(
 								() => this.pubsub.asyncIterator(tags),
-								async (payload, params, { $ctx }) => {
+								async (payload, params, { ctx }) => {
 									return payload !== undefined
-										? $ctx.call(filter, { ...params, payload },{parentCtx:$ctx})
+										? ctx.call(filter, { ...params, payload },{parentCtx:ctx})
 										: false
 								}
 						  )
 						: () => this.pubsub.asyncIterator(tags),
-					resolve: (payload, params, { $ctx }) => {
-						return $ctx.call(actionName, { ...params, payload },{parentCtx:$ctx})
+					resolve: (payload, params, { ctx }) => {
+						return ctx.call(actionName, { ...params, payload },{parentCtx:ctx})
 					},
 				};
 			},
@@ -847,7 +848,7 @@ module.exports = function (mixinOptions) {
 				mixinOptions.serverOptions.subscriptions &&
 				_.isFunction(mixinOptions.serverOptions.subscriptions.createPubSub)
 			) {
-				mixinOptions.serverOptions.subscriptions.context =
+				mixinOptions.serverOptions.subscriptions.createPubSub =
 					mixinOptions.serverOptions.subscriptions.createPubSub.bind(this);
 			}
 

@@ -15,7 +15,7 @@
 "use strict";
 
 const core = require("apollo-server-core");
-const GraphQLUpload = require("graphql-upload");
+// const GraphQLUpload = require("graphql-upload");
 const { ApolloServer } = require("./src/ApolloServer");
 const ApolloService = require("./src/service");
 const gql = require("./src/gql");
@@ -34,10 +34,10 @@ module.exports = {
 	defaultPlaygroundOptions: core.defaultPlaygroundOptions,
 
 	// GraphQL tools
-	...require("graphql-tools"),
+	// ...require("graphql-tools"),
 
 	// GraphQL Upload
-	GraphQLUpload,
+	// GraphQLUpload,
 
 	// Apollo Server
 	ApolloServer,

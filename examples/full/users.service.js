@@ -68,8 +68,8 @@ module.exports = {
 			graphql: {
 				query: "hello: String!",
 			},
-			handler() {
-				return "Hello Moleculer! 3";
+			handler(ctx) {
+				return `${ctx.meta.user.username}: Hello Moleculer !`;
 			},
 		},
 

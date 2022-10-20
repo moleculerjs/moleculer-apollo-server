@@ -1,15 +1,17 @@
-<a name="0.3.8"></a>
-# 0.3.8 (2022-10-20)
+<a name="0.3.7.1"></a>
+# 0.3.7.1 (2022-10-20)
 
 ## Changes
-- Upgrade to Apollo server v3 ( + switch from subscriptions-transport-ws to graphql-ws )
-- Custom PubSub creator ( for use custom PubSubEngine )
+- upgrade to Apollo server v3 ( + switch from subscriptions-transport-ws to graphql-ws )
+- add Custom PubSub creator ( for use custom PubSubEngine )
+- add Update/Reload schema without restarting server/ws
 - Playground ( RenderPageOptions ) options in serverOptions.playgroundOptions 
-- serverOptions.subscriptions.onConnect should return acts lile graphql-ws
-- serverOptions.subscriptions.context should return user account ( like "authenticate" method )
+- add serverOptions.subscriptions.onConnect should return acts lile graphql-ws
+- add serverOptions.subscriptions.context should return user account ( like "authenticate" method )
 - CAUTION: with new graphql-ws subscriptions are not available in build-in playground
-- Not tested - graphql-upload, DataLoader
-
+- WARNING: graphql-upload disabled ( new versions is mjs type )
+- Not tested - DataLoader
+- Example in examples/full/
 --------------------------------------------------
 <a name="0.3.7"></a>
 # 0.3.7 (2022-10-04)

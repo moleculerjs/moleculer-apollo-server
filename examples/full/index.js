@@ -10,6 +10,12 @@ const { PubSub } = require("graphql-subscriptions");
 
 const broker = new ServiceBroker({
 	hotReload: true,
+	tracing:{
+		enabled:true,
+		exporter:"Console",
+		events:true,
+		stackTrace:true
+	},
 	logLevel: process.env.LOGLEVEL || "info" /*, transporter: "NATS"*/,
 });
 
@@ -74,7 +80,7 @@ broker.createService({
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
 			serverOptions: {
-				tracing: false,
+				tracing: true,
 
 				playgroundOptions:{
 					settings:{
@@ -94,10 +100,12 @@ broker.createService({
 
 					async onConnect($ctx){
 						const {params:{connectionParams,extra:{request}}} = $ctx;
+						// return false for drop connection
 						return request.headers.cookie.indexOf("logged=1") !== -1;
 					},
 					async context($ctx) {
 						const {params:{connectionParams,extra:{request}}} = $ctx;
+						// will be set to ctx.meta.user 
 						return this.graphql_authenticate($ctx,undefined,request)
 							.then(user => {
 								return user;
