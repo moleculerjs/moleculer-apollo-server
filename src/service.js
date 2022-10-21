@@ -645,7 +645,7 @@ module.exports = function (mixinOptions) {
 			createPubSub() {
 				if ( _.isFunction(mixinOptions.serverOptions.subscriptions.createPubSub) ) {
 					const engine = mixinOptions.serverOptions.subscriptions.createPubSub();
-					if ( !(engine instanceof PubSubEngine) ) {
+					if ( !("publish" in engine) ) {
 						throw new MoleculerServerError("createPubSub should return PubSubEngine derived instance....");
 					}
 					return engine;
