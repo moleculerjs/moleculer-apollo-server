@@ -269,13 +269,25 @@ module.exports = function (mixinOptions) {
 								}
 							}
 
+							/* pass to resolvers arguments variables
+							// some times resolvers need to know parents query args
+							// - fixed - do it in prepareContextParams
+							if ( root && !Object.keys(args).length && Object.keys(context.params.variables).length > 0 ) {
+								const args = Object.values(context.params.variables);
+								_.set(params,"$args",args);
+							}
+							*/
+	
 							let mergedParams = _.defaultsDeep({}, args, params, staticParams);
 
 							if (this.prepareContextParams) {
 								mergedParams = await this.prepareContextParams(
 									mergedParams,
 									actionName,
-									context
+									// "root" - not added here,becouse of backward comp.
+									context,
+									args, // added
+									root, // added 
 								);
 							}
 
@@ -643,13 +655,6 @@ module.exports = function (mixinOptions) {
 			 * Create PubSub instance.
 			 */
 			createPubSub() {
-				if ( _.isFunction(mixinOptions.serverOptions.subscriptions.createPubSub) ) {
-					const engine = mixinOptions.serverOptions.subscriptions.createPubSub();
-					if ( !("publish" in engine) ) {
-						throw new MoleculerServerError("createPubSub should return PubSubEngine derived instance....");
-					}
-					return engine;
-				}
 				return new PubSub();
 			},
 
@@ -828,6 +833,19 @@ module.exports = function (mixinOptions) {
 			this.dataLoaderBatchParams = new Map();
 
 			// Bind service to onConnect method
+
+			Object.entries(mixinOptions.serverOptions.subscriptions).forEach(([key,val],i,obj)=>{
+				if ( _.isFunction(val) ) {
+					mixinOptions.serverOptions.subscriptions[key] = val.bind(this);
+				}
+			});
+			Object.entries(mixinOptions.serverOptions).forEach(([key,val],i,obj)=>{
+				if ( _.isFunction(val) ) {
+					mixinOptions.serverOptions[key] = val.bind(this);
+				}
+			});
+			
+			/*
 			if (
 				mixinOptions.serverOptions.subscriptions &&
 				_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)
@@ -851,6 +869,7 @@ module.exports = function (mixinOptions) {
 				mixinOptions.serverOptions.subscriptions.createPubSub =
 					mixinOptions.serverOptions.subscriptions.createPubSub.bind(this);
 			}
+			*/
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {

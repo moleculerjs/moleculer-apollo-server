@@ -94,10 +94,6 @@ broker.createService({
 
 				subscriptions:{
 
-					createPubSub() {
-						return new PubSub();
-					},
-
 					async onConnect($ctx){
 						const {params:{connectionParams,extra:{request}}} = $ctx;
 						// return false for drop connection
@@ -111,7 +107,16 @@ broker.createService({
 								return user;
 							});
 					}
-				}
+				}, // sub
+
+				formatError(err){
+					// console.log("formar",this);
+					this.logger.error("[GraphQL.formatError]",JSON.stringify(err,null,2));
+					const { message, extensions: { code,exception } } = err;
+					this.broker.emit("tgError",{ message });
+					return { message,code,exception };
+				},
+		
 			},
 		}),
 	],
@@ -160,8 +165,21 @@ broker.createService({
 	},
 
 	methods: {
+
+		createPubSub() {
+			console.log(">>>>>>>>>>>");
+		},
+		prepareContextParams(mergedParams,actionName,context,args,root) {
+			if ( root && !Object.keys(args).length && Object.keys(context.params.variables).length > 0 ) {
+				const args = Object.values(context.params.variables);
+				_.set(mergedParams,"$args",args);
+			}
+			console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>",mergedParams);
+			return mergedParams;
+		},
+
 		async graphql_authenticate(ctx, route, req, res) {
-			if (req.headers.cookie.indexOf("logged=1") !== -1)
+			if (req.headers.cookie?.indexOf("logged=1") !== -1)
 				return this.Promise.resolve({ username: "john", email: "john.doe@gmail.com" });
 			return this.Promise.resolve(null);
 		},

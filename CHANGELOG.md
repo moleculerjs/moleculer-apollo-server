@@ -1,3 +1,11 @@
+<a name="0.3.7.2"></a>
+# 0.3.7.2 (2022-10-23)
+
+## Changes
+- remove createPubSub from subscriptoins:{},will be overriden in methods of host service
+- change prepareContextParams, last 2 params - args, "root" added
+- binds any functions in serverOptions to service
+
 <a name="0.3.7.1"></a>
 # 0.3.7.1 (2022-10-20)
 
