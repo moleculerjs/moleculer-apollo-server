@@ -76,6 +76,12 @@ broker.createService({
 				mappingPolicy: "restrict",
 				authentication: "graphql_authenticate",
 				authorization: "graphql_authorize",
+
+				onBeforeCall(ctx, route, req, res) {
+                    // Set request headers to context meta
+                    // ctx.meta.userAgent = req.headers["user-agent"];
+					console.log(">>>>>>>>>",req.headers);
+                },				
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
@@ -167,14 +173,13 @@ broker.createService({
 	methods: {
 
 		createPubSub() {
-			console.log(">>>>>>>>>>>");
+			return new PubSub();
 		},
 		prepareContextParams(mergedParams,actionName,context,args,root) {
 			if ( root && !Object.keys(args).length && Object.keys(context.params.variables).length > 0 ) {
 				const args = Object.values(context.params.variables);
 				_.set(mergedParams,"$args",args);
 			}
-			console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>",mergedParams);
 			return mergedParams;
 		},
 
