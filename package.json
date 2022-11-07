@@ -25,7 +25,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/code4bones/moleculer-apollo-server.git"
+    "url": "https://github.com/moleculerjs/moleculer-apollo-server.git"
   },
   "author": "MoleculerJS",
   "license": "MIT",
