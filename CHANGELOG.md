@@ -1,3 +1,13 @@
+<a name="0.3.7.3"></a>
+# 0.3.7.3 (2022-11-08)
+
+ [#118](https://github.com/moleculerjs/moleculer-apollo-server/pull/118)
+
+## Changes
+ - Original Package.json description
+ - Removed extra code from examples
+ - Comments cleanup
+
 <a name="0.3.7.2"></a>
 # 0.3.7.2 (2022-10-23)
 

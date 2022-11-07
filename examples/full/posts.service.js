@@ -196,6 +196,7 @@ module.exports = {
 
 				post.voters = post.voters.filter(voter => voter != ctx.params.userID);
 				post.votes = post.voters.length;
+
 				await ctx.broadcast("graphql.publish", {
 					tag: "VOTE",
 					payload: { type: "down", userID: ctx.params.userID },
@@ -216,7 +217,7 @@ module.exports = {
 				filter: "posts.vote.filter",
 			},
 			handler(ctx) {
-				return `${ctx.meta.user.username} : ${ctx.params.payload.type}`;
+				return ctx.params.payload.type;
 			},
 		},
 		"vote.filter": {

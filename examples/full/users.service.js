@@ -64,15 +64,6 @@ module.exports = {
 		},
 	},
 	actions: {
-		hello: {
-			graphql: {
-				query: "hello: String!",
-			},
-			handler(ctx) {
-				return `${ctx.meta.user.username}: Hello Moleculer !`;
-			},
-		},
-
 		find: {
 			//cache: true,
 			params: {
