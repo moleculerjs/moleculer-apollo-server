@@ -678,10 +678,10 @@ module.exports = function (mixinOptions) {
 						if (!this.shouldUpdateGraphqlSchema) return;
 						const services = this.broker.registry.getServiceList({ withActions: true });
 						const schema = this.generateGraphQLSchema(services);
-						const data = this.apolloServer.generateSchemaDerivedData(schema);
-						this.apolloServer.state.schemaManager["schemaDerivedData"] = data;
+						const data = ApolloServer.generateSchemaDerivedData(schema);
+						// in v4 state.schemaManager placed into internals
+						this.apolloServer.internals.state.schemaManager["schemaDerivedData"] = data;
 						this.shouldUpdateGraphqlSchema = false;
-
 						this.broker.broadcast("graphql.schema.updated", {
 							schema: GraphQL.printSchema(schema),
 						});
@@ -756,6 +756,8 @@ module.exports = function (mixinOptions) {
 							]
 						}),
 					});
+
+					console.log("#######",ApolloServer.generateSchemaDerivedData);
 
 					await this.apolloServer.start()
 						.then(()=>{

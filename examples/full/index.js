@@ -9,6 +9,7 @@ const { PubSub } = require("graphql-subscriptions");
 
 const broker = new ServiceBroker({
 	logLevel: process.env.LOGLEVEL || "info" /*, transporter: "NATS"*/,
+	hotReload: true,
 });
 
 broker.createService({
