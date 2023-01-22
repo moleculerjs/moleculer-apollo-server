@@ -1,3 +1,10 @@
+<a name="0.3.7.4"></a>
+# 0.3.7.4 (2023-01-22)
+
+- Upgrade to Apollo server v4
+- According to v4, moleculerApollo handler disabled and moleculerMiddleware is used instead
+
+
 <a name="0.3.7.3"></a>
 # 0.3.7.3 (2022-11-08)
 
