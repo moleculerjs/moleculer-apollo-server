@@ -691,7 +691,6 @@ module.exports = function (mixinOptions) {
 						throw new Error(e);
 					}
 					return;
-					// await this.apolloServer.stop();
 				}
 
 				// Create new server & regenerate GraphQL schema
@@ -756,8 +755,6 @@ module.exports = function (mixinOptions) {
 							]
 						}),
 					});
-
-					console.log("#######",ApolloServer.generateSchemaDerivedData);
 
 					await this.apolloServer.start()
 						.then(()=>{

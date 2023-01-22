@@ -88,6 +88,11 @@ class ApolloServer extends ApolloServerBase {
 			// Handle incoming GraphQL requests using Apollo Server.
 			const graphqlHandler = moleculerMiddleware(this, this.contextOptions);
 			const { statusCode, data: responseData } = await graphqlHandler(req, res);
+			if (statusCode === -1) {
+				// bypass websocket upgrade
+				res.statusCode = 200;
+				return res.end();
+			}
 			return send(req, res, statusCode, responseData);
 		};
 	}

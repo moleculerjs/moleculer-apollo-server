@@ -27,12 +27,36 @@ function moleculerMiddleware(server,options) {
 				headers.set(key, Array.isArray(value) ? value.join(", ") : value);
 			}
 		}
+		
+        let query;
+		try {
+			if (req.method === "POST") {
+				query = req.body;
+			} else {
+				query = url.parse(req.url, true).query;
+			}
+		} catch (error) {
+			// Do nothing; `query` stays `undefined`
+		}
+
+        const search = urlParse(req.url).search ?? '';
+
+        //TODO: Deal with it, got an GET req, while websocket upgrade request
+        // And got an error in executeHTTPGraphQLRequest :  
+        // "GraphQL operations must contain a non-empty `query` or a `persistedQuery` extension."
+        if ( query === undefined ) {
+            // this will send statusCode = 200 and ends request
+            return {
+                statusCode:-1,
+                data:"Bypass socket upgrade request"
+            }
+        }
 
         const httpGraphQLRequest  = {
             method: req.method.toUpperCase(),
             headers,
-            search: urlParse(req.url).search ?? '',
-            body: req.body,
+            search,
+            body: query,
           };
       
           return server.executeHTTPGraphQLRequest({

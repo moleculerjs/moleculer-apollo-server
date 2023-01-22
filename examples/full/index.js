@@ -123,7 +123,7 @@ broker.createService({
 			// Configures the Access-Control-Allow-Methods CORS header.
 			methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
 		},
-		port: 3001,
+		port: 3000,
 	},
 
 	actions: {},
