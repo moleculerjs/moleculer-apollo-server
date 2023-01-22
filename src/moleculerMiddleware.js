@@ -90,7 +90,7 @@ function moleculerMiddleware(server,options) {
                 console.warn("**")
                 return {
                     statusCode: res.statusCode,
-                    data:chunk
+                    data:buf
                 }
         })
         .catch((e)=>{
