@@ -60,7 +60,12 @@ broker.createService({
 			// API Gateway route options
 			routeOptions: {
 				path: "/graphql",
-				cors: true,
+				cors: {
+					origin: ["http://localhost:3001", "http://localhost:3000"],
+					credentials: true,
+					// Configures the Access-Control-Allow-Methods CORS header.
+					methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
+				},
 				mappingPolicy: "restrict",
 				authentication: "graphql_authenticate",
 				authorization: "graphql_authorize",
@@ -111,8 +116,13 @@ broker.createService({
 
 	settings: {
 		path: "/",
-		cors: true,
-		port: 3000,
+		cors: {
+			origin: ["http://localhost:3000"],
+			credentials: true,
+			// Configures the Access-Control-Allow-Methods CORS header.
+			methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
+		},
+		port: 3001,
 	},
 
 	actions: {},
@@ -134,7 +144,7 @@ broker.createService({
 	events: {
 		"graphql.schema.updated"({ schema }) {
 			fs.writeFileSync(__dirname + "/generated-schema.gql", schema, "utf8");
-			this.logger.info("Generated GraphQL schema:\n\n" + schema);
+			// this.logger.info("Generated GraphQL schema:\n\n" + schema);
 		},
 	},
 });

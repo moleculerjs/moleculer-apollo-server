@@ -14,7 +14,9 @@
 
 "use strict";
 
-const core = require("apollo-server-core");
+// const core = require("apollo-server-core");
+const core = require("@apollo/server");
+
 // const GraphQLUpload = require("graphql-upload");
 const { ApolloServer } = require("./src/ApolloServer");
 const ApolloService = require("./src/service");

@@ -1,14 +1,16 @@
 "use strict";
 
-const { ApolloServerBase } = require("apollo-server-core");
+// const { ApolloServerBase } = require("apollo-server-core");
+const { ApolloServer: ApolloServerBase } = require("@apollo/server");
+
 // const { processRequest } = require("graphql-upload");
 const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
 const accept = require("@hapi/accept");
-const moleculerApollo = require("./moleculerApollo");
+// const moleculerApollo = require("./moleculerApollo");
+const moleculerMiddleware = require("./moleculerMiddleware");
 
 async function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
-
 	const ctx = res.$ctx;
 	if (!ctx.meta.$responseType) {
 		ctx.meta.$responseType = responseType;
@@ -25,6 +27,12 @@ async function send(req, res, statusCode, data, responseType = "application/json
 
 class ApolloServer extends ApolloServerBase {
 	// Extract Apollo Server options from the request.
+
+	constructor(options, config) {
+		super(config);
+		this.contextOptions = options;
+	}
+
 	createGraphQLServerOptions(req, res) {
 		return super.graphQLServerOptions({ req, res });
 	}
@@ -82,9 +90,9 @@ class ApolloServer extends ApolloServerBase {
 			}
 
 			// Handle incoming GraphQL requests using Apollo Server.
-			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
-			const responseData = await graphqlHandler(req, res);
-			return send(req, res, 200, responseData);
+			const graphqlHandler = moleculerMiddleware(this, this.contextOptions);
+			const { statusCode, data: responseData } = await graphqlHandler(req, res);
+			return send(req, res, statusCode, responseData);
 		};
 	}
 

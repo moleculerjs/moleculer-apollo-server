@@ -10,9 +10,15 @@ const _ = require("lodash");
 const { MoleculerServerError } = require("moleculer").Errors;
 const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
+/*
 const { 
 	ApolloServerPluginDrainHttpServer, AuthenticationError,
 } = require("apollo-server-core");
+*/
+const { 
+	ApolloServerPluginDrainHttpServer,
+} = require("@apollo/server/plugin/drainHttpServer");
+
 const { makeExecutableSchema } = require("@graphql-tools/schema");
 const GraphQL = require("graphql");
 const { PubSub, withFilter, PubSubEngine } = require("graphql-subscriptions");
@@ -722,17 +728,18 @@ module.exports = function (mixinOptions) {
 					//const {subscriptions,...restServerOptions} = mixinOptions.serverOptions; 
 					const serverOptions = _.omit(mixinOptions.serverOptions,["subscriptions"]);
 
-					this.apolloServer = new ApolloServer({
+					this.apolloServer = new ApolloServer({ // middleware options
+						context:async ({ req, res, }) => {
+							return { 
+								ctx:req.$ctx,
+								params:req.$params,
+								service:req.$service,
+								dataLoaders:new Map()
+							};
+						}},						
+						{ // ApolloServer c-tor options
 						schema,
 						..._.defaultsDeep({}, serverOptions, {
-							context:async ({ req, res, }) => {
-								return { 
-									ctx:req.$ctx,
-									params:req.$params,
-									service:req.$service,
-									dataLoaders:new Map()
-								};
-							},
 							plugins:[
 								ApolloServerPluginDrainHttpServer({ 
 									httpServer:this.server,

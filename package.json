@@ -34,6 +34,7 @@
     "moleculer": "^0.13.0 || ^0.14.0"
   },
   "devDependencies": {
+    "@apollo/server": "^4.3.1",
     "benchmarkify": "^3.0.0",
     "coveralls": "^3.1.1",
     "eslint": "^8.24.0",
@@ -45,9 +46,9 @@
     "graphql": "^16.6.0",
     "jest": "^27.4.7",
     "jest-cli": "^27.4.7",
-    "moleculer": "^0.14.23",
+    "moleculer": "^0.14.28",
     "moleculer-repl": "^0.7.2",
-    "moleculer-web": "^0.10.4",
+    "moleculer-web": "^0.10.5",
     "node-fetch": "^2.6.1",
     "nodemon": "^2.0.20",
     "prettier": "^2.7.1"
@@ -69,18 +70,16 @@
   },
   "dependencies": {
     "@apollographql/graphql-playground-html": "^1.6.29",
-    "@graphql-tools/schema": "^9.0.4",
-    "@graphql-tools/utils": "^8.12.0",
+    "@graphql-tools/schema": "^9.0.13",
+    "@graphql-tools/utils": "^9.1.4",
     "@hapi/accept": "^6.0.0",
     "@types/graphql-upload": "^8.0.11",
-    "apollo-server-core": "^3.10.3",
-    "apollo-server-errors": "^3.3.1",
     "dataloader": "^2.1.0",
-    "graphql-subscriptions": "^1.2.1",
+    "graphql-subscriptions": "^2.0.0",
     "graphql-upload": "^16.0.2",
     "graphql-ws": "^5.11.2",
     "lodash": "^4.17.21",
     "object-hash": "^2.2.0",
-    "ws": "^8.9.0"
+    "ws": "^8.12.0"
   }
 }
