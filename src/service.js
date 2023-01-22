@@ -706,7 +706,6 @@ module.exports = function (mixinOptions) {
 					this.logger.debug(
 						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
 					);
-
 					const wsServer = new WebSocketServer({
 						server:this.server,
 						path:mixinOptions.serverOptions?.path 
