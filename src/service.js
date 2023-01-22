@@ -759,17 +759,12 @@ module.exports = function (mixinOptions) {
 
 					await this.apolloServer.start()
 						.then(()=>{
-							this.logger.info("🚀 Apollo is ready !");
+							this.logger.info("🚀 Apollo (v4) is ready !");
 						});
 
 					this.graphqlHandler = this.apolloServer.createHandler(
 						mixinOptions.serverOptions
 					);
-
-					// if (mixinOptions.serverOptions.subscriptions !== false) {
-						// Avoid installing the subscription handlers if they have been disabled
-					//	this.apolloServer.installSubscriptionHandlers(this.server);
-					//}
 
 					this.graphqlSchema = schema;
 

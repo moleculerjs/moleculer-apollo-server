@@ -1,7 +1,6 @@
 "use strict";
 
-// const { runHttpQuery, convertNodeHttpToRequest } = require("apollo-server-core");
-const { runHttpQuery, convertNodeHttpToRequest } = require("@apollo/server/dist/esm");
+const { runHttpQuery, convertNodeHttpToRequest } = require("apollo-server-core");
 
 const url = require("url");
 
