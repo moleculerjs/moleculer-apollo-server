@@ -760,9 +760,10 @@ module.exports = function (mixinOptions) {
 							this.logger.info("🚀 Apollo (v4) is ready !");
 						});
 
-					this.graphqlHandler = this.apolloServer.createHandler(
-						mixinOptions.serverOptions
-					);
+					this.graphqlHandler = this.apolloServer.createHandler({
+						path:mixinOptions.routeOptions.path,
+						...mixinOptions.serverOptions
+					});
 
 					this.graphqlSchema = schema;
 
