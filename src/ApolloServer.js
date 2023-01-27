@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 "use strict";
 
 const { ApolloServer: ApolloServerBase } = require("@apollo/server");
@@ -37,10 +38,10 @@ class ApolloServer extends ApolloServerBase {
 	// GraphQL requests.
 	createHandler({ path, disableHealthCheck, onHealthCheck, playgroundOptions } = {}) {
 		// const promiseWillStart = this.willStart();
-
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
 
+			console.log(">>>>>>>>>>>>>>>>>>>>>>> PATH", this.graphqlPath);
 			// await promiseWillStart;
 
 			// If file uploads are detected, prepare them for easier handling with
