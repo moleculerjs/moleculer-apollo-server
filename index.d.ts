@@ -3,7 +3,8 @@ import { ServerOptions } from "graphql-ws";
 
 declare module "moleculer-apollo-server" {
 	import { ServiceSchema, Context } from "moleculer";
-	import { Config } from "apollo-server-core";
+	// import { Config } from "apollo-server-core";
+	import { Config } from "@apollo/server";
 	import { OptionsUrlencoded } from "body-parser";
 	import { SchemaDirectiveVisitor, IResolvers } from "graphql-tools";
 	import { RenderPageOptions } from "@apollographql/graphql-playground-html";

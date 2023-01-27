@@ -41,9 +41,6 @@ class ApolloServer extends ApolloServerBase {
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
 
-			console.log(">>>>>>>>>>>>>>>>>>>>>>> PATH", this.graphqlPath);
-			// await promiseWillStart;
-
 			// If file uploads are detected, prepare them for easier handling with
 			// the help of `graphql-upload`.
 			if (this.uploadsConfig) {
@@ -76,7 +73,6 @@ class ApolloServer extends ApolloServerBase {
 						},
 						playgroundOptions
 					);
-					console.log("Moddlwware", middlewareOptions);
 					return send(
 						req,
 						res,

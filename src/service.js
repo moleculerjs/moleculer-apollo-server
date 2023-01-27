@@ -856,32 +856,6 @@ module.exports = function (mixinOptions) {
 				}
 			});
 
-			/*
-			if (
-				mixinOptions.serverOptions.subscriptions &&
-				_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)
-			) {
-				mixinOptions.serverOptions.subscriptions.onConnect =
-					mixinOptions.serverOptions.subscriptions.onConnect.bind(this);
-			}
-
-			if (
-				mixinOptions.serverOptions.subscriptions &&
-				_.isFunction(mixinOptions.serverOptions.subscriptions.context)
-			) {
-				mixinOptions.serverOptions.subscriptions.context =
-					mixinOptions.serverOptions.subscriptions.context.bind(this);
-			}
-
-			if (
-				mixinOptions.serverOptions.subscriptions &&
-				_.isFunction(mixinOptions.serverOptions.subscriptions.createPubSub)
-			) {
-				mixinOptions.serverOptions.subscriptions.createPubSub =
-					mixinOptions.serverOptions.subscriptions.createPubSub.bind(this);
-			}
-			*/
-
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {
 					async "/"(req, res) {
