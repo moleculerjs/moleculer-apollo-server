@@ -76,6 +76,7 @@ class ApolloServer extends ApolloServerBase {
 						},
 						playgroundOptions
 					);
+					console.log("Moddlwware", middlewareOptions);
 					return send(
 						req,
 						res,
