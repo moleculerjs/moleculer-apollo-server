@@ -11,13 +11,11 @@ const { MoleculerServerError } = require("moleculer").Errors;
 const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
 /*
-const { 
+const {
 	ApolloServerPluginDrainHttpServer, AuthenticationError,
 } = require("apollo-server-core");
 */
-const { 
-	ApolloServerPluginDrainHttpServer,
-} = require("@apollo/server/plugin/drainHttpServer");
+const { ApolloServerPluginDrainHttpServer } = require("@apollo/server/plugin/drainHttpServer");
 
 const { makeExecutableSchema } = require("@graphql-tools/schema");
 const GraphQL = require("graphql");
@@ -48,17 +46,17 @@ module.exports = function (mixinOptions) {
 					tags: {
 						params: ["extra.request.url"],
 					},
-					spanName: (ctx) => { 
+					spanName: ctx => {
 						return `PubSub:CONNECT ${ctx.params.extra.request.url}`;
-					}
+					},
 				},
 				async handler(ctx) {
-					if ( _.isFunction(mixinOptions.serverOptions.subscriptions.onConnect) ) {
-						return  mixinOptions.serverOptions.subscriptions.onConnect(ctx);
+					if (_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)) {
+						return mixinOptions.serverOptions.subscriptions.onConnect(ctx);
 					}
 				},
 			},
-			context:{
+			context: {
 				timeout: 0,
 				visibility: "private",
 				tracing: {
@@ -67,14 +65,14 @@ module.exports = function (mixinOptions) {
 					},
 					spanName: ctx => `PubSub:CONTEXT ${ctx.params.extra.request.url}`,
 				},
-				async handler(ctx){
-					if ( _.isFunction(mixinOptions.serverOptions.subscriptions.context) ) {
+				async handler(ctx) {
+					if (_.isFunction(mixinOptions.serverOptions.subscriptions.context)) {
 						const user = await mixinOptions.serverOptions.subscriptions.context(ctx);
 						ctx.meta.user = user;
 					}
-					return {ctx}
-				}
-			}
+					return { ctx };
+				},
+			},
 		},
 
 		events: {
@@ -283,7 +281,7 @@ module.exports = function (mixinOptions) {
 								_.set(params,"$args",args);
 							}
 							*/
-	
+
 							let mergedParams = _.defaultsDeep({}, args, params, staticParams);
 
 							if (this.prepareContextParams) {
@@ -293,7 +291,7 @@ module.exports = function (mixinOptions) {
 									// "root" - not added here,becouse of backward comp.
 									context,
 									args, // added
-									root, // added 
+									root // added
 								);
 							}
 
@@ -380,13 +378,17 @@ module.exports = function (mixinOptions) {
 								() => this.pubsub.asyncIterator(tags),
 								async (payload, params, { ctx }) => {
 									return payload !== undefined
-										? ctx.call(filter, { ...params, payload },{parentCtx:ctx})
-										: false
+										? ctx.call(
+												filter,
+												{ ...params, payload },
+												{ parentCtx: ctx }
+										  )
+										: false;
 								}
 						  )
 						: () => this.pubsub.asyncIterator(tags),
 					resolve: (payload, params, { ctx }) => {
-						return ctx.call(actionName, { ...params, payload },{parentCtx:ctx})
+						return ctx.call(actionName, { ...params, payload }, { parentCtx: ctx });
 					},
 				};
 			},
@@ -685,7 +687,6 @@ module.exports = function (mixinOptions) {
 						this.broker.broadcast("graphql.schema.updated", {
 							schema: GraphQL.printSchema(schema),
 						});
-	
 					} catch (e) {
 						this.logger.error(e);
 						throw new Error(e);
@@ -707,62 +708,69 @@ module.exports = function (mixinOptions) {
 						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
 					);
 					const wsServer = new WebSocketServer({
-						server:this.server,
-						path:mixinOptions.serverOptions?.path 
-							|| mixinOptions?.routeOptions?.path
+						server: this.server,
+						path: "/graphql", //mixinOptions.serverOptions?.path
+						//|| mixinOptions?.routeOptions?.path
 					});
 
-					const serverCleanup = useServer({ 
-						schema, 
-						onConnect:async (ctx) => {
-							return this.actions.onConnect(ctx);
+					const serverCleanup = useServer(
+						{
+							schema,
+							onConnect: async ctx => {
+								return this.actions.onConnect(ctx);
+							},
+							context: async (ctx, msg, args) => {
+								return this.actions.context(ctx, msg, args);
+							},
 						},
-						context:async (ctx,msg,args)=>{
-							return this.actions.context(ctx,msg,args);
-						}
-						
-					}, wsServer);
+						wsServer
+					);
 
-					//const {subscriptions,...restServerOptions} = mixinOptions.serverOptions; 
-					const serverOptions = _.omit(mixinOptions.serverOptions,["subscriptions"]);
+					//const {subscriptions,...restServerOptions} = mixinOptions.serverOptions;
+					const serverOptions = _.omit(mixinOptions.serverOptions, ["subscriptions"]);
 
-					this.apolloServer = new ApolloServer({ // middleware options
-						context:async ({ req, res, }) => {
-							return { 
-								ctx:req.$ctx,
-								params:req.$params,
-								service:req.$service,
-								dataLoaders:new Map()
-							};
-						}},						
-						{ // ApolloServer c-tor options
-						schema,
-						..._.defaultsDeep({}, serverOptions, {
-							plugins:[
-								ApolloServerPluginDrainHttpServer({ 
-									httpServer:this.server,
-									stopGracePeriodMillis:1000 * 10 }),
-								{
-									async serverWillStart(){
-										return {
-											async drainServer(){
-												await serverCleanup.dispose();
-											}
-										};
+					this.apolloServer = new ApolloServer(
+						{
+							// middleware options
+							context: async ({ req, res }) => {
+								return {
+									ctx: req.$ctx,
+									params: req.$params,
+									service: req.$service,
+									dataLoaders: new Map(),
+								};
+							},
+						},
+						{
+							// ApolloServer c-tor options
+							schema,
+							..._.defaultsDeep({}, serverOptions, {
+								plugins: [
+									ApolloServerPluginDrainHttpServer({
+										httpServer: this.server,
+										stopGracePeriodMillis: 1000 * 10,
+									}),
+									{
+										async serverWillStart() {
+											return {
+												async drainServer() {
+													await serverCleanup.dispose();
+												},
+											};
+										},
 									},
-								},
-							]
-						}),
-					});
+								],
+							}),
+						}
+					);
 
-					await this.apolloServer.start()
-						.then(()=>{
-							this.logger.info("🚀 Apollo (v4) is ready !");
-						});
+					await this.apolloServer.start().then(() => {
+						this.logger.info("🚀 Apollo (v4) is ready !");
+					});
 
 					this.graphqlHandler = this.apolloServer.createHandler({
-						path:mixinOptions.routeOptions.path,
-						...mixinOptions.serverOptions
+						path: mixinOptions.routeOptions.path,
+						...mixinOptions.serverOptions,
 					});
 
 					this.graphqlSchema = schema;
@@ -835,17 +843,19 @@ module.exports = function (mixinOptions) {
 
 			// Bind service to onConnect method
 
-			Object.entries(mixinOptions.serverOptions.subscriptions).forEach(([key,val],i,obj)=>{
-				if ( _.isFunction(val) ) {
-					mixinOptions.serverOptions.subscriptions[key] = val.bind(this);
+			Object.entries(mixinOptions.serverOptions.subscriptions).forEach(
+				([key, val], i, obj) => {
+					if (_.isFunction(val)) {
+						mixinOptions.serverOptions.subscriptions[key] = val.bind(this);
+					}
 				}
-			});
-			Object.entries(mixinOptions.serverOptions).forEach(([key,val],i,obj)=>{
-				if ( _.isFunction(val) ) {
+			);
+			Object.entries(mixinOptions.serverOptions).forEach(([key, val], i, obj) => {
+				if (_.isFunction(val)) {
 					mixinOptions.serverOptions[key] = val.bind(this);
 				}
 			});
-			
+
 			/*
 			if (
 				mixinOptions.serverOptions.subscriptions &&
