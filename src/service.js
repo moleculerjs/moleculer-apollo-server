@@ -24,6 +24,7 @@ module.exports = function (mixinOptions) {
 		serverOptions: {},
 		createAction: true,
 		subscriptionEventName: "graphql.publish",
+		invalidateEventName: "graphql.invalidate",
 		autoUpdateSchema: true,
 		checkActionVisibility: false,
 	});
@@ -52,6 +53,9 @@ module.exports = function (mixinOptions) {
 		},
 
 		events: {
+			[mixinOptions.invalidateEventName]() {
+				this.invalidateGraphQLSchema();
+			},
 			"$services.changed"() {
 				if (mixinOptions.autoUpdateSchema) {
 					this.invalidateGraphQLSchema();
