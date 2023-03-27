@@ -10,7 +10,7 @@ const gql = (typeString, ...placeholders) => {
 	const zipped = zip(typeString, placeholders);
 	const combinedString = zipped.reduce(
 		(prev, [next, placeholder]) => `${prev}${next}${placeholder || ""}`,
-		"",
+		""
 	);
 	const re = /type\s+(Query|Mutation|Subscription)\s+{(.*?)}/s;
 

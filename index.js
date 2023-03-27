@@ -14,14 +14,19 @@
 
 "use strict";
 
-const core = require("apollo-server-core");
-const { GraphQLUpload } = require("graphql-upload");
+const { GraphQLError } = require("graphql");
+
+// const GraphQLUpload = require("graphql-upload");
 const { ApolloServer } = require("./src/ApolloServer");
 const ApolloService = require("./src/service");
 const gql = require("./src/gql");
 
 module.exports = {
+	// Only GraphQLError exposes, other errors need custom creation
+	GraphQLError,
 	// Core
+	// Next  defs are removed in v4 from core
+	/*
 	GraphQLExtension: core.GraphQLExtension,
 	gql: core.gql,
 	ApolloError: core.ApolloError,
@@ -32,12 +37,10 @@ module.exports = {
 	ForbiddenError: core.ForbiddenError,
 	UserInputError: core.UserInputError,
 	defaultPlaygroundOptions: core.defaultPlaygroundOptions,
-
-	// GraphQL tools
-	...require("graphql-tools"),
+    */
 
 	// GraphQL Upload
-	GraphQLUpload,
+	// GraphQLUpload,
 
 	// Apollo Server
 	ApolloServer,

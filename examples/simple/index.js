@@ -6,7 +6,7 @@ const { MoleculerClientError } = require("moleculer").Errors;
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
-const broker = new ServiceBroker({ logLevel: "info", hotReload: true });
+const broker = new ServiceBroker({ logLevel: "debug", hotReload: true });
 
 broker.createService({
 	name: "api",
@@ -47,7 +47,7 @@ broker.createService({
 				query: "hello: String!",
 			},
 			handler() {
-				return "Hello Moleculer!";
+				return "Hello Moleculer! 2";
 			},
 		},
 		welcome: {
@@ -104,8 +104,9 @@ broker.createService({
 });
 
 broker.start().then(async () => {
-	broker.repl();
+	// broker.repl();
 
+	/*
 	const res = await broker.call("api.graphql", {
 		query: "query { hello }",
 	});
@@ -120,7 +121,7 @@ broker.start().then(async () => {
 	if (res.errors && res.errors.length > 0) return res.errors.forEach(broker.logger.error);
 
 	broker.logger.info(res.data);
-
+  */
 	broker.logger.info("----------------------------------------------------------");
 	broker.logger.info("Open the http://localhost:3000/graphql URL in your browser");
 	broker.logger.info("----------------------------------------------------------");

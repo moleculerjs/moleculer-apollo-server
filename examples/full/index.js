@@ -5,9 +5,11 @@ const { Kind } = require("graphql");
 const { ServiceBroker } = require("moleculer");
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
+const { PubSub } = require("graphql-subscriptions");
 
 const broker = new ServiceBroker({
 	logLevel: process.env.LOGLEVEL || "info" /*, transporter: "NATS"*/,
+	hotReload: true,
 });
 
 broker.createService({
@@ -59,25 +61,91 @@ broker.createService({
 			// API Gateway route options
 			routeOptions: {
 				path: "/graphql",
-				cors: true,
+				cors: {
+					origin: ["http://localhost:3001", "http://localhost:3000"],
+					credentials: true,
+					// Configures the Access-Control-Allow-Methods CORS header.
+					methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
+				},
 				mappingPolicy: "restrict",
+				authentication: "graphql_authenticate",
+				authorization: "graphql_authorize",
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
 			serverOptions: {
-				tracing: false,
+				tracing: true,
+
+				playgroundOptions: {
+					settings: {
+						"editor.theme": "dark",
+					},
+				},
 
 				engine: {
 					apiKey: process.env.APOLLO_ENGINE_KEY,
+				},
+
+				subscriptions: {
+					async onConnect($ctx) {
+						const {
+							params: {
+								connectionParams,
+								extra: { request },
+							},
+						} = $ctx;
+						return true;
+					},
+					async context($ctx) {
+						const {
+							params: {
+								connectionParams,
+								extra: { request },
+							},
+						} = $ctx;
+						// will be set to ctx.meta.user ( for subsciption filters )
+						return this.graphql_authenticate($ctx, undefined, request)
+							.then(user => {
+								return user;
+							})
+							.catch(e => null);
+					},
 				},
 			},
 		}),
 	],
 
+	settings: {
+		path: "/",
+		cors: {
+			origin: ["http://localhost:3000"],
+			credentials: true,
+			// Configures the Access-Control-Allow-Methods CORS header.
+			methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
+		},
+		port: 3000,
+	},
+
+	actions: {},
+
+	methods: {
+		createPubSub() {
+			return new PubSub();
+		},
+		prepareContextParams(mergedParams, actionName, context, args, root) {
+			return mergedParams;
+		},
+
+		async graphql_authenticate(ctx, route, req, res) {
+			return this.Promise.resolve({ username: "john", email: "john.doe@gmail.com" });
+		},
+		async graphql_authorize(ctx, route, req, res) {},
+	},
+
 	events: {
 		"graphql.schema.updated"({ schema }) {
 			fs.writeFileSync(__dirname + "/generated-schema.gql", schema, "utf8");
-			this.logger.info("Generated GraphQL schema:\n\n" + schema);
+			// this.logger.info("Generated GraphQL schema:\n\n" + schema);
 		},
 	},
 });
