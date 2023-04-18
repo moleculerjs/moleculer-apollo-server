@@ -1,3 +1,43 @@
+<a name="0.3.7.4"></a>
+# 0.3.7.4 (2023-01-22)
+
+- Upgrade to Apollo server v4
+- According to v4, moleculerApollo handler disabled and moleculerMiddleware is used instead
+
+
+<a name="0.3.7.3"></a>
+# 0.3.7.3 (2022-11-08)
+
+ [#118](https://github.com/moleculerjs/moleculer-apollo-server/pull/118)
+
+## Changes
+ - Original Package.json description
+ - Removed extra code from examples
+ - Comments cleanup
+
+<a name="0.3.7.2"></a>
+# 0.3.7.2 (2022-10-23)
+
+## Changes
+- remove createPubSub from subscriptoins:{},will be overriden in methods of host service
+- change prepareContextParams, last 2 params - args, "root" added
+- binds any functions in serverOptions to service
+
+<a name="0.3.7.1"></a>
+# 0.3.7.1 (2022-10-20)
+
+## Changes
+- upgrade to Apollo server v3 ( + switch from subscriptions-transport-ws to graphql-ws )
+- add Custom PubSub creator ( for use custom PubSubEngine )
+- add Update/Reload schema without restarting server/ws
+- Playground ( RenderPageOptions ) options in serverOptions.playgroundOptions 
+- add serverOptions.subscriptions.onConnect should return acts lile graphql-ws
+- add serverOptions.subscriptions.context should return user account ( like "authenticate" method )
+- CAUTION: with new graphql-ws subscriptions are not available in build-in playground
+- WARNING: graphql-upload disabled ( new versions is mjs type )
+- Not tested - DataLoader
+- Example in examples/full/
+--------------------------------------------------
 <a name="0.3.7"></a>
 # 0.3.7 (2022-10-04)
 

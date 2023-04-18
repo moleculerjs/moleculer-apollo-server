@@ -1,9 +1,13 @@
+import { PubSubEngine } from "graphql-subscriptions";
+import { ServerOptions } from "graphql-ws";
+
 declare module "moleculer-apollo-server" {
 	import { ServiceSchema, Context } from "moleculer";
-	import { Config } from "apollo-server-core";
+	// import { Config } from "apollo-server-core";
+	import { Config } from "@apollo/server";
 	import { OptionsUrlencoded } from "body-parser";
 	import { SchemaDirectiveVisitor, IResolvers } from "graphql-tools";
-
+	import { RenderPageOptions } from "@apollographql/graphql-playground-html";
 	export {
 		GraphQLExtension,
 		gql,
@@ -17,9 +21,10 @@ declare module "moleculer-apollo-server" {
 		defaultPlaygroundOptions,
 	} from "apollo-server-core";
 
-	export { GraphQLUpload } from "graphql-upload";
+	
+	// export { GraphQLUpload } from "graphql-upload";
 
-	export * from "graphql-tools";
+	// export * from "graphql-tools";
 
 	export interface ApolloServerOptions {
 		path: string;
@@ -86,6 +91,18 @@ declare module "moleculer-apollo-server" {
 		onBeforeCall?: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
 		onAfterCall?: (ctx: Context, route: any, req: any, res: any, data: any) => Promise<any>;
 	}
+   // Promise<GraphQLExecutionContextValue> | GraphQLExecutionContextValue)
+
+	export interface SubscriptionsConfig  {
+		onConnect?:(ctx: Context) => Promise<Record<string, unknown> | boolean | void> | Record<string, unknown> | boolean | void;
+		context?:(ctx:Context) => Promise<any>;
+		createPubSub?:() => typeof PubSubEngine;
+	}
+
+	export interface ServerMixinOptions extends Config {
+		playgroundOptions?:RenderPageOptions;
+		subscriptions?:SubscriptionsConfig;
+	}
 
 	export interface ApolloServiceOptions {
 		typeDefs?: string | string[];
@@ -94,7 +111,7 @@ declare module "moleculer-apollo-server" {
 			[name: string]: typeof SchemaDirectiveVisitor;
 		};
 		routeOptions?: ServiceRouteOptions;
-		serverOptions?: Config;
+		serverOptions?: ServerMixinOptions;
 		checkActionVisibility?: boolean;
 		autoUpdateSchema?: boolean;
 	}

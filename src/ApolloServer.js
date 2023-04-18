@@ -1,14 +1,13 @@
+/* eslint-disable no-console */
 "use strict";
 
-const { ApolloServerBase } = require("apollo-server-core");
-const { processRequest } = require("graphql-upload");
+const { ApolloServer: ApolloServerBase } = require("@apollo/server");
 const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
 const accept = require("@hapi/accept");
-const moleculerApollo = require("./moleculerApollo");
+const moleculerMiddleware = require("./moleculerMiddleware");
 
 async function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
-
 	const ctx = res.$ctx;
 	if (!ctx.meta.$responseType) {
 		ctx.meta.$responseType = responseType;
@@ -25,26 +24,30 @@ async function send(req, res, statusCode, data, responseType = "application/json
 
 class ApolloServer extends ApolloServerBase {
 	// Extract Apollo Server options from the request.
+
+	constructor(options, config) {
+		super(config);
+		this.contextOptions = options;
+	}
+
 	createGraphQLServerOptions(req, res) {
 		return super.graphQLServerOptions({ req, res });
 	}
 
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
-	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
-		const promiseWillStart = this.willStart();
-
+	createHandler({ path, disableHealthCheck, onHealthCheck, playgroundOptions } = {}) {
+		// const promiseWillStart = this.willStart();
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
-
-			await promiseWillStart;
 
 			// If file uploads are detected, prepare them for easier handling with
 			// the help of `graphql-upload`.
 			if (this.uploadsConfig) {
 				const contentType = req.headers["content-type"];
 				if (contentType && contentType.startsWith("multipart/form-data")) {
-					req.filePayload = await processRequest(req, res, this.uploadsConfig);
+					throw new Error("graphql-upload not implemented");
+					// req.filePayload = await processRequest(req, res, this.uploadsConfig);
 				}
 			}
 
@@ -56,7 +59,7 @@ class ApolloServer extends ApolloServerBase {
 			// If the `playgroundOptions` are set, register a `graphql-playground` instance
 			// (not available in production) that is then used to handle all
 			// incoming GraphQL requests.
-			if (this.playgroundOptions && req.method === "GET") {
+			if (playgroundOptions && req.method === "GET") {
 				const { mediaTypes } = accept.parseAll(req.headers);
 				const prefersHTML =
 					mediaTypes.find(x => x === "text/html" || x === "application/json") ===
@@ -66,9 +69,9 @@ class ApolloServer extends ApolloServerBase {
 					const middlewareOptions = Object.assign(
 						{
 							endpoint: this.graphqlPath,
-							subscriptionEndpoint: this.subscriptionsPath,
+							subscriptionEndpoint: this.subscriptionsPath || this.graphqlPath,
 						},
-						this.playgroundOptions
+						playgroundOptions
 					);
 					return send(
 						req,
@@ -81,15 +84,20 @@ class ApolloServer extends ApolloServerBase {
 			}
 
 			// Handle incoming GraphQL requests using Apollo Server.
-			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
-			const responseData = await graphqlHandler(req, res);
-			return send(req, res, 200, responseData);
+			const graphqlHandler = moleculerMiddleware(this, this.contextOptions);
+			const { statusCode, data: responseData } = await graphqlHandler(req, res);
+			if (statusCode === -1) {
+				// bypass websocket upgrade
+				res.statusCode = 200;
+				return res.end();
+			}
+			return send(req, res, statusCode, responseData);
 		};
 	}
 
 	// This integration supports file uploads.
 	supportsUploads() {
-		return true;
+		return false;
 	}
 
 	// This integration supports subscriptions.

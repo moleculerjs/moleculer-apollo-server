@@ -3,8 +3,9 @@
   "version": "0.3.7",
   "description": "Apollo GraphQL server for Moleculer API Gateway",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "dev": "nodemon examples/index.js",
+    "dev": "nodemon examples/index.js full",
     "ci": "jest --watch",
     "test": "jest --coverage",
     "ci:integration": "jest \"**/integration/**spec.js\" --watch",
@@ -29,7 +30,7 @@
   "author": "MoleculerJS",
   "license": "MIT",
   "peerDependencies": {
-    "graphql": "^14.0.0 || ^15.0.0",
+    "graphql": "^16.6.0",
     "moleculer": "^0.13.0 || ^0.14.0"
   },
   "devDependencies": {
@@ -41,12 +42,12 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.0.1",
     "eslint-plugin-security": "^1.5.0",
-    "graphql": "^15.5.1",
+    "graphql": "^16.6.0",
     "jest": "^27.4.7",
     "jest-cli": "^27.4.7",
-    "moleculer": "^0.14.23",
+    "moleculer": "^0.14.28",
     "moleculer-repl": "^0.7.2",
-    "moleculer-web": "^0.10.4",
+    "moleculer-web": "^0.10.5",
     "node-fetch": "^2.6.1",
     "nodemon": "^2.0.20",
     "prettier": "^2.7.1"
@@ -64,18 +65,21 @@
     ]
   },
   "engines": {
-    "node": ">= 10.x.x"
+    "node": ">= 18.x.x"
   },
   "dependencies": {
+    "@apollo/server": "^4.3.1",
     "@apollographql/graphql-playground-html": "^1.6.29",
-    "@hapi/accept": "^3.2.4",
+    "@graphql-tools/schema": "^9.0.13",
+    "@graphql-tools/utils": "^9.1.4",
+    "@hapi/accept": "^6.0.0",
     "@types/graphql-upload": "^8.0.11",
-    "apollo-server-core": "^2.22.2",
     "dataloader": "^2.1.0",
-    "graphql-subscriptions": "^1.2.1",
-    "graphql-tools": "^7.0.5",
-    "graphql-upload": "^11.0.0",
+    "graphql-subscriptions": "^2.0.0",
+    "graphql-upload": "^16.0.2",
+    "graphql-ws": "^5.11.2",
     "lodash": "^4.17.21",
-    "object-hash": "^2.2.0"
+    "object-hash": "^2.2.0",
+    "ws": "^8.12.0"
   }
 }

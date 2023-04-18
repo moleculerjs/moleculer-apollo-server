@@ -10,10 +10,19 @@ const _ = require("lodash");
 const { MoleculerServerError } = require("moleculer").Errors;
 const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
-const { makeExecutableSchema } = require("graphql-tools");
+/*
+const {
+	ApolloServerPluginDrainHttpServer, AuthenticationError,
+} = require("apollo-server-core");
+*/
+const { ApolloServerPluginDrainHttpServer } = require("@apollo/server/plugin/drainHttpServer");
+
+const { makeExecutableSchema } = require("@graphql-tools/schema");
 const GraphQL = require("graphql");
-const { PubSub, withFilter } = require("graphql-subscriptions");
+const { PubSub, withFilter, PubSubEngine } = require("graphql-subscriptions");
 const hash = require("object-hash");
+const { WebSocketServer } = require("ws");
+const { useServer } = require("graphql-ws/lib/use/ws");
 
 module.exports = function (mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
@@ -31,23 +40,38 @@ module.exports = function (mixinOptions) {
 
 	const serviceSchema = {
 		actions: {
-			ws: {
+			onConnect: {
 				timeout: 0,
 				visibility: "private",
 				tracing: {
 					tags: {
-						params: ["socket.upgradeReq.url"],
+						params: ["extra.request.url"],
 					},
-					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq.url}`,
+					spanName: ctx => {
+						return `PubSub:CONNECT ${ctx.params.extra.request.url}`;
+					},
 				},
-				handler(ctx) {
-					const { socket, connectionParams } = ctx.params;
-					return {
-						$ctx: ctx,
-						$socket: socket,
-						$service: this,
-						$params: { body: connectionParams, query: socket.upgradeReq.query },
-					};
+				async handler(ctx) {
+					if (_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)) {
+						return mixinOptions.serverOptions.subscriptions.onConnect(ctx);
+					}
+				},
+			},
+			context: {
+				timeout: 0,
+				visibility: "private",
+				tracing: {
+					tags: {
+						params: ["extra.request.url"],
+					},
+					spanName: ctx => `PubSub:CONTEXT ${ctx.params.extra.request.url}`,
+				},
+				async handler(ctx) {
+					if (_.isFunction(mixinOptions.serverOptions.subscriptions.context)) {
+						const user = await mixinOptions.serverOptions.subscriptions.context(ctx);
+						ctx.meta.user = user;
+					}
+					return { ctx };
 				},
 			},
 		},
@@ -253,13 +277,25 @@ module.exports = function (mixinOptions) {
 								}
 							}
 
+							/* pass to resolvers arguments variables
+							// some times resolvers need to know parents query args
+							// - fixed - do it in prepareContextParams
+							if ( root && !Object.keys(args).length && Object.keys(context.params.variables).length > 0 ) {
+								const args = Object.values(context.params.variables);
+								_.set(params,"$args",args);
+							}
+							*/
+
 							let mergedParams = _.defaultsDeep({}, args, params, staticParams);
 
 							if (this.prepareContextParams) {
 								mergedParams = await this.prepareContextParams(
 									mergedParams,
 									actionName,
-									context
+									// "root" - not added here,becouse of backward comp.
+									context,
+									args, // added
+									root // added
 								);
 							}
 
@@ -344,14 +380,20 @@ module.exports = function (mixinOptions) {
 					subscribe: filter
 						? withFilter(
 								() => this.pubsub.asyncIterator(tags),
-								async (payload, params, { ctx }) =>
-									payload !== undefined
-										? ctx.call(filter, { ...params, payload })
-										: false
+								async (payload, params, { ctx }) => {
+									return payload !== undefined
+										? ctx.call(
+												filter,
+												{ ...params, payload },
+												{ parentCtx: ctx }
+										  )
+										: false;
+								}
 						  )
 						: () => this.pubsub.asyncIterator(tags),
-					resolve: (payload, params, { ctx }) =>
-						ctx.call(actionName, { ...params, payload }),
+					resolve: (payload, params, { ctx }) => {
+						return ctx.call(actionName, { ...params, payload }, { parentCtx: ctx });
+					},
 				};
 			},
 
@@ -638,7 +680,22 @@ module.exports = function (mixinOptions) {
 				}
 
 				if (this.apolloServer) {
-					await this.apolloServer.stop();
+					try {
+						if (!this.shouldUpdateGraphqlSchema) return;
+						const services = this.broker.registry.getServiceList({ withActions: true });
+						const schema = this.generateGraphQLSchema(services);
+						const data = ApolloServer.generateSchemaDerivedData(schema);
+						// in v4 state.schemaManager placed into internals
+						this.apolloServer.internals.state.schemaManager["schemaDerivedData"] = data;
+						this.shouldUpdateGraphqlSchema = false;
+						this.broker.broadcast("graphql.schema.updated", {
+							schema: GraphQL.printSchema(schema),
+						});
+					} catch (e) {
+						this.logger.error(e);
+						throw new Error(e);
+					}
+					return;
 				}
 
 				// Create new server & regenerate GraphQL schema
@@ -654,39 +711,71 @@ module.exports = function (mixinOptions) {
 					this.logger.debug(
 						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
 					);
-
-					this.apolloServer = new ApolloServer({
-						schema,
-						..._.defaultsDeep({}, mixinOptions.serverOptions, {
-							context: ({ req, connection }) => ({
-								...(req
-									? {
-											ctx: req.$ctx,
-											service: req.$service,
-											params: req.$params,
-									  }
-									: {
-											ctx: connection.context.$ctx,
-											service: connection.context.$service,
-											params: connection.context.$params,
-									  }),
-								dataLoaders: new Map(), // create an empty map to load DataLoader instances into
-							}),
-							subscriptions: {
-								onConnect: (connectionParams, socket) =>
-									this.actions.ws({ connectionParams, socket }),
-							},
-						}),
+					const wsServer = new WebSocketServer({
+						server: this.server,
+						path: "/graphql", //mixinOptions.serverOptions?.path
+						//|| mixinOptions?.routeOptions?.path
 					});
 
-					this.graphqlHandler = this.apolloServer.createHandler(
-						mixinOptions.serverOptions
+					const serverCleanup = useServer(
+						{
+							schema,
+							onConnect: async ctx => {
+								return this.actions.onConnect(ctx);
+							},
+							context: async (ctx, msg, args) => {
+								return this.actions.context(ctx, msg, args);
+							},
+						},
+						wsServer
 					);
 
-					if (mixinOptions.serverOptions.subscriptions !== false) {
-						// Avoid installing the subscription handlers if they have been disabled
-						this.apolloServer.installSubscriptionHandlers(this.server);
-					}
+					//const {subscriptions,...restServerOptions} = mixinOptions.serverOptions;
+					const serverOptions = _.omit(mixinOptions.serverOptions, ["subscriptions"]);
+
+					this.apolloServer = new ApolloServer(
+						{
+							// middleware options
+							context: async ({ req, res }) => {
+								return {
+									ctx: req.$ctx,
+									params: req.$params,
+									service: req.$service,
+									dataLoaders: new Map(),
+								};
+							},
+						},
+						{
+							// ApolloServer c-tor options
+							schema,
+							..._.defaultsDeep({}, serverOptions, {
+								plugins: [
+									ApolloServerPluginDrainHttpServer({
+										httpServer: this.server,
+										stopGracePeriodMillis: 1000 * 10,
+									}),
+									{
+										async serverWillStart() {
+											return {
+												async drainServer() {
+													await serverCleanup.dispose();
+												},
+											};
+										},
+									},
+								],
+							}),
+						}
+					);
+
+					await this.apolloServer.start().then(() => {
+						this.logger.info("🚀 Apollo (v4) is ready !");
+					});
+
+					this.graphqlHandler = this.apolloServer.createHandler({
+						path: mixinOptions.routeOptions.path,
+						...mixinOptions.serverOptions,
+					});
 
 					this.graphqlSchema = schema;
 
@@ -757,13 +846,19 @@ module.exports = function (mixinOptions) {
 			this.dataLoaderBatchParams = new Map();
 
 			// Bind service to onConnect method
-			if (
-				mixinOptions.serverOptions.subscriptions &&
-				_.isFunction(mixinOptions.serverOptions.subscriptions.onConnect)
-			) {
-				mixinOptions.serverOptions.subscriptions.onConnect =
-					mixinOptions.serverOptions.subscriptions.onConnect.bind(this);
-			}
+
+			Object.entries(mixinOptions.serverOptions.subscriptions).forEach(
+				([key, val], i, obj) => {
+					if (_.isFunction(val)) {
+						mixinOptions.serverOptions.subscriptions[key] = val.bind(this);
+					}
+				}
+			);
+			Object.entries(mixinOptions.serverOptions).forEach(([key, val], i, obj) => {
+				if (_.isFunction(val)) {
+					mixinOptions.serverOptions[key] = val.bind(this);
+				}
+			});
 
 			const route = _.defaultsDeep(mixinOptions.routeOptions, {
 				aliases: {
