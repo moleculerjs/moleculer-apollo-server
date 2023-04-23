@@ -1,3 +1,10 @@
+<a name="0.3.8"></a>
+# 0.3.8 (2023-04-23)
+
+## Changes
+- add `graphql.invalidate` event, to invalidate GraphQL Schema manually. [#122](https://github.com/moleculerjs/moleculer-apollo-server/pull/122)
+
+--------------------------------------------------
 <a name="0.3.7"></a>
 # 0.3.7 (2022-10-04)
 
