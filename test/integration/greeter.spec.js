@@ -34,6 +34,7 @@ describe("Integration test for greeter service", () => {
 		],
 
 		settings: {
+			ip: "0.0.0.0",
 			port: 0, // Random
 		},
 
@@ -126,7 +127,7 @@ describe("Integration test for greeter service", () => {
 	afterAll(() => broker.stop());
 
 	it("should call the greeter.hello action", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
+		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -145,7 +146,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.welcome action with parameter", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
+		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -164,7 +165,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.welcome action with query variable", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
+		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -183,7 +184,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.welcome action with wrapped input params", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
+		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -204,7 +205,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.danger and receives an error", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
+		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -241,7 +242,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should not call the greeter.secret", async () => {
-		const res = await fetch(`http://localhost:${port}/graphql`, {
+		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
