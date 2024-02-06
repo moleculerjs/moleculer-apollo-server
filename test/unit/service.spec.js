@@ -77,7 +77,7 @@ describe("Test Service", () => {
 				await stop();
 			});
 
-			it("should call sendError if error occured", async () => {
+			it("should call sendError if error occurs when preparing graphql schema", async () => {
 				const { svc, stop } = await startService();
 
 				const err = new Error("Something happened");
@@ -94,6 +94,29 @@ describe("Test Service", () => {
 				expect(res).toBeUndefined();
 				expect(svc.prepareGraphQLSchema).toBeCalledTimes(1);
 				expect(svc.graphqlHandler).toBeCalledTimes(0);
+				expect(svc.sendError).toBeCalledTimes(1);
+				expect(svc.sendError).toBeCalledWith(fakeReq, fakeRes, err);
+
+				await stop();
+			});
+
+			it("should call sendError if error occurs when handling graphql request", async () => {
+				const { svc, stop } = await startService();
+
+				const err = new Error("Something happened");
+				svc.sendError = jest.fn();
+				svc.prepareGraphQLSchema = jest.fn();
+				svc.graphqlHandler = jest.fn(() => {
+					throw err;
+				});
+				const fakeReq = { req: 1 };
+				const fakeRes = { res: 1 };
+
+				const res = await svc.settings.routes[0].aliases["/"].call(svc, fakeReq, fakeRes);
+
+				expect(res).toBeUndefined();
+				expect(svc.prepareGraphQLSchema).toBeCalledTimes(1);
+				expect(svc.graphqlHandler).toBeCalledTimes(1);
 				expect(svc.sendError).toBeCalledTimes(1);
 				expect(svc.sendError).toBeCalledWith(fakeReq, fakeRes, err);
 
@@ -123,7 +146,7 @@ describe("Test Service", () => {
 				await stop();
 			});
 
-			it("should call sendError if error occured", async () => {
+			it("should call sendError if error occurs when preparing graphql schema", async () => {
 				const { svc, stop } = await startService();
 
 				const err = new Error("Something happened");
@@ -146,13 +169,38 @@ describe("Test Service", () => {
 				expect(svc.sendResponse).toBeCalledWith(
 					fakeReq,
 					fakeRes,
-					{
-						status: "fail",
-						schema: false,
-					},
-					{
-						responseType: "application/health+json",
-					}
+					{ status: "fail", schema: false },
+					{ responseType: "application/health+json" }
+				);
+
+				await stop();
+			});
+
+			it("should call sendError if error occurs when handling graphql request", async () => {
+				const { svc, stop } = await startService();
+
+				const err = new Error("Something happened");
+				svc.sendResponse = jest.fn();
+				svc.prepareGraphQLSchema = jest.fn();
+				svc.graphqlHandler = jest.fn(() => {
+					throw err;
+				});
+				const fakeReq = { req: 1 };
+				const fakeRes = { res: 1 };
+
+				const res = await svc.settings.routes[0].aliases[
+					"GET /.well-known/apollo/server-health"
+				].call(svc, fakeReq, fakeRes);
+
+				expect(res).toBeUndefined();
+				expect(svc.prepareGraphQLSchema).toBeCalledTimes(1);
+				expect(svc.graphqlHandler).toBeCalledTimes(1);
+				expect(svc.sendResponse).toBeCalledTimes(1);
+				expect(svc.sendResponse).toBeCalledWith(
+					fakeReq,
+					fakeRes,
+					{ status: "fail", schema: false },
+					{ responseType: "application/health+json" }
 				);
 
 				await stop();

@@ -770,7 +770,7 @@ module.exports = function (mixinOptions) {
 					async "/"(req, res) {
 						try {
 							await this.prepareGraphQLSchema();
-							return this.graphqlHandler(req, res);
+							return await this.graphqlHandler(req, res);
 						} catch (err) {
 							this.sendError(req, res, err);
 						}
@@ -778,6 +778,7 @@ module.exports = function (mixinOptions) {
 					async "GET /.well-known/apollo/server-health"(req, res) {
 						try {
 							await this.prepareGraphQLSchema();
+							return await this.graphqlHandler(req, res);
 						} catch (err) {
 							res.statusCode = 503;
 							return this.sendResponse(
@@ -787,7 +788,6 @@ module.exports = function (mixinOptions) {
 								{ responseType: "application/health+json" }
 							);
 						}
-						return this.graphqlHandler(req, res);
 					},
 				},
 
