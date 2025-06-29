@@ -4,8 +4,6 @@ const { MoleculerClientError } = require("moleculer").Errors;
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
-const fetch = require("node-fetch");
-
 describe("Integration test for greeter service", () => {
 	const broker = new ServiceBroker({ logger: false });
 
@@ -23,19 +21,19 @@ describe("Integration test for greeter service", () => {
 				routeOptions: {
 					path: "/graphql",
 					cors: true,
-					mappingPolicy: "restrict",
+					mappingPolicy: "restrict"
 				},
 
 				checkActionVisibility: true,
 
 				// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
-				serverOptions: {},
-			}),
+				serverOptions: {}
+			})
 		],
 
 		settings: {
 			ip: "0.0.0.0",
-			port: 0, // Random
+			port: 0 // Random
 		},
 
 		methods: {
@@ -44,8 +42,8 @@ describe("Integration test for greeter service", () => {
 					return params.input;
 				}
 				return params;
-			},
-		},
+			}
+		}
 	});
 
 	broker.createService({
@@ -54,21 +52,21 @@ describe("Integration test for greeter service", () => {
 		actions: {
 			hello: {
 				graphql: {
-					query: "hello: String!",
+					query: "hello: String!"
 				},
 				handler() {
 					return "Hello Moleculer!";
-				},
+				}
 			},
 			welcome: {
 				graphql: {
 					query: `
 						welcome(name: String!): String!
-					`,
+					`
 				},
 				handler(ctx) {
 					return `Hello ${ctx.params.name}`;
-				},
+				}
 			},
 			/*update: {
 				graphql: {
@@ -88,16 +86,16 @@ describe("Integration test for greeter service", () => {
 					type: `type GreeterOutput {
 						name: String
 					}`,
-					mutation: "replace(input: GreeterInput!): GreeterOutput",
+					mutation: "replace(input: GreeterInput!): GreeterOutput"
 				},
 				handler(ctx) {
 					return ctx.params;
-				},
+				}
 			},
 
 			danger: {
 				graphql: {
-					query: "danger: String!",
+					query: "danger: String!"
 				},
 				async handler() {
 					throw new MoleculerClientError(
@@ -105,19 +103,19 @@ describe("Integration test for greeter service", () => {
 						422,
 						"DANGER"
 					);
-				},
+				}
 			},
 
 			secret: {
 				visibility: "protected",
 				graphql: {
-					query: "secret: String!",
+					query: "secret: String!"
 				},
 				async handler() {
 					return "! TOP SECRET !";
-				},
-			},
-		},
+				}
+			}
+		}
 	});
 
 	beforeAll(async () => {
@@ -132,16 +130,16 @@ describe("Integration test for greeter service", () => {
 			body: JSON.stringify({
 				operationName: null,
 				variables: {},
-				query: "{ hello }",
+				query: "{ hello }"
 			}),
-			headers: { "Content-Type": "application/json" },
+			headers: { "Content-Type": "application/json" }
 		});
 
 		expect(res.status).toBe(200);
 		expect(await res.json()).toStrictEqual({
 			data: {
-				hello: "Hello Moleculer!",
-			},
+				hello: "Hello Moleculer!"
+			}
 		});
 	});
 
@@ -151,16 +149,16 @@ describe("Integration test for greeter service", () => {
 			body: JSON.stringify({
 				operationName: null,
 				variables: {},
-				query: 'query { welcome(name: "GraphQL") }',
+				query: 'query { welcome(name: "GraphQL") }'
 			}),
-			headers: { "Content-Type": "application/json" },
+			headers: { "Content-Type": "application/json" }
 		});
 
 		expect(res.status).toBe(200);
 		expect(await res.json()).toStrictEqual({
 			data: {
-				welcome: "Hello GraphQL",
-			},
+				welcome: "Hello GraphQL"
+			}
 		});
 	});
 
@@ -170,16 +168,16 @@ describe("Integration test for greeter service", () => {
 			body: JSON.stringify({
 				operationName: null,
 				variables: { name: "Moleculer GraphQL" },
-				query: "query ($name: String!) { welcome(name: $name) }",
+				query: "query ($name: String!) { welcome(name: $name) }"
 			}),
-			headers: { "Content-Type": "application/json" },
+			headers: { "Content-Type": "application/json" }
 		});
 
 		expect(res.status).toBe(200);
 		expect(await res.json()).toStrictEqual({
 			data: {
-				welcome: "Hello Moleculer GraphQL",
-			},
+				welcome: "Hello Moleculer GraphQL"
+			}
 		});
 	});
 
@@ -189,18 +187,18 @@ describe("Integration test for greeter service", () => {
 			body: JSON.stringify({
 				operationName: null,
 				variables: { name: "Moleculer GraphQL" },
-				query: "mutation ($name: String!) { replace(input: { name: $name }) { name } }",
+				query: "mutation ($name: String!) { replace(input: { name: $name }) { name } }"
 			}),
-			headers: { "Content-Type": "application/json" },
+			headers: { "Content-Type": "application/json" }
 		});
 
 		expect(res.status).toBe(200);
 		expect(await res.json()).toStrictEqual({
 			data: {
 				replace: {
-					name: "Moleculer GraphQL",
-				},
-			},
+					name: "Moleculer GraphQL"
+				}
+			}
 		});
 	});
 
@@ -210,9 +208,9 @@ describe("Integration test for greeter service", () => {
 			body: JSON.stringify({
 				operationName: null,
 				variables: {},
-				query: "query { danger }",
+				query: "query { danger }"
 			}),
-			headers: { "Content-Type": "application/json" },
+			headers: { "Content-Type": "application/json" }
 		});
 
 		expect(res.status).toBe(200);
@@ -225,19 +223,19 @@ describe("Integration test for greeter service", () => {
 						exception: {
 							code: 422,
 							retryable: false,
-							type: "DANGER",
-						},
+							type: "DANGER"
+						}
 					},
 					locations: [
 						{
 							column: 9,
-							line: 1,
-						},
+							line: 1
+						}
 					],
 					message: "I've said it's a danger action!",
-					path: ["danger"],
-				},
-			],
+					path: ["danger"]
+				}
+			]
 		});
 	});
 
@@ -247,9 +245,9 @@ describe("Integration test for greeter service", () => {
 			body: JSON.stringify({
 				operationName: null,
 				variables: {},
-				query: "query { danger }",
+				query: "query { danger }"
 			}),
-			headers: { "Content-Type": "application/json" },
+			headers: { "Content-Type": "application/json" }
 		});
 
 		expect(res.status).toBe(200);
@@ -262,19 +260,19 @@ describe("Integration test for greeter service", () => {
 						exception: {
 							code: 422,
 							retryable: false,
-							type: "DANGER",
-						},
+							type: "DANGER"
+						}
 					},
 					locations: [
 						{
 							column: 9,
-							line: 1,
-						},
+							line: 1
+						}
 					],
 					message: "I've said it's a danger action!",
-					path: ["danger"],
-				},
-			],
+					path: ["danger"]
+				}
+			]
 		});
 	});
 });

@@ -12,7 +12,7 @@ const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
 const { makeExecutableSchema } = require("graphql-tools");
 const GraphQL = require("graphql");
-const { PubSub, withFilter } = require("graphql-subscriptions");
+// const { PubSub, withFilter } = require("graphql-subscriptions");
 const hash = require("object-hash");
 
 module.exports = function (mixinOptions) {
@@ -341,7 +341,7 @@ module.exports = function (mixinOptions) {
 			 */
 			createAsyncIteratorResolver(actionName, tags = [], filter) {
 				return {
-					subscribe: filter
+					/*subscribe: filter
 						? withFilter(
 								() => this.pubsub.asyncIterator(tags),
 								async (payload, params, { ctx }) =>
@@ -350,6 +350,7 @@ module.exports = function (mixinOptions) {
 										: false
 							)
 						: () => this.pubsub.asyncIterator(tags),
+					*/
 					resolve: (payload, params, { ctx }) =>
 						ctx.call(actionName, { ...params, payload })
 				};
@@ -625,7 +626,7 @@ module.exports = function (mixinOptions) {
 			 * Create PubSub instance.
 			 */
 			createPubSub() {
-				return new PubSub();
+				//return new PubSub();
 			},
 
 			/**
@@ -655,9 +656,12 @@ module.exports = function (mixinOptions) {
 						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
 					);
 
-					this.apolloServer = new ApolloServer({
-						schema,
-						..._.defaultsDeep({}, mixinOptions.serverOptions, {
+					this.apolloServer = new ApolloServer(
+						{
+							schema,
+							...(mixinOptions.serverOptions ?? {})
+						},
+						{
 							context: ({ req, connection }) => ({
 								...(req
 									? {
@@ -671,22 +675,20 @@ module.exports = function (mixinOptions) {
 											params: connection.context.$params
 										}),
 								dataLoaders: new Map() // create an empty map to load DataLoader instances into
-							}),
-							subscriptions: {
-								onConnect: (connectionParams, socket) =>
-									this.actions.ws({ connectionParams, socket })
-							}
-						})
-					});
+							})
+						}
+					);
+
+					await this.apolloServer.start();
 
 					this.graphqlHandler = this.apolloServer.createHandler(
 						mixinOptions.serverOptions
 					);
 
-					if (mixinOptions.serverOptions.subscriptions !== false) {
-						// Avoid installing the subscription handlers if they have been disabled
-						this.apolloServer.installSubscriptionHandlers(this.server);
-					}
+					// if (mixinOptions.serverOptions.subscriptions !== false) {
+					// 	// Avoid installing the subscription handlers if they have been disabled
+					// 	this.apolloServer.installSubscriptionHandlers(this.server);
+					// }
 
 					this.graphqlSchema = schema;
 
@@ -818,13 +820,21 @@ module.exports = function (mixinOptions) {
 				},
 				async handler(ctx) {
 					await this.prepareGraphQLSchema();
-					return GraphQL.graphql(
-						this.graphqlSchema,
-						ctx.params.query,
-						null,
-						{ ctx },
-						ctx.params.variables
+					const response = await this.apolloServer.executeOperation(
+						{
+							query: ctx.params.query,
+							variables: ctx.params.variables
+						},
+						{ contextValue: { ctx } }
 					);
+
+					if (response.body?.kind == "single") {
+						return response.body?.singleResult;
+					}
+
+					// TODO: handle incremental response body as a Stream response
+
+					return response;
 				}
 			}
 		};

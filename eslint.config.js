@@ -36,7 +36,7 @@ module.exports = [
 			"security/detect-non-literal-fs-filename": ["off"],
 			"no-process-exit": ["off"],
 			"node/no-unpublished-require": 0
-		},
+		}
 		// ignores: ["benchmark/test.js", "test/typescript/hello-world/out/*.js"]
 	},
 	{

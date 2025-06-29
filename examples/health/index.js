@@ -8,13 +8,13 @@ const { ApolloService } = require("../../index");
 const brokerWithRandomHealthy = new ServiceBroker({
 	logLevel: "info",
 	hotReload: true,
-	namespace: "randomhealthy",
+	namespace: "randomhealthy"
 });
 
 const brokerWithWrongSchema = new ServiceBroker({
 	logLevel: "info",
 	hotReload: true,
-	namespace: "wrongschema",
+	namespace: "wrongschema"
 });
 
 const greeterService = {
@@ -23,13 +23,13 @@ const greeterService = {
 	actions: {
 		hello: {
 			graphql: {
-				query: "hello: String!",
+				query: "hello: String!"
 			},
 			handler() {
 				return "Hello Moleculer!";
-			},
-		},
-	},
+			}
+		}
+	}
 };
 
 // ===================================
@@ -49,7 +49,7 @@ brokerWithRandomHealthy.createService({
 			routeOptions: {
 				path: "/graphql",
 				cors: true,
-				mappingPolicy: "restrict",
+				mappingPolicy: "restrict"
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
@@ -59,10 +59,10 @@ brokerWithRandomHealthy.createService({
 						throw new Error("Database not connected");
 					}
 					return { database: true, storage: true };
-				},
-			},
-		}),
-	],
+				}
+			}
+		})
+	]
 });
 brokerWithRandomHealthy.createService(greeterService);
 
@@ -84,13 +84,13 @@ brokerWithWrongSchema.createService({
 			routeOptions: {
 				path: "/graphql",
 				cors: true,
-				mappingPolicy: "restrict",
+				mappingPolicy: "restrict"
 			},
 
 			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
-			serverOptions: {},
-		}),
-	],
+			serverOptions: {}
+		})
+	]
 });
 brokerWithWrongSchema.createService(greeterService);
 
@@ -101,9 +101,15 @@ Promise.all([brokerWithRandomHealthy.start(), brokerWithWrongSchema.start()]).th
 	brokerWithWrongSchema.logger.info("Open the http://localhost:3001/graphql URL in your browser");
 	brokerWithWrongSchema.logger.info("----------------------------------------------------------");
 
-	brokerWithRandomHealthy.logger.info("API With random health result (1/2) ----------------------");
-	brokerWithRandomHealthy.logger.info("Open the http://localhost:3000/graphql URL in your browser");
-	brokerWithRandomHealthy.logger.info("----------------------------------------------------------");
+	brokerWithRandomHealthy.logger.info(
+		"API With random health result (1/2) ----------------------"
+	);
+	brokerWithRandomHealthy.logger.info(
+		"Open the http://localhost:3000/graphql URL in your browser"
+	);
+	brokerWithRandomHealthy.logger.info(
+		"----------------------------------------------------------"
+	);
 
 	brokerWithWrongSchema.repl();
 });

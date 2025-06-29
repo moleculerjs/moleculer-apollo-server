@@ -4,7 +4,7 @@
   "description": "Apollo GraphQL server for Moleculer API Gateway",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon examples/index.js",
+    "dev": "nodemon --inspect examples/index.js",
     "ci": "jest --watch",
     "test": "jest --coverage",
     "ci:integration": "jest \"**/integration/**spec.js\" --watch",
@@ -65,6 +65,7 @@
     "@apollo/server": "^4.12.2",
     "@hapi/accept": "^6.0.3",
     "dataloader": "^2.2.3",
+    "graphql-tools": "^9.0.18",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0"
   }

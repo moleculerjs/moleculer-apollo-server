@@ -6,9 +6,8 @@
 
 "use strict";
 
-const { ApolloServerBase } = require("apollo-server-core");
-const { processRequest } = require("graphql-upload");
-const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
+const { ApolloServer: ApolloServerBase } = require("@apollo/server");
+//const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
 const accept = require("@hapi/accept");
 const moleculerApollo = require("./moleculerApollo");
 
@@ -30,6 +29,11 @@ async function send(req, res, statusCode, data, responseType = "application/json
 }
 
 class ApolloServer extends ApolloServerBase {
+	constructor(options, middlewareOptions) {
+		super(options);
+		this.middlewareOptions = middlewareOptions;
+	}
+
 	// Extract Apollo Server options from the request.
 	createGraphQLServerOptions(req, res) {
 		return super.graphQLServerOptions({ req, res });
@@ -38,21 +42,12 @@ class ApolloServer extends ApolloServerBase {
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
 	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
-		const promiseWillStart = this.willStart();
+		//const promiseWillStart = this.willStart();
 
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
 
-			await promiseWillStart;
-
-			// If file uploads are detected, prepare them for easier handling with
-			// the help of `graphql-upload`.
-			if (this.uploadsConfig) {
-				const contentType = req.headers["content-type"];
-				if (contentType && contentType.startsWith("multipart/form-data")) {
-					req.filePayload = await processRequest(req, res, this.uploadsConfig);
-				}
-			}
+			//await promiseWillStart;
 
 			// If health checking is enabled, trigger the `onHealthCheck`
 			// function when the health check URL is requested.
@@ -62,7 +57,7 @@ class ApolloServer extends ApolloServerBase {
 			// If the `playgroundOptions` are set, register a `graphql-playground` instance
 			// (not available in production) that is then used to handle all
 			// incoming GraphQL requests.
-			if (this.playgroundOptions && req.method === "GET") {
+			/*if (this.playgroundOptions && req.method === "GET") {
 				const { mediaTypes } = accept.parseAll(req.headers);
 				const prefersHTML =
 					mediaTypes.find(x => x === "text/html" || x === "application/json") ===
@@ -84,23 +79,32 @@ class ApolloServer extends ApolloServerBase {
 						"text/html"
 					);
 				}
-			}
+			}*/
 
 			// Handle incoming GraphQL requests using Apollo Server.
-			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
-			const responseData = await graphqlHandler(req, res);
-			return send(req, res, 200, responseData);
+			const graphqlHandler = moleculerApollo(this, this.middlewareOptions);
+			const response = await graphqlHandler(req, res);
+
+			if (response?.body?.kind == "complete") {
+				// return send(req, res, response.status ?? 200, response.body.string, null);
+				res.statusCode = response.status || 200;
+				//res.write(response.body.string);
+				res.end(response.body.string);
+				return;
+			}
+
+			// TODO: Handle chunked response
 		};
 	}
 
 	// This integration supports file uploads.
 	supportsUploads() {
-		return true;
+		return false;
 	}
 
 	// This integration supports subscriptions.
 	supportsSubscriptions() {
-		return true;
+		return false;
 	}
 
 	async handleHealthCheck({ req, res, onHealthCheck }) {

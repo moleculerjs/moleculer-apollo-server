@@ -6,59 +6,52 @@
 
 "use strict";
 
-const { runHttpQuery, convertNodeHttpToRequest } = require("apollo-server-core");
+//const { runHttpQuery, convertNodeHttpToRequest } = require("apollo-server-core");
+const { HeaderMap } = require("@apollo/server");
 const url = require("url");
 
 // Utility function used to set multiple headers on a response object.
 function setHeaders(res, headers) {
-	Object.keys(headers).forEach(header => res.setHeader(header, headers[header]));
+	for (const [key, value] of headers) {
+		res.setHeader(key, value);
+	}
 }
 
-module.exports = function graphqlMoleculer(options) {
-	if (!options) {
-		throw new Error("Apollo Server requires options.");
+function convertHeadersToHeaderMap(req) {
+	const headers = new HeaderMap();
+	for (const [key, value] of Object.entries(req.headers)) {
+		if (value !== undefined) {
+			headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+		}
 	}
+	return headers;
+}
 
-	if (arguments.length > 1) {
-		throw new Error(`Apollo Server expects exactly one argument, got ${arguments.length}`);
+module.exports = function graphqlMoleculer(server, options) {
+	if (!server) {
+		throw new Error("Apollo Server instance is required.");
 	}
+	// if (!options) {
+	// 	throw new Error("Apollo Server requires options.");
+	// }
 
 	return async function graphqlHandler(req, res) {
-		let query;
-		try {
-			if (req.method === "POST") {
-				query = req.filePayload || req.body;
-			} else {
-				query = url.parse(req.url, true).query;
-			}
-		} catch (error) {
-			// Do nothing; `query` stays `undefined`
-		}
+		const context = options?.context ?? (async () => ({}));
 
-		try {
-			const { graphqlResponse, responseInit } = await runHttpQuery([req, res], {
-				method: req.method,
-				options,
-				query,
-				request: convertNodeHttpToRequest(req)
-			});
+		const httpGraphQLRequest = {
+			method: req.method.toUpperCase(),
+			headers: convertHeadersToHeaderMap(req),
+			search: url.parse(req.url, true).query ?? "",
+			body: req.body
+		};
 
-			setHeaders(res, responseInit.headers);
+		const result = await server.executeHTTPGraphQLRequest({
+			httpGraphQLRequest,
+			context: () => context({ req, res })
+		});
 
-			return graphqlResponse;
-		} catch (error) {
-			if ("HttpQueryError" === error.name && error.headers) {
-				setHeaders(res, error.headers);
-			}
+		setHeaders(res, result.headers);
 
-			if (!error.statusCode) {
-				error.statusCode = 500;
-			}
-
-			res.statusCode = error.statusCode || error.code || 500;
-			res.end(error.message);
-
-			return undefined;
-		}
+		return result;
 	};
 };
