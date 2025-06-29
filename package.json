@@ -10,9 +10,8 @@
     "ci:integration": "jest \"**/integration/**spec.js\" --watch",
     "lint": "eslint --ext=.js src test",
     "lint:fix": "eslint --fix --ext=.js src test",
-    "deps": "npm-check -u",
-    "postdeps": "npm test",
-    "coverall": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+    "deps": "ncu -i --format group",
+    "postdeps": "npm test"
   },
   "keywords": [
     "graphql",
@@ -29,27 +28,23 @@
   "author": "MoleculerJS",
   "license": "MIT",
   "peerDependencies": {
-    "graphql": "^14.0.0 || ^15.0.0",
-    "moleculer": "^0.13.0 || ^0.14.0"
+    "graphql": "^16.0.0",
+    "moleculer": "^0.14.0 || ^0.15.0-0"
   },
   "devDependencies": {
-    "benchmarkify": "^3.0.0",
-    "coveralls": "^3.1.1",
-    "eslint": "^8.24.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint": "^9.30.0",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.0.1",
-    "eslint-plugin-security": "^1.5.0",
-    "graphql": "^15.5.1",
-    "jest": "^27.4.7",
-    "jest-cli": "^27.4.7",
-    "moleculer": "^0.14.23",
-    "moleculer-repl": "^0.7.2",
-    "moleculer-web": "^0.10.4",
-    "node-fetch": "^2.6.1",
-    "nodemon": "^2.0.20",
-    "prettier": "^2.7.1"
+    "eslint-plugin-prettier": "^5.5.1",
+    "graphql": "^16.11.0",
+    "jest": "^30.0.3",
+    "jest-cli": "^30.0.3",
+    "moleculer": "^0.14.35",
+    "moleculer-repl": "^0.7.4",
+    "moleculer-web": "^0.10.8",
+    "nodemon": "^3.1.10",
+    "npm-check-updates": "^18.0.1",
+    "prettier": "^3.6.2"
   },
   "jest": {
     "coverageDirectory": "../coverage",
@@ -64,18 +59,13 @@
     ]
   },
   "engines": {
-    "node": ">= 10.x.x"
+    "node": ">= 20.x.x"
   },
   "dependencies": {
-    "@apollographql/graphql-playground-html": "^1.6.29",
-    "@hapi/accept": "^3.2.4",
-    "@types/graphql-upload": "^8.0.11",
-    "apollo-server-core": "^2.22.2",
-    "dataloader": "^2.1.0",
-    "graphql-subscriptions": "^1.2.1",
-    "graphql-tools": "^7.0.5",
-    "graphql-upload": "^11.0.0",
+    "@apollo/server": "^4.12.2",
+    "@hapi/accept": "^6.0.3",
+    "dataloader": "^2.2.3",
     "lodash": "^4.17.21",
-    "object-hash": "^2.2.0"
+    "object-hash": "^3.0.0"
   }
 }
