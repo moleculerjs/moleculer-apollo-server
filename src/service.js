@@ -1,6 +1,6 @@
 /*
  * moleculer-apollo-server
- * Copyright (c) 2020 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
+ * Copyright (c) 2025 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
  * MIT Licensed
  */
 
@@ -18,7 +18,7 @@ const hash = require("object-hash");
 module.exports = function (mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
 		routeOptions: {
-			path: "/graphql",
+			path: "/graphql"
 		},
 		schema: null,
 		serverOptions: {},
@@ -26,7 +26,7 @@ module.exports = function (mixinOptions) {
 		subscriptionEventName: "graphql.publish",
 		invalidateEventName: "graphql.invalidate",
 		autoUpdateSchema: true,
-		checkActionVisibility: false,
+		checkActionVisibility: false
 	});
 
 	const serviceSchema = {
@@ -36,9 +36,9 @@ module.exports = function (mixinOptions) {
 				visibility: "private",
 				tracing: {
 					tags: {
-						params: ["socket.upgradeReq.url"],
+						params: ["socket.upgradeReq.url"]
 					},
-					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq.url}`,
+					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq.url}`
 				},
 				handler(ctx) {
 					const { socket, connectionParams } = ctx.params;
@@ -46,10 +46,10 @@ module.exports = function (mixinOptions) {
 						$ctx: ctx,
 						$socket: socket,
 						$service: this,
-						$params: { body: connectionParams, query: socket.upgradeReq.query },
+						$params: { body: connectionParams, query: socket.upgradeReq.query }
 					};
-				},
-			},
+				}
+			}
 		},
 
 		events: {
@@ -65,7 +65,7 @@ module.exports = function (mixinOptions) {
 				if (this.pubsub) {
 					this.pubsub.publish(event.tag, event.payload);
 				}
-			},
+			}
 		},
 
 		methods: {
@@ -160,7 +160,7 @@ module.exports = function (mixinOptions) {
 					nullIfError = false,
 					params: staticParams = {},
 					rootParams = {},
-					fileUploadArg = null,
+					fileUploadArg = null
 				} = def;
 				const rootKeys = Object.keys(rootParams);
 
@@ -227,7 +227,7 @@ module.exports = function (mixinOptions) {
 											await uploadPromise;
 										const stream = createReadStream();
 										return context.ctx.call(actionName, stream, {
-											meta: { $fileInfo, $args: additionalArgs },
+											meta: { $fileInfo, $args: additionalArgs }
 										});
 									})
 								);
@@ -236,7 +236,7 @@ module.exports = function (mixinOptions) {
 							const { createReadStream, ...$fileInfo } = await args[fileUploadArg];
 							const stream = createReadStream();
 							return await context.ctx.call(actionName, stream, {
-								meta: { $fileInfo, $args: additionalArgs },
+								meta: { $fileInfo, $args: additionalArgs }
 							});
 						} else {
 							const params = {};
@@ -326,7 +326,7 @@ module.exports = function (mixinOptions) {
 				const cacheKeyFn = hashCacheKey && (key => hash(key));
 				const options = {
 					...(cacheKeyFn && { cacheKeyFn }),
-					...dataLoaderOptions,
+					...dataLoaderOptions
 				};
 
 				return new DataLoader(batchLoadFn, options);
@@ -348,10 +348,10 @@ module.exports = function (mixinOptions) {
 									payload !== undefined
 										? ctx.call(filter, { ...params, payload })
 										: false
-						  )
+							)
 						: () => this.pubsub.asyncIterator(tags),
 					resolve: (payload, params, { ctx }) =>
-						ctx.call(actionName, { ...params, payload }),
+						ctx.call(actionName, { ...params, payload })
 				};
 			},
 
@@ -484,7 +484,7 @@ module.exports = function (mixinOptions) {
 										resolver.Mutation[name] = this.createActionResolver(
 											action.name,
 											{
-												fileUploadArg: def.fileUploadArg,
+												fileUploadArg: def.fileUploadArg
 											}
 										);
 									});
@@ -663,20 +663,20 @@ module.exports = function (mixinOptions) {
 									? {
 											ctx: req.$ctx,
 											service: req.$service,
-											params: req.$params,
-									  }
+											params: req.$params
+										}
 									: {
 											ctx: connection.context.$ctx,
 											service: connection.context.$service,
-											params: connection.context.$params,
-									  }),
-								dataLoaders: new Map(), // create an empty map to load DataLoader instances into
+											params: connection.context.$params
+										}),
+								dataLoaders: new Map() // create an empty map to load DataLoader instances into
 							}),
 							subscriptions: {
 								onConnect: (connectionParams, socket) =>
-									this.actions.ws({ connectionParams, socket }),
-							},
-						}),
+									this.actions.ws({ connectionParams, socket })
+							}
+						})
 					});
 
 					this.graphqlHandler = this.apolloServer.createHandler(
@@ -695,7 +695,7 @@ module.exports = function (mixinOptions) {
 					this.shouldUpdateGraphqlSchema = false;
 
 					this.broker.broadcast("graphql.schema.updated", {
-						schema: GraphQL.printSchema(schema),
+						schema: GraphQL.printSchema(schema)
 					});
 				} catch (err) {
 					this.logger.error(err);
@@ -744,7 +744,7 @@ module.exports = function (mixinOptions) {
 						}
 					});
 				});
-			},
+			}
 		},
 
 		created() {
@@ -788,15 +788,15 @@ module.exports = function (mixinOptions) {
 								{ responseType: "application/health+json" }
 							);
 						}
-					},
+					}
 				},
 
 				mappingPolicy: "restrict",
 
 				bodyParsers: {
 					json: true,
-					urlencoded: { extended: true },
-				},
+					urlencoded: { extended: true }
+				}
 			});
 
 			// Add route
@@ -805,7 +805,7 @@ module.exports = function (mixinOptions) {
 
 		started() {
 			this.logger.info(`🚀 GraphQL server is available at ${mixinOptions.routeOptions.path}`);
-		},
+		}
 	};
 
 	if (mixinOptions.createAction) {
@@ -814,7 +814,7 @@ module.exports = function (mixinOptions) {
 			graphql: {
 				params: {
 					query: { type: "string" },
-					variables: { type: "object", optional: true },
+					variables: { type: "object", optional: true }
 				},
 				async handler(ctx) {
 					await this.prepareGraphQLSchema();
@@ -825,8 +825,8 @@ module.exports = function (mixinOptions) {
 						{ ctx },
 						ctx.params.variables
 					);
-				},
-			},
+				}
+			}
 		};
 	}
 

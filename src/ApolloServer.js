@@ -1,3 +1,9 @@
+/*
+ * moleculer-apollo-server
+ * Copyright (c) 2025 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
+ * MIT Licensed
+ */
+
 "use strict";
 
 const { ApolloServerBase } = require("apollo-server-core");
@@ -66,7 +72,7 @@ class ApolloServer extends ApolloServerBase {
 					const middlewareOptions = Object.assign(
 						{
 							endpoint: this.graphqlPath,
-							subscriptionEndpoint: this.subscriptionsPath,
+							subscriptionEndpoint: this.subscriptionsPath
 						},
 						this.playgroundOptions
 					);
@@ -109,5 +115,5 @@ class ApolloServer extends ApolloServerBase {
 	}
 }
 module.exports = {
-	ApolloServer,
+	ApolloServer
 };

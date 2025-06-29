@@ -1,3 +1,9 @@
+/*
+ * moleculer-apollo-server
+ * Copyright (c) 2025 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
+ * MIT Licensed
+ */
+
 "use strict";
 
 const { runHttpQuery, convertNodeHttpToRequest } = require("apollo-server-core");
@@ -34,7 +40,7 @@ module.exports = function graphqlMoleculer(options) {
 				method: req.method,
 				options,
 				query,
-				request: convertNodeHttpToRequest(req),
+				request: convertNodeHttpToRequest(req)
 			});
 
 			setHeaders(res, responseInit.headers);
