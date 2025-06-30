@@ -3,8 +3,8 @@
 jest.mock("../../src/ApolloServer");
 const { ApolloServer } = require("../../src/ApolloServer");
 
-jest.mock("graphql-tools");
-const { makeExecutableSchema } = require("graphql-tools");
+//jest.mock("graphql-tools");
+const { makeExecutableSchema } = require("@graphql-tools/schema");
 
 jest.mock("graphql");
 const GraphQL = require("graphql");
@@ -22,8 +22,8 @@ async function startService(mixinOptions, baseSchema) {
 	baseSchema = baseSchema || {
 		name: "api",
 		settings: {
-			routes: [],
-		},
+			routes: []
+		}
 	};
 
 	const svc = broker.createService(ApolloServerService(mixinOptions), baseSchema);
@@ -44,15 +44,15 @@ describe("Test Service", () => {
 
 				aliases: {
 					"/": expect.any(Function),
-					"GET /.well-known/apollo/server-health": expect.any(Function),
+					"GET /.well-known/apollo/server-health": expect.any(Function)
 				},
 
 				mappingPolicy: "restrict",
 
 				bodyParsers: {
 					json: true,
-					urlencoded: { extended: true },
-				},
+					urlencoded: { extended: true }
+				}
 			});
 			await stop();
 		});
@@ -213,11 +213,11 @@ describe("Test Service", () => {
 					path: "/apollo-server",
 
 					aliases: {
-						"GET /my-alias": jest.fn(),
+						"GET /my-alias": jest.fn()
 					},
 
-					cors: true,
-				},
+					cors: true
+				}
 			});
 
 			expect(svc.settings.routes[0]).toStrictEqual({
@@ -226,17 +226,17 @@ describe("Test Service", () => {
 				aliases: {
 					"/": expect.any(Function),
 					"GET /.well-known/apollo/server-health": expect.any(Function),
-					"GET /my-alias": expect.any(Function),
+					"GET /my-alias": expect.any(Function)
 				},
 
 				mappingPolicy: "restrict",
 
 				bodyParsers: {
 					json: true,
-					urlencoded: { extended: true },
+					urlencoded: { extended: true }
 				},
 
-				cors: true,
+				cors: true
 			});
 
 			await stop();
@@ -258,7 +258,7 @@ describe("Test Service", () => {
 
 		it("should not invalidate schema when autoUpdateSchema is false", async () => {
 			const { broker, svc, stop } = await startService({
-				autoUpdateSchema: false,
+				autoUpdateSchema: false
 			});
 			svc.invalidateGraphQLSchema = jest.fn();
 
@@ -271,7 +271,7 @@ describe("Test Service", () => {
 
 		it("should not invalidate schema when autoUpdateSchema is true", async () => {
 			const { broker, svc, stop } = await startService({
-				autoUpdateSchema: true,
+				autoUpdateSchema: true
 			});
 			svc.invalidateGraphQLSchema = jest.fn();
 
@@ -287,12 +287,12 @@ describe("Test Service", () => {
 			const { broker, svc, stop } = await startService();
 
 			svc.pubsub = {
-				publish: jest.fn(),
+				publish: jest.fn()
 			};
 
 			await broker.broadcastLocal("graphql.publish", {
 				tag: "tag",
-				payload: { a: 5 },
+				payload: { a: 5 }
 			});
 
 			expect(svc.pubsub.publish).toBeCalledTimes(1);
@@ -303,16 +303,16 @@ describe("Test Service", () => {
 
 		it("should subscribe to a custom subscription event", async () => {
 			const { broker, svc, stop } = await startService({
-				subscriptionEventName: "my.graphql.event",
+				subscriptionEventName: "my.graphql.event"
 			});
 
 			svc.pubsub = {
-				publish: jest.fn(),
+				publish: jest.fn()
 			};
 
 			await broker.broadcastLocal("my.graphql.event", {
 				tag: "tag",
-				payload: { a: 5 },
+				payload: { a: 5 }
 			});
 
 			expect(svc.pubsub.publish).toBeCalledTimes(1);
@@ -331,7 +331,7 @@ describe("Test Service", () => {
 
 			const res = await broker.call("api.graphql", {
 				query: "my-query",
-				variables: { a: 5 },
+				variables: { a: 5 }
 			});
 			expect(res).toBe("result");
 
@@ -450,21 +450,21 @@ describe("Test Service", () => {
 					// Call the `users.resolve` action with `id` params
 					action: "users.resolve",
 					rootParams: {
-						author: "id",
-					},
+						author: "id"
+					}
 				},
 				voters: {
 					// Call the `users.resolve` action with `id` params
 					action: "voters.get",
 					rootParams: {
-						voters: "id",
-					},
+						voters: "id"
+					}
 				},
 
 				UserType: {
 					ADMIN: { value: "1" },
-					READER: { value: "2" },
-				},
+					READER: { value: "2" }
+				}
 			};
 
 			expect(svc.createServiceResolvers("users", resolvers)).toStrictEqual({
@@ -472,8 +472,8 @@ describe("Test Service", () => {
 				voters: expect.any(Function),
 				UserType: {
 					ADMIN: { value: "1" },
-					READER: { value: "2" },
-				},
+					READER: { value: "2" }
+				}
 			});
 
 			expect(svc.createActionResolver).toBeCalledTimes(2);
@@ -503,12 +503,12 @@ describe("Test Service", () => {
 		it("should call the given action with keys", async () => {
 			const resolver = svc.createActionResolver("posts.find", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
 				params: {
-					repl: false,
-				},
+					repl: false
+				}
 			});
 
 			const ctx = new Context(broker);
@@ -524,15 +524,15 @@ describe("Test Service", () => {
 			expect(ctx.call).toBeCalledWith("posts.find", {
 				a: 5,
 				id: 12345,
-				repl: false,
+				repl: false
 			});
 		});
 
 		it("should throw error", async () => {
 			const resolver = svc.createActionResolver("posts.find", {
 				params: {
-					limit: 5,
-				},
+					limit: 5
+				}
 			});
 
 			const ctx = new Context(broker);
@@ -552,7 +552,7 @@ describe("Test Service", () => {
 			expect(ctx.call).toBeCalledTimes(1);
 			expect(ctx.call).toBeCalledWith("posts.find", {
 				limit: 5,
-				a: 5,
+				a: 5
 			});
 		});
 
@@ -561,8 +561,8 @@ describe("Test Service", () => {
 				nullIfError: true,
 				rootParams: {
 					author: "id",
-					"company.code": "company.code",
-				},
+					"company.code": "company.code"
+				}
 			});
 
 			const ctx = new Context(broker);
@@ -580,17 +580,17 @@ describe("Test Service", () => {
 			expect(ctx.call).toBeCalledWith("posts.find", {
 				id: 12345,
 				company: {
-					code: "Moleculer",
+					code: "Moleculer"
 				},
-				a: 5,
+				a: 5
 			});
 		});
 
 		it("should use null value if skipNullKeys is false", async () => {
 			const resolver = svc.createActionResolver("posts.find", {
 				rootParams: {
-					author: "id",
-				},
+					author: "id"
+				}
 			});
 
 			const ctx = new Context(broker);
@@ -605,7 +605,7 @@ describe("Test Service", () => {
 			expect(ctx.call).toBeCalledTimes(1);
 			expect(ctx.call).toBeCalledWith("posts.find", {
 				id: undefined,
-				a: 5,
+				a: 5
 			});
 		});
 
@@ -613,8 +613,8 @@ describe("Test Service", () => {
 			const resolver = svc.createActionResolver("posts.find", {
 				skipNullKeys: true,
 				rootParams: {
-					author: "id",
-				},
+					author: "id"
+				}
 			});
 
 			const ctx = new Context(broker);
@@ -644,7 +644,7 @@ describe("Test Service", () => {
 
 		it("should create a stream and pass to call", async () => {
 			const resolver = svc.createActionResolver("posts.uploadSingle", {
-				fileUploadArg: "file",
+				fileUploadArg: "file"
 			});
 
 			const ctx = new Context(broker);
@@ -656,7 +656,7 @@ describe("Test Service", () => {
 				filename: "filename.txt",
 				encoding: "7bit",
 				mimetype: "text/plain",
-				createReadStream: () => "fake read stream",
+				createReadStream: () => "fake read stream"
 			};
 
 			const res = await resolver(fakeRoot, { file, other: "something" }, { ctx });
@@ -669,16 +669,16 @@ describe("Test Service", () => {
 					$fileInfo: {
 						filename: "filename.txt",
 						encoding: "7bit",
-						mimetype: "text/plain",
+						mimetype: "text/plain"
 					},
-					$args: { other: "something" },
-				},
+					$args: { other: "something" }
+				}
 			});
 		});
 
 		it("should invoke call once per file when handling an array of file uploads", async () => {
 			const resolver = svc.createActionResolver("posts.uploadMulti", {
-				fileUploadArg: "files",
+				fileUploadArg: "files"
 			});
 
 			const ctx = new Context(broker);
@@ -691,21 +691,21 @@ describe("Test Service", () => {
 					filename: "filename1.txt",
 					encoding: "7bit",
 					mimetype: "text/plain",
-					createReadStream: () => "fake read stream 1",
+					createReadStream: () => "fake read stream 1"
 				},
 				{
 					filename: "filename2.txt",
 					encoding: "7bit",
 					mimetype: "text/plain",
-					createReadStream: () => "fake read stream 2",
-				},
+					createReadStream: () => "fake read stream 2"
+				}
 			];
 
 			const res = await resolver(fakeRoot, { files, other: "something" }, { ctx });
 
 			expect(res).toEqual([
 				"response for fake read stream 1",
-				"response for fake read stream 2",
+				"response for fake read stream 2"
 			]);
 
 			expect(ctx.call).toBeCalledTimes(2);
@@ -714,20 +714,20 @@ describe("Test Service", () => {
 					$fileInfo: {
 						filename: "filename1.txt",
 						encoding: "7bit",
-						mimetype: "text/plain",
+						mimetype: "text/plain"
 					},
-					$args: { other: "something" },
-				},
+					$args: { other: "something" }
+				}
 			});
 			expect(ctx.call).toBeCalledWith("posts.uploadMulti", "fake read stream 2", {
 				meta: {
 					$fileInfo: {
 						filename: "filename2.txt",
 						encoding: "7bit",
-						mimetype: "text/plain",
+						mimetype: "text/plain"
 					},
-					$args: { other: "something" },
-				},
+					$args: { other: "something" }
+				}
 			});
 		});
 	});
@@ -752,10 +752,10 @@ describe("Test Service", () => {
 		it("should return null if no rootValue", async () => {
 			const resolver = svc.createActionResolver("posts.find", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const fakeRoot = { user: 12345 };
@@ -768,10 +768,10 @@ describe("Test Service", () => {
 		it("should call the action via the loader with single value", async () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -790,10 +790,10 @@ describe("Test Service", () => {
 		it("should call the action via the loader with multi value", async () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -813,10 +813,10 @@ describe("Test Service", () => {
 			svc.dataLoaderOptions.set("users.resolve", { maxBatchSize: 2 });
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -841,10 +841,10 @@ describe("Test Service", () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
 					authorId: "authorIdParam",
-					testId: "testIdParam",
+					testId: "testIdParam"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -858,7 +858,7 @@ describe("Test Service", () => {
 			const res = await Promise.all([
 				resolver(fakeRoot1, {}, fakeContext),
 				resolver(fakeRoot2, {}, fakeContext),
-				resolver(fakeRoot3, {}, fakeContext),
+				resolver(fakeRoot3, {}, fakeContext)
 			]);
 
 			expect(res).toEqual(["res1", "res2", "res3"]);
@@ -868,8 +868,8 @@ describe("Test Service", () => {
 				testBatchParam: [
 					{ authorIdParam: 1, testIdParam: "foo" },
 					{ authorIdParam: 2, testIdParam: "bar" },
-					{ authorIdParam: 5, testIdParam: "baz" },
-				],
+					{ authorIdParam: 5, testIdParam: "baz" }
+				]
 			});
 		});
 
@@ -878,10 +878,10 @@ describe("Test Service", () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
 					authorId: "authorIdParam",
-					testId: "testIdParam",
+					testId: "testIdParam"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -895,7 +895,7 @@ describe("Test Service", () => {
 			const res = await Promise.all([
 				resolver(fakeRoot1, {}, fakeContext),
 				resolver(fakeRoot2, {}, fakeContext),
-				resolver(fakeRoot3, {}, fakeContext),
+				resolver(fakeRoot3, {}, fakeContext)
 			]);
 
 			expect(res).toEqual(["res1", "res2", "res1"]);
@@ -904,18 +904,18 @@ describe("Test Service", () => {
 			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", {
 				testBatchParam: [
 					{ authorIdParam: 1, testIdParam: "foo" },
-					{ authorIdParam: 2, testIdParam: "bar" },
-				],
+					{ authorIdParam: 2, testIdParam: "bar" }
+				]
 			});
 		});
 
 		it("should reuse the loader for multiple calls with the same context", async () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -939,21 +939,21 @@ describe("Test Service", () => {
 			expect(ctx.call).toHaveBeenCalledTimes(2);
 			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", {
 				a: 5,
-				id: [1, 2, 5],
+				id: [1, 2, 5]
 			});
 			expect(ctx.call).toHaveBeenNthCalledWith(2, "users.resolve", {
 				a: 5,
-				id: [3, 4, 6],
+				id: [3, 4, 6]
 			});
 		});
 
 		it("should make multiple loaders for multiple calls with different args", async () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -977,21 +977,21 @@ describe("Test Service", () => {
 			expect(ctx.call).toHaveBeenCalledTimes(2);
 			expect(ctx.call).toHaveBeenNthCalledWith(1, "users.resolve", {
 				a: 5,
-				id: [1, 2, 5],
+				id: [1, 2, 5]
 			});
 			expect(ctx.call).toHaveBeenNthCalledWith(2, "users.resolve", {
 				a: 10,
-				id: [3, 4, 6],
+				id: [3, 4, 6]
 			});
 		});
 
 		it("should construct a loader with key without a hash if no args and no params", async () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -1011,10 +1011,10 @@ describe("Test Service", () => {
 		it("should construct a loader with key with a hash if args passed", async () => {
 			const resolver = svc.createActionResolver("users.resolve", {
 				rootParams: {
-					author: "id",
+					author: "id"
 				},
 
-				dataLoader: true,
+				dataLoader: true
 			});
 
 			const ctx = new Context(broker);
@@ -1052,7 +1052,7 @@ describe("Test Service", () => {
 
 			expect(res).toEqual({
 				subscribe: expect.any(Function),
-				resolve: expect.any(Function),
+				resolve: expect.any(Function)
 			});
 
 			// Test subscribe
@@ -1079,7 +1079,7 @@ describe("Test Service", () => {
 
 			expect(res).toEqual({
 				subscribe: expect.any(Function),
-				resolve: expect.any(Function),
+				resolve: expect.any(Function)
 			});
 
 			// Test subscribe
@@ -1099,7 +1099,7 @@ describe("Test Service", () => {
 
 			expect(res).toEqual({
 				subscribe: [expect.any(Function), expect.any(Function)],
-				resolve: expect.any(Function),
+				resolve: expect.any(Function)
 			});
 
 			// Test first function
@@ -1135,7 +1135,7 @@ describe("Test Service", () => {
 			expect(makeExecutableSchema).toBeCalledWith({
 				typeDefs: [],
 				resolvers: {},
-				schemaDirectives: null,
+				schemaDirectives: null
 			});
 
 			await stop();
@@ -1146,8 +1146,8 @@ describe("Test Service", () => {
 			const UniqueIdDirective = jest.fn();
 			const { svc, stop } = await startService({
 				schemaDirectives: {
-					uid: UniqueIdDirective,
-				},
+					uid: UniqueIdDirective
+				}
 			});
 
 			const res = svc.generateGraphQLSchema([]);
@@ -1158,8 +1158,8 @@ describe("Test Service", () => {
 				typeDefs: [],
 				resolvers: {},
 				schemaDirectives: {
-					uid: UniqueIdDirective,
-				},
+					uid: UniqueIdDirective
+				}
 			});
 
 			await stop();
@@ -1174,15 +1174,15 @@ describe("Test Service", () => {
 					},
 					__serialize(value) {
 						return value.getTime(); // value sent to the client
-					},
-				},
+					}
+				}
 			};
 			const { svc, stop } = await startService({
 				typeDefs: `
 					scalar Date
 				`,
 
-				resolvers: globalResolvers,
+				resolvers: globalResolvers
 			});
 
 			const res = svc.generateGraphQLSchema([
@@ -1221,19 +1221,19 @@ describe("Test Service", () => {
 									author: {
 										action: "users.resolve",
 										rootParams: {
-											author: "id",
-										},
+											author: "id"
+										}
 									},
 									voters: {
 										action: "users.resolve",
 										dataLoader: true,
 										rootParams: {
-											voters: "id",
-										},
-									},
-								},
-							},
-						},
+											voters: "id"
+										}
+									}
+								}
+							}
+						}
 					},
 
 					actions: {
@@ -1246,13 +1246,13 @@ describe("Test Service", () => {
 										votes: Int!,
 										voters: [User]
 									}
-								`,
-							},
+								`
+							}
 						},
 						upvote: {
 							params: {
 								id: "number",
-								userID: "number",
+								userID: "number"
 							},
 							graphql: {
 								mutation: "upvote(input: PostVoteInput): Post",
@@ -1261,8 +1261,8 @@ describe("Test Service", () => {
 										id: Int!,
 										userID: Int!
 									}
-								`,
-							},
+								`
+							}
 						},
 						vote: {
 							params: { payload: "object" },
@@ -1278,13 +1278,13 @@ describe("Test Service", () => {
 									vote(userID: Int!): String!
 								`,
 								tags: ["VOTE"],
-								filter: "posts.vote.filter",
+								filter: "posts.vote.filter"
 							},
 							handler(ctx) {
 								return ctx.params.payload.type;
-							},
-						},
-					},
+							}
+						}
+					}
 				},
 
 				{
@@ -1342,40 +1342,40 @@ describe("Test Service", () => {
 									posts: {
 										action: "posts.findByUser",
 										rootParams: {
-											id: "userID",
-										},
+											id: "userID"
+										}
 									},
 									postCount: {
 										// Call the "posts.count" action
 										action: "posts.count",
 										// Get `id` value from `root` and put it into `ctx.params.query.author`
 										rootParams: {
-											id: "query.author",
-										},
-									},
+											id: "query.author"
+										}
+									}
 								},
 								UserType: {
 									ADMIN: "1",
 									PUBLISHER: "2",
-									READER: "3",
-								},
-							},
-						},
+									READER: "3"
+								}
+							}
+						}
 					},
 
 					actions: {
 						find: {
 							//cache: true,
 							params: {
-								limit: { type: "number", optional: true },
+								limit: { type: "number", optional: true }
 							},
 							graphql: {
 								query: `
 									users(limit: Int): [User]
-								`,
-							},
-						},
-					},
+								`
+							}
+						}
+					}
 				},
 				{
 					// Must be skipped
@@ -1389,10 +1389,10 @@ describe("Test Service", () => {
 									id: Int!
 									title: String!
 								}
-							`,
-						},
-					},
-				},
+							`
+						}
+					}
+				}
 			]);
 			expect(res).toBe("generated-schema");
 
@@ -1420,7 +1420,7 @@ describe("Test Service", () => {
 
 		const fakeApolloServer = {
 			createHandler,
-			installSubscriptionHandlers,
+			installSubscriptionHandlers
 		};
 
 		ApolloServer.mockImplementation(() => fakeApolloServer);
@@ -1435,11 +1435,11 @@ describe("Test Service", () => {
 						name: "test-action-1",
 						graphql: {
 							dataLoaderOptions: { option1: "option-value-1" },
-							dataLoaderBatchParam: "batch-param-1",
-						},
+							dataLoaderBatchParam: "batch-param-1"
+						}
 					},
-					{ name: "test-action-2" },
-				],
+					{ name: "test-action-2" }
+				]
 			},
 			{
 				name: "test-svc-2",
@@ -1449,12 +1449,12 @@ describe("Test Service", () => {
 						name: "test-action-3",
 						graphql: {
 							dataLoaderOptions: { option2: "option-value-2" },
-							dataLoaderBatchParam: "batch-param-2",
-						},
+							dataLoaderBatchParam: "batch-param-2"
+						}
 					},
-					{ name: "test-action-4" },
-				],
-			},
+					{ name: "test-action-4" }
+				]
+			}
 		];
 
 		beforeEach(() => {
@@ -1469,8 +1469,8 @@ describe("Test Service", () => {
 			const { broker, svc, stop } = await startService({
 				serverOptions: {
 					path: "/my-graphql",
-					playground: true,
-				},
+					playground: true
+				}
 			});
 
 			svc.server = "server";
@@ -1503,8 +1503,8 @@ describe("Test Service", () => {
 				path: "/my-graphql",
 				playground: true,
 				subscriptions: {
-					onConnect: expect.any(Function),
-				},
+					onConnect: expect.any(Function)
+				}
 			});
 
 			expect(svc.graphqlHandler).toBe("createdHandler");
@@ -1512,7 +1512,7 @@ describe("Test Service", () => {
 			expect(createHandler).toBeCalledTimes(1);
 			expect(createHandler).toBeCalledWith({
 				path: "/my-graphql",
-				playground: true,
+				playground: true
 			});
 
 			expect(installSubscriptionHandlers).toBeCalledTimes(1);
@@ -1524,7 +1524,7 @@ describe("Test Service", () => {
 
 			expect(broker.broadcast).toBeCalledTimes(1);
 			expect(broker.broadcast).toBeCalledWith("graphql.schema.updated", {
-				schema: "printed schema",
+				schema: "printed schema"
 			});
 
 			expect(GraphQL.printSchema).toBeCalledTimes(2);
@@ -1533,14 +1533,14 @@ describe("Test Service", () => {
 			expect(svc.dataLoaderOptions).toEqual(
 				new Map([
 					["test-svc-1.test-action-1", { option1: "option-value-1" }],
-					["v1.test-svc-2.test-action-3", { option2: "option-value-2" }],
+					["v1.test-svc-2.test-action-3", { option2: "option-value-2" }]
 				])
 			);
 
 			expect(svc.dataLoaderBatchParams).toEqual(
 				new Map([
 					["test-svc-1.test-action-1", "batch-param-1"],
-					["v1.test-svc-2.test-action-3", "batch-param-2"],
+					["v1.test-svc-2.test-action-3", "batch-param-2"]
 				])
 			);
 
@@ -1553,38 +1553,38 @@ describe("Test Service", () => {
 						context: {
 							$service: "service",
 							$ctx: "context",
-							$params: { a: 5 },
-						},
-					},
+							$params: { a: 5 }
+						}
+					}
 				})
 			).toEqual({
 				ctx: "context",
 				dataLoaders: new Map(),
 				params: {
-					a: 5,
+					a: 5
 				},
-				service: "service",
+				service: "service"
 			});
 
 			const req = {
 				$ctx: "context",
 				$service: "service",
-				$params: { a: 5 },
+				$params: { a: 5 }
 			};
 			expect(
 				contextFn({
 					req,
 					connection: {
-						$service: "service",
-					},
+						$service: "service"
+					}
 				})
 			).toEqual({
 				ctx: "context",
 				dataLoaders: new Map(),
 				params: {
-					a: 5,
+					a: 5
 				},
-				service: "service",
+				service: "service"
 			});
 
 			// Test subscription `onConnect`
@@ -1606,8 +1606,8 @@ describe("Test Service", () => {
 			const { broker, svc, stop } = await startService({
 				serverOptions: {
 					path: "/my-graphql",
-					subscriptions: false,
-				},
+					subscriptions: false
+				}
 			});
 
 			svc.server = "server";

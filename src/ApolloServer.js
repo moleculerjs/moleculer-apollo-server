@@ -6,10 +6,25 @@
 
 "use strict";
 
-const { ApolloServer: ApolloServerBase } = require("@apollo/server");
-//const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
-const accept = require("@hapi/accept");
-const moleculerApollo = require("./moleculerApollo");
+const { ApolloServer: ApolloServerBase, HeaderMap } = require("@apollo/server");
+const url = require("url");
+
+// Utility function used to set multiple headers on a response object.
+function convertHeaderMapToHeaders(res, headers) {
+	for (const [key, value] of headers) {
+		res.setHeader(key, value);
+	}
+}
+
+function convertHeadersToHeaderMap(req) {
+	const headers = new HeaderMap();
+	for (const [key, value] of Object.entries(req.headers)) {
+		if (value !== undefined) {
+			headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+		}
+	}
+	return headers;
+}
 
 async function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
@@ -42,55 +57,36 @@ class ApolloServer extends ApolloServerBase {
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
 	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
-		//const promiseWillStart = this.willStart();
-
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
-
-			//await promiseWillStart;
 
 			// If health checking is enabled, trigger the `onHealthCheck`
 			// function when the health check URL is requested.
 			if (!disableHealthCheck && req.url === "/.well-known/apollo/server-health")
 				return await this.handleHealthCheck({ req, res, onHealthCheck });
 
-			// If the `playgroundOptions` are set, register a `graphql-playground` instance
-			// (not available in production) that is then used to handle all
-			// incoming GraphQL requests.
-			/*if (this.playgroundOptions && req.method === "GET") {
-				const { mediaTypes } = accept.parseAll(req.headers);
-				const prefersHTML =
-					mediaTypes.find(x => x === "text/html" || x === "application/json") ===
-					"text/html";
-
-				if (prefersHTML) {
-					const middlewareOptions = Object.assign(
-						{
-							endpoint: this.graphqlPath,
-							subscriptionEndpoint: this.subscriptionsPath
-						},
-						this.playgroundOptions
-					);
-					return send(
-						req,
-						res,
-						200,
-						renderPlaygroundPage(middlewareOptions),
-						"text/html"
-					);
-				}
-			}*/
-
 			// Handle incoming GraphQL requests using Apollo Server.
-			const graphqlHandler = moleculerApollo(this, this.middlewareOptions);
-			const response = await graphqlHandler(req, res);
+			const context = this.middlewareOptions?.context ?? (async () => ({}));
+			const response = await this.executeHTTPGraphQLRequest({
+				httpGraphQLRequest: {
+					method: req.method.toUpperCase(),
+					headers: convertHeadersToHeaderMap(req),
+					search: url.parse(req.url, true).query ?? "",
+					body: req.body
+				},
+				context: () => context({ req, res })
+			});
+
+			convertHeaderMapToHeaders(res, response.headers);
 
 			if (response?.body?.kind == "complete") {
-				// return send(req, res, response.status ?? 200, response.body.string, null);
-				res.statusCode = response.status || 200;
-				//res.write(response.body.string);
-				res.end(response.body.string);
-				return;
+				return send(
+					req,
+					res,
+					response.status ?? 200,
+					response.body.string,
+					response.headers?.get("content-type")
+				);
 			}
 
 			// TODO: Handle chunked response

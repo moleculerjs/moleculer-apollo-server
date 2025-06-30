@@ -7,7 +7,7 @@
     "dev": "nodemon --inspect examples/index.js",
     "ci": "jest --watch",
     "test": "jest --coverage",
-    "ci:integration": "jest \"**/integration/**spec.js\" --watch",
+    "ci:integration": "jest \"**/integration/*.spec.js\" --watch",
     "lint": "eslint --ext=.js src test",
     "lint:fix": "eslint --fix --ext=.js src test",
     "deps": "ncu -i --format group",
@@ -63,9 +63,8 @@
   },
   "dependencies": {
     "@apollo/server": "^4.12.2",
-    "@hapi/accept": "^6.0.3",
+    "@graphql-tools/schema": "^10.0.23",
     "dataloader": "^2.2.3",
-    "graphql-tools": "^9.0.18",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0"
   }
