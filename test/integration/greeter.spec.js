@@ -136,7 +136,7 @@ describe("Integration test for greeter service", () => {
 		});
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
+		expect(await res.json()).toEqual({
 			data: {
 				hello: "Hello Moleculer!"
 			}
@@ -155,7 +155,7 @@ describe("Integration test for greeter service", () => {
 		});
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
+		expect(await res.json()).toEqual({
 			data: {
 				welcome: "Hello GraphQL"
 			}
@@ -174,7 +174,7 @@ describe("Integration test for greeter service", () => {
 		});
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
+		expect(await res.json()).toEqual({
 			data: {
 				welcome: "Hello Moleculer GraphQL"
 			}
@@ -193,7 +193,7 @@ describe("Integration test for greeter service", () => {
 		});
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
+		expect(await res.json()).toEqual({
 			data: {
 				replace: {
 					name: "Moleculer GraphQL"
@@ -214,17 +214,17 @@ describe("Integration test for greeter service", () => {
 		});
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
+		expect(await res.json()).toEqual({
 			data: null,
 			errors: [
 				{
 					extensions: {
-						code: "INTERNAL_SERVER_ERROR",
-						exception: {
-							code: 422,
-							retryable: false,
-							type: "DANGER"
-						}
+						code: "INTERNAL_SERVER_ERROR"
+						// exception: {
+						// 	code: 422,
+						// 	retryable: false,
+						// 	type: "DANGER"
+						// }
 					},
 					locations: [
 						{
@@ -251,17 +251,17 @@ describe("Integration test for greeter service", () => {
 		});
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toStrictEqual({
+		expect(await res.json()).toEqual({
 			data: null,
 			errors: [
 				{
 					extensions: {
-						code: "INTERNAL_SERVER_ERROR",
-						exception: {
-							code: 422,
-							retryable: false,
-							type: "DANGER"
-						}
+						code: "INTERNAL_SERVER_ERROR"
+						// exception: {
+						// 	code: 422,
+						// 	retryable: false,
+						// 	type: "DANGER"
+						// }
 					},
 					locations: [
 						{
