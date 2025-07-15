@@ -182,21 +182,21 @@ describe("Test Apollo Service", () => {
 					title: "First post",
 					author: 2,
 					votes: 2,
-					createdAt: new Date("2025-08-23T08:10:25")
+					createdAt: new Date("2025-08-23T08:10:25Z")
 				},
 				{
 					id: 2,
 					title: "Second post",
 					author: 1,
 					votes: 1,
-					createdAt: new Date("2025-11-23T12:59:30")
+					createdAt: new Date("2025-11-23T12:59:30Z")
 				},
 				{
 					id: 3,
 					title: "Third post",
 					author: 2,
 					votes: 0,
-					createdAt: new Date("2025-02-23T22:24:28")
+					createdAt: new Date("2025-02-23T22:24:28Z")
 				}
 			];
 
@@ -370,19 +370,19 @@ describe("Test Apollo Service", () => {
 							id: 1,
 							title: "First post",
 							author: { name: "Nicholas Paris" },
-							createdAt: "2025-08-23T06:10:25.000Z"
+							createdAt: "2025-08-23T08:10:25.000Z"
 						},
 						{
 							id: 2,
 							title: "Second post",
 							author: { name: "Genaro Krueger" },
-							createdAt: "2025-11-23T11:59:30.000Z"
+							createdAt: "2025-11-23T12:59:30.000Z"
 						},
 						{
 							id: 3,
 							title: "Third post",
 							author: { name: "Nicholas Paris" },
-							createdAt: "2025-02-23T21:24:28.000Z"
+							createdAt: "2025-02-23T22:24:28.000Z"
 						}
 					]
 				}
