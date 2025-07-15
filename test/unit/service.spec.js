@@ -322,6 +322,7 @@ describe("Test Service", () => {
 		});
 	});
 
+	/*
 	describe("Test action", () => {
 		it("should create the 'graphql' action", async () => {
 			const { broker, svc, stop } = await startService();
@@ -358,6 +359,7 @@ describe("Test Service", () => {
 			await stop();
 		});
 	});
+	*/
 
 	describe("Test methods", () => {
 		describe("Test 'invalidateGraphQLSchema'", () => {

@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Test Apollo Service Test schema preparation should generate valid GraphQL schema 1`] = `
+{
+  "schema": "type Query {
+  posts: [Post!]!
+  users: [User!]!
+}
+
+"""This type describes a post entity."""
+type Post {
+  id: Int!
+  title: String!
+  votes: Int!
+}
+
+type User {
+  id: Int!
+  name: String!
+}",
+}
+`;

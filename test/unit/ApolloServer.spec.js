@@ -36,7 +36,7 @@ describe("Test ApolloServer", () => {
 		expect(ApolloServerBase.prototype.graphQLServerOptions).toBeCalledTimes(1);
 		expect(ApolloServerBase.prototype.graphQLServerOptions).toBeCalledWith({
 			req: "req",
-			res: "res",
+			res: "res"
 		});
 	});
 
@@ -44,17 +44,17 @@ describe("Test ApolloServer", () => {
 		const apolloServer = new ApolloServer({});
 
 		const fakeCtx = {
-			meta: {},
+			meta: {}
 		};
 		const fakeService = {
-			sendResponse: jest.fn(),
+			sendResponse: jest.fn()
 		};
 
 		const fakeReq = {};
 		const fakeRes = {
 			$ctx: fakeCtx,
 			$service: fakeService,
-			$route: {},
+			$route: {}
 		};
 
 		test("should return 200 'pass'", async () => {
@@ -70,7 +70,7 @@ describe("Test ApolloServer", () => {
 			expect(fakeService.sendResponse).toBeCalledTimes(1);
 			expect(fakeService.sendResponse).toBeCalledWith(fakeReq, fakeRes, {
 				result: "Everything OK",
-				status: "pass",
+				status: "pass"
 			});
 
 			expect(fakeCtx.meta.$responseType).toBe("application/health+json");
@@ -91,7 +91,7 @@ describe("Test ApolloServer", () => {
 			expect(fakeService.sendResponse).toBeCalledTimes(1);
 			expect(fakeService.sendResponse).toBeCalledWith(fakeReq, fakeRes, {
 				result: "Error: Something wrong",
-				status: "fail",
+				status: "fail"
 			});
 
 			expect(fakeCtx.meta.$responseType).toBe("application/health+json");
@@ -110,7 +110,7 @@ describe("Test ApolloServer", () => {
 			expect(fakeService.sendResponse).toBeCalledTimes(1);
 			expect(fakeService.sendResponse).toBeCalledWith(fakeReq, fakeRes, {
 				result: undefined,
-				status: "pass",
+				status: "pass"
 			});
 
 			expect(fakeCtx.meta.$responseType).toBe("application/json");
@@ -125,10 +125,10 @@ describe("Test ApolloServer", () => {
 		moleculerApollo.mockImplementation(() => fakeGraphqlHandler);
 
 		const fakeCtx = {
-			meta: {},
+			meta: {}
 		};
 		const fakeService = {
-			sendResponse: jest.fn(),
+			sendResponse: jest.fn()
 		};
 
 		let fakeReq;
@@ -136,12 +136,12 @@ describe("Test ApolloServer", () => {
 
 		beforeEach(() => {
 			fakeReq = {
-				headers: {},
+				headers: {}
 			};
 			fakeRes = {
 				$ctx: fakeCtx,
 				$service: fakeService,
-				$route: {},
+				$route: {}
 			};
 		});
 
@@ -260,7 +260,7 @@ describe("Test ApolloServer", () => {
 			expect(apolloServer.handleHealthCheck).toBeCalledWith({
 				req: fakeReq,
 				res: fakeRes,
-				onHealthCheck,
+				onHealthCheck
 			});
 
 			expect(moleculerApollo).toBeCalledTimes(0);
@@ -298,14 +298,14 @@ describe("Test ApolloServer", () => {
 
 			// Init mocks
 			apolloServer.playgroundOptions = {
-				b: "John",
+				b: "John"
 			};
 			apolloServer.subscriptionsPath = "/subscription";
 			fakeCtx.meta.$responseType = null;
 			fakeReq.url = "/graphql";
 			fakeReq.method = "GET";
 			fakeReq.headers = {
-				accept: "text/html",
+				accept: "text/html"
 			};
 
 			// Create handler
@@ -321,7 +321,7 @@ describe("Test ApolloServer", () => {
 			expect(Playground.renderPlaygroundPage).toBeCalledWith({
 				endpoint: "/graphql",
 				subscriptionEndpoint: "/subscription",
-				b: "John",
+				b: "John"
 			});
 
 			expect(fakeRes.statusCode).toBe(200);

@@ -7,7 +7,7 @@ const { ApolloService } = require("../../index");
 describe("Integration test for greeter service", () => {
 	const broker = new ServiceBroker({ logger: false });
 
-	let port;
+	let GQL_URL;
 	const apiSvc = broker.createService({
 		name: "api",
 
@@ -120,12 +120,12 @@ describe("Integration test for greeter service", () => {
 
 	beforeAll(async () => {
 		await broker.start();
-		port = apiSvc.server.address().port;
+		GQL_URL = `http://127.0.0.1:${apiSvc.server.address().port}/graphql`;
 	});
 	afterAll(() => broker.stop());
 
 	it("should call the greeter.hello action", async () => {
-		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
+		const res = await fetch(GQL_URL, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -144,7 +144,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.welcome action with parameter", async () => {
-		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
+		const res = await fetch(GQL_URL, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -163,7 +163,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.welcome action with query variable", async () => {
-		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
+		const res = await fetch(GQL_URL, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -181,8 +181,8 @@ describe("Integration test for greeter service", () => {
 		});
 	});
 
-	it("should call the greeter.welcome action with wrapped input params", async () => {
-		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
+	it("should call the greeter.replace action with wrapped input params", async () => {
+		const res = await fetch(GQL_URL, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -203,7 +203,7 @@ describe("Integration test for greeter service", () => {
 	});
 
 	it("should call the greeter.danger and receives an error", async () => {
-		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
+		const res = await fetch(GQL_URL, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
@@ -239,24 +239,23 @@ describe("Integration test for greeter service", () => {
 		});
 	});
 
-	it("should not call the greeter.secret", async () => {
-		const res = await fetch(`http://127.0.0.1:${port}/graphql`, {
+	it("should not call the greeter.secret because it's protected", async () => {
+		const res = await fetch(GQL_URL, {
 			method: "post",
 			body: JSON.stringify({
 				operationName: null,
 				variables: {},
-				query: "query { danger }"
+				query: "query { secret }"
 			}),
 			headers: { "Content-Type": "application/json" }
 		});
 
-		expect(res.status).toBe(200);
+		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({
-			data: null,
 			errors: [
 				{
 					extensions: {
-						code: "INTERNAL_SERVER_ERROR"
+						code: "GRAPHQL_VALIDATION_FAILED"
 						// exception: {
 						// 	code: 422,
 						// 	retryable: false,
@@ -269,8 +268,7 @@ describe("Integration test for greeter service", () => {
 							line: 1
 						}
 					],
-					message: "I've said it's a danger action!",
-					path: ["danger"]
+					message: 'Cannot query field "secret" on type "Query".'
 				}
 			]
 		});

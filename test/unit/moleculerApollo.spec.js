@@ -13,7 +13,7 @@ describe("Test graphqlMoleculer", () => {
 
 	it("should throw error if there are more arguments", () => {
 		expect(() => graphqlMoleculer({}, true)).toThrow(
-			"Apollo Server expects exactly one argument, got 2",
+			"Apollo Server expects exactly one argument, got 2"
 		);
 	});
 
@@ -27,11 +27,11 @@ describe("Test graphqlMoleculer handler", () => {
 
 	let fakeReq = {
 		method: "GET",
-		url: "http://my-server/graphql?filter=something",
+		url: "http://my-server/graphql?filter=something"
 	};
 	let fakeRes = {
 		setHeader: jest.fn(),
-		end: jest.fn(),
+		end: jest.fn()
 	};
 
 	it("should return the response of runHttpQuery with GET request", async () => {
@@ -40,10 +40,10 @@ describe("Test graphqlMoleculer handler", () => {
 				graphqlResponse: "my-response",
 				responseInit: {
 					headers: {
-						"X-Response-Time": "123ms",
-					},
-				},
-			}),
+						"X-Response-Time": "123ms"
+					}
+				}
+			})
 		);
 
 		const handler = graphqlMoleculer(options);
@@ -56,12 +56,12 @@ describe("Test graphqlMoleculer handler", () => {
 		expect(ApolloServerCore.runHttpQuery).toBeCalledWith([fakeReq, fakeRes], {
 			method: "GET",
 			options: {
-				a: 5,
+				a: 5
 			},
 			query: {
-				filter: "something",
+				filter: "something"
 			},
-			request: "convertedRequest",
+			request: "convertedRequest"
 		});
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledTimes(1);
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledWith(fakeReq);
@@ -92,10 +92,10 @@ describe("Test graphqlMoleculer handler", () => {
 		expect(ApolloServerCore.runHttpQuery).toBeCalledWith([fakeReq, fakeRes], {
 			method: "POST",
 			options: {
-				a: 5,
+				a: 5
 			},
 			query: "postBody",
-			request: "convertedRequest",
+			request: "convertedRequest"
 		});
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledTimes(1);
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledWith(fakeReq);
@@ -126,10 +126,10 @@ describe("Test graphqlMoleculer handler", () => {
 		expect(ApolloServerCore.runHttpQuery).toBeCalledWith([fakeReq, fakeRes], {
 			method: "POST",
 			options: {
-				a: 5,
+				a: 5
 			},
 			query: "filePayload",
-			request: "convertedRequest",
+			request: "convertedRequest"
 		});
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledTimes(1);
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledWith(fakeReq);
@@ -162,10 +162,10 @@ describe("Test graphqlMoleculer handler", () => {
 		expect(ApolloServerCore.runHttpQuery).toBeCalledWith([fakeReq, fakeRes], {
 			method: "POST",
 			options: {
-				a: 5,
+				a: 5
 			},
 			query: "filePayload",
-			request: "convertedRequest",
+			request: "convertedRequest"
 		});
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledTimes(1);
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledWith(fakeReq);
@@ -183,7 +183,7 @@ describe("Test graphqlMoleculer handler", () => {
 			err.name = "HttpQueryError";
 			err.statusCode = 422;
 			err.headers = {
-				"X-Http-Error": "Some error",
+				"X-Http-Error": "Some error"
 			};
 			throw err;
 		});
@@ -203,10 +203,10 @@ describe("Test graphqlMoleculer handler", () => {
 		expect(ApolloServerCore.runHttpQuery).toBeCalledWith([fakeReq, fakeRes], {
 			method: "POST",
 			options: {
-				a: 5,
+				a: 5
 			},
 			query: "filePayload",
-			request: "convertedRequest",
+			request: "convertedRequest"
 		});
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledTimes(1);
 		expect(ApolloServerCore.convertNodeHttpToRequest).toBeCalledWith(fakeReq);
