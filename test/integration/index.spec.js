@@ -1,9 +1,11 @@
 "use strict";
 
+const { Kind } = require("graphql");
 const { ServiceBroker, Context, Errors } = require("moleculer");
 const ApiGateway = require("moleculer-web");
 const _ = require("lodash");
 
+const { moleculerGql: gql } = require("../../index");
 const ApolloServerService = require("../../src/service");
 
 async function startService(mixinOptions, schemaMod) {
@@ -149,7 +151,299 @@ describe("Test Apollo Service", () => {
 	});
 
 	describe("Test schema merging", () => {
-		// TODO:
+		it("should merge schemas", async () => {
+			const { broker, url } = await startService({
+				typeDefs: ["scalar Timestamp"],
+				resolver: {
+					Timestamp: {
+						__parseValue(value) {
+							return new Date(value); // value from the client
+						},
+						__serialize(value) {
+							return value.toISOString(); // value sent to the client
+						},
+						__parseLiteral(ast) {
+							if (ast.kind === Kind.INT) {
+								return parseInt(ast.value, 10); // ast value is always in string format
+							}
+
+							return null;
+						}
+					}
+				}
+			});
+
+			jest.spyOn(broker, "broadcast");
+			jest.spyOn(broker, "call");
+
+			const POSTS = [
+				{
+					id: 1,
+					title: "First post",
+					author: 2,
+					votes: 2,
+					createdAt: new Date("2025-08-23T08:10:25")
+				},
+				{
+					id: 2,
+					title: "Second post",
+					author: 1,
+					votes: 1,
+					createdAt: new Date("2025-11-23T12:59:30")
+				},
+				{
+					id: 3,
+					title: "Third post",
+					author: 2,
+					votes: 0,
+					createdAt: new Date("2025-02-23T22:24:28")
+				}
+			];
+
+			await broker.createService({
+				name: "posts",
+				settings: {
+					graphql: {
+						type: `
+							"""
+							This type describes a post entity.
+							"""
+							type Post {
+								id: Int!
+								title: String!
+								author: User!
+								votes: Int!
+								createdAt: Timestamp
+							}
+						`,
+						query: `
+							tags: [String!]
+						`,
+						resolvers: {
+							Post: {
+								author: {
+									action: "users.resolve",
+									rootParams: {
+										author: "id"
+									}
+								}
+							},
+							Query: {
+								tags() {
+									return ["tag1", "tag2"];
+								}
+							}
+						}
+					}
+				},
+
+				actions: {
+					posts: {
+						graphql: {
+							query: "posts: [Post!]!"
+						},
+						handler() {
+							return POSTS;
+						}
+					},
+
+					vote: {
+						graphql: {
+							mutation: "vote(postID: Int!): Post!"
+						},
+						handler(ctx) {
+							const post = POSTS.find(p => p.id === ctx.params.postID);
+							if (post) {
+								post.votes++;
+								return post;
+							}
+							throw new Error("Post not found");
+						}
+					}
+				}
+			});
+
+			const USERS = [
+				{
+					id: 1,
+					name: "Genaro Krueger",
+					type: "1"
+				},
+				{
+					id: 2,
+					name: "Nicholas Paris",
+					type: "2"
+				},
+				{
+					id: 3,
+					name: "Quinton Loden",
+					type: "3"
+				}
+			];
+
+			await broker.createService({
+				name: "users",
+				settings: {
+					graphql: {
+						type: gql`
+							type User {
+								id: Int!
+								name: String!
+								posts: [Post]
+								postCount: Int
+								type: UserType
+							}
+						`,
+						enum: gql`
+							"""
+							Enumerations for user types
+							"""
+							enum UserType {
+								ADMIN
+								PUBLISHER
+								READER
+							}
+						`,
+						resolvers: {
+							User: {
+								posts: {
+									action: "posts.findByUser",
+									rootParams: {
+										id: "userID"
+									}
+								},
+								postCount: {
+									// Call the "posts.count" action
+									action: "posts.count",
+									// Get `id` value from `root` and put it into `ctx.params.query.author`
+									rootParams: {
+										id: "query.author"
+									}
+								}
+							},
+							UserType: {
+								ADMIN: "1",
+								PUBLISHER: "2",
+								READER: "3"
+							}
+						}
+					}
+				},
+
+				actions: {
+					users: {
+						graphql: {
+							query: "users: [User!]!"
+						},
+						handler() {
+							return USERS;
+						}
+					},
+
+					resolve(ctx) {
+						if (Array.isArray(ctx.params.id)) {
+							return _.cloneDeep(ctx.params.id.map(id => this.findByID(id)));
+						} else {
+							return _.cloneDeep(this.findByID(ctx.params.id));
+						}
+					}
+				},
+
+				methods: {
+					findByID(id) {
+						return USERS.find(user => user.id == id);
+					}
+				}
+			});
+
+			await broker.Promise.delay(1000);
+
+			const res = await call(url, {
+				query: "{ posts { id title author { name } createdAt } }"
+			});
+
+			expect(res.status).toBe(200);
+			expect(await res.json()).toEqual({
+				data: {
+					posts: [
+						{
+							id: 1,
+							title: "First post",
+							author: { name: "Nicholas Paris" },
+							createdAt: "2025-08-23T06:10:25.000Z"
+						},
+						{
+							id: 2,
+							title: "Second post",
+							author: { name: "Genaro Krueger" },
+							createdAt: "2025-11-23T11:59:30.000Z"
+						},
+						{
+							id: 3,
+							title: "Third post",
+							author: { name: "Nicholas Paris" },
+							createdAt: "2025-02-23T21:24:28.000Z"
+						}
+					]
+				}
+			});
+
+			expect(broker.call).toHaveBeenCalledTimes(4);
+			expect(broker.call).toHaveBeenNthCalledWith(1, "posts.posts", {}, expect.any(Object));
+			expect(broker.call).toHaveBeenNthCalledWith(
+				2,
+				"users.resolve",
+				{ id: 2 },
+				expect.any(Object)
+			);
+			expect(broker.call).toHaveBeenNthCalledWith(
+				3,
+				"users.resolve",
+				{ id: 1 },
+				expect.any(Object)
+			);
+			expect(broker.call).toHaveBeenNthCalledWith(
+				4,
+				"users.resolve",
+				{ id: 2 },
+				expect.any(Object)
+			);
+
+			// -------
+
+			const res2 = await call(url, {
+				query: "mutation { vote(postID: 2) { id title votes author { name } } }"
+			});
+
+			expect(res2.status).toBe(200);
+			expect(await res2.json()).toEqual({
+				data: {
+					vote: {
+						id: 2,
+						title: "Second post",
+						votes: 2,
+						author: { name: "Genaro Krueger" }
+					}
+				}
+			});
+
+			// -------
+
+			const res3 = await call(url, {
+				query: "{ tags }"
+			});
+
+			expect(res3.status).toBe(200);
+			expect(await res3.json()).toEqual({ data: { tags: ["tag1", "tag2"] } });
+
+			expect(broker.broadcast).toHaveBeenCalledTimes(2);
+			expect(broker.broadcast).toHaveBeenCalledWith("graphql.schema.updated", {
+				schema: expect.any(String)
+			});
+			expect(broker.broadcast.mock.calls[1][1]).toMatchSnapshot();
+
+			await broker.stop();
+		});
 	});
 
 	describe("Test resolvers", () => {
@@ -249,6 +543,6 @@ describe("Test Apollo Service", () => {
 	});
 
 	describe("Test healthcheck", () => {
-		// TODO:
+		// TODO: remove because not supported by Apollo Server
 	});
 });
