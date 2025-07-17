@@ -12,7 +12,6 @@ const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
 const { makeExecutableSchema } = require("@graphql-tools/schema");
 const GraphQL = require("graphql");
-// const { PubSub, withFilter } = require("graphql-subscriptions");
 const hash = require("object-hash");
 
 module.exports = function (mixinOptions) {
@@ -23,35 +22,12 @@ module.exports = function (mixinOptions) {
 		schema: null,
 		serverOptions: {},
 		createAction: true,
-		subscriptionEventName: "graphql.publish",
 		invalidateEventName: "graphql.invalidate",
 		autoUpdateSchema: true,
 		checkActionVisibility: false
 	});
 
 	const serviceSchema = {
-		actions: {
-			ws: {
-				timeout: 0,
-				visibility: "private",
-				tracing: {
-					tags: {
-						params: ["socket.upgradeReq.url"]
-					},
-					spanName: ctx => `UPGRADE ${ctx.params.socket.upgradeReq.url}`
-				},
-				handler(ctx) {
-					const { socket, connectionParams } = ctx.params;
-					return {
-						$ctx: ctx,
-						$socket: socket,
-						$service: this,
-						$params: { body: connectionParams, query: socket.upgradeReq.query }
-					};
-				}
-			}
-		},
-
 		events: {
 			[mixinOptions.invalidateEventName]() {
 				this.invalidateGraphQLSchema();
@@ -59,11 +35,6 @@ module.exports = function (mixinOptions) {
 			"$services.changed"() {
 				if (mixinOptions.autoUpdateSchema) {
 					this.invalidateGraphQLSchema();
-				}
-			},
-			[mixinOptions.subscriptionEventName](event) {
-				if (this.pubsub) {
-					this.pubsub.publish(event.tag, event.payload);
 				}
 			}
 		},
@@ -88,27 +59,6 @@ module.exports = function (mixinOptions) {
 					.replace(/^[\s]*?#.*\n?/gm, "")
 					.trim();
 				return cleanedDeclaration.split(/[(:]/g)[0];
-			},
-
-			/**
-			 * Get the full name of a service including version spec.
-			 *
-			 * @param {Service} service - Service object
-			 * @returns {String} Name of service including version spec
-			 */
-			getServiceName(service) {
-				if (service.fullName) return service.fullName;
-
-				if (service.version != null)
-					return (
-						(typeof service.version == "number"
-							? "v" + service.version
-							: service.version) +
-						"." +
-						service.name
-					);
-
-				return service.name;
 			},
 
 			/**
@@ -159,8 +109,7 @@ module.exports = function (mixinOptions) {
 					dataLoader: useDataLoader = false,
 					nullIfError = false,
 					params: staticParams = {},
-					rootParams = {},
-					fileUploadArg = null
+					rootParams = {}
 				} = def;
 				const rootKeys = Object.keys(rootParams);
 
@@ -217,27 +166,6 @@ module.exports = function (mixinOptions) {
 							return Array.isArray(dataLoaderKey)
 								? await dataLoader.loadMany(dataLoaderKey)
 								: await dataLoader.load(dataLoaderKey);
-						} else if (fileUploadArg != null && args[fileUploadArg] != null) {
-							const additionalArgs = _.omit(args, [fileUploadArg]);
-
-							if (Array.isArray(args[fileUploadArg])) {
-								return await Promise.all(
-									args[fileUploadArg].map(async uploadPromise => {
-										const { createReadStream, ...$fileInfo } =
-											await uploadPromise;
-										const stream = createReadStream();
-										return context.ctx.call(actionName, stream, {
-											meta: { $fileInfo, $args: additionalArgs }
-										});
-									})
-								);
-							}
-
-							const { createReadStream, ...$fileInfo } = await args[fileUploadArg];
-							const stream = createReadStream();
-							return await context.ctx.call(actionName, stream, {
-								meta: { $fileInfo, $args: additionalArgs }
-							});
 						} else {
 							const params = {};
 							let hasRootKeyValue = false;
@@ -336,21 +264,9 @@ module.exports = function (mixinOptions) {
 			 * Create resolver for subscription
 			 *
 			 * @param {String} actionName
-			 * @param {Array?} tags
-			 * @param {String?} filter
 			 */
-			createAsyncIteratorResolver(actionName, tags = [], filter) {
+			createAsyncIteratorResolver(actionName) {
 				return {
-					/*subscribe: filter
-						? withFilter(
-								() => this.pubsub.asyncIterator(tags),
-								async (payload, params, { ctx }) =>
-									payload !== undefined
-										? ctx.call(filter, { ...params, payload })
-										: false
-							)
-						: () => this.pubsub.asyncIterator(tags),
-					*/
 					resolve: (payload, params, { ctx }) =>
 						ctx.call(actionName, { ...params, payload })
 				};
@@ -393,7 +309,7 @@ module.exports = function (mixinOptions) {
 					const processedServices = new Set();
 
 					services.forEach(service => {
-						const serviceName = this.getServiceName(service);
+						const serviceName = service.fullName;
 
 						// Skip multiple instances of services
 						if (processedServices.has(serviceName)) return;
@@ -483,10 +399,7 @@ module.exports = function (mixinOptions) {
 										const name = this.getFieldName(mutation);
 										mutations.push(mutation);
 										resolver.Mutation[name] = this.createActionResolver(
-											action.name,
-											{
-												fileUploadArg: def.fileUploadArg
-											}
+											action.name
 										);
 									});
 								}
@@ -623,13 +536,6 @@ module.exports = function (mixinOptions) {
 			},
 
 			/**
-			 * Create PubSub instance.
-			 */
-			createPubSub() {
-				//return new PubSub();
-			},
-
-			/**
 			 * Prepare GraphQL schemas based on Moleculer services.
 			 */
 			async prepareGraphQLSchema() {
@@ -648,7 +554,6 @@ module.exports = function (mixinOptions) {
 				);
 
 				try {
-					this.pubsub = this.createPubSub();
 					const services = this.broker.registry.getServiceList({ withActions: true });
 					const schema = this.generateGraphQLSchema(services);
 
@@ -656,39 +561,35 @@ module.exports = function (mixinOptions) {
 						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
 					);
 
-					this.apolloServer = new ApolloServer(
-						{
-							schema,
-							...(mixinOptions.serverOptions ?? {})
-						},
-						{
-							context: ({ req, connection }) => ({
-								...(req
-									? {
-											ctx: req.$ctx,
-											service: req.$service,
-											params: req.$params
-										}
-									: {
-											ctx: connection.context.$ctx,
-											service: connection.context.$service,
-											params: connection.context.$params
-										}),
-								dataLoaders: new Map() // create an empty map to load DataLoader instances into
-							})
-						}
-					);
+					this.apolloServer = new ApolloServer({
+						schema,
+						...(mixinOptions.serverOptions ?? {})
+					});
 
 					await this.apolloServer.start();
 
 					this.graphqlHandler = this.apolloServer.createHandler(
-						mixinOptions.serverOptions
+						mixinOptions.serverOptions,
+						args => {
+							const context = {
+								dataLoaders: new Map() // create an empty map to load DataLoader instances into
+							};
+							if (args?.req) {
+								Object.assign(context, {
+									ctx: args.req.$ctx,
+									service: args.req.$service,
+									params: args.req.$params
+								});
+							}
+							if (mixinOptions.serverOptions?.context) {
+								const customContext = mixinOptions.serverOptions.context(context);
+								if (customContext != null) {
+									Object.assign(context, customContext);
+								}
+							}
+							return context;
+						}
 					);
-
-					// if (mixinOptions.serverOptions.subscriptions !== false) {
-					// 	// Avoid installing the subscription handlers if they have been disabled
-					// 	this.apolloServer.installSubscriptionHandlers(this.server);
-					// }
 
 					this.graphqlSchema = schema;
 
@@ -724,7 +625,7 @@ module.exports = function (mixinOptions) {
 							(graphqlDefinition.dataLoaderOptions ||
 								graphqlDefinition.dataLoaderBatchParam)
 						) {
-							const serviceName = this.getServiceName(service);
+							const serviceName = service.fullName;
 							const fullActionName = this.getResolverActionName(
 								serviceName,
 								actionName
@@ -753,7 +654,6 @@ module.exports = function (mixinOptions) {
 			this.apolloServer = null;
 			this.graphqlHandler = null;
 			this.graphqlSchema = null;
-			this.pubsub = null;
 			this.shouldUpdateGraphqlSchema = true;
 			this.dataLoaderOptions = new Map();
 			this.dataLoaderBatchParams = new Map();
@@ -775,20 +675,6 @@ module.exports = function (mixinOptions) {
 							return await this.graphqlHandler(req, res);
 						} catch (err) {
 							this.sendError(req, res, err);
-						}
-					},
-					async "GET /.well-known/apollo/server-health"(req, res) {
-						try {
-							await this.prepareGraphQLSchema();
-							return await this.graphqlHandler(req, res);
-						} catch (err) {
-							res.statusCode = 503;
-							return this.sendResponse(
-								req,
-								res,
-								{ status: "fail", schema: false },
-								{ responseType: "application/health+json" }
-							);
 						}
 					}
 				},

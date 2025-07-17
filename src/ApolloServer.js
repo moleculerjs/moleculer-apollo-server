@@ -44,24 +44,11 @@ async function send(req, res, statusCode, data, responseType = "application/json
 }
 
 class ApolloServer extends ApolloServerBase {
-	constructor(options, middlewareOptions) {
-		super(options);
-		this.middlewareOptions = middlewareOptions;
-	}
-
-	// Extract Apollo Server options from the request.
-	createGraphQLServerOptions(req, res) {
-		return super.graphQLServerOptions({ req, res });
-	}
-
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
-	createHandler({ path } = {}) {
+	createHandler(serverOptions, context) {
 		return async (req, res) => {
-			this.graphqlPath = path || "/graphql";
-
 			// Handle incoming GraphQL requests using Apollo Server.
-			const context = this.middlewareOptions?.context ?? (async () => ({}));
 			const response = await this.executeHTTPGraphQLRequest({
 				httpGraphQLRequest: {
 					method: req.method.toUpperCase(),
@@ -86,16 +73,6 @@ class ApolloServer extends ApolloServerBase {
 
 			// TODO: Handle chunked response
 		};
-	}
-
-	// This integration supports file uploads.
-	supportsUploads() {
-		return false;
-	}
-
-	// This integration supports subscriptions.
-	supportsSubscriptions() {
-		return false;
 	}
 }
 module.exports = {
