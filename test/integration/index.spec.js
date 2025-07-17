@@ -176,6 +176,8 @@ describe("Test Apollo Service", () => {
 			jest.spyOn(broker, "broadcast");
 			jest.spyOn(broker, "call");
 
+			const TAGS = ["tag1", "tag2"];
+
 			const POSTS = [
 				{
 					id: 1,
@@ -219,6 +221,9 @@ describe("Test Apollo Service", () => {
 						query: `
 							tags: [String!]
 						`,
+						mutation: `
+							addTag(tag: String!): Boolean!
+						`,
 						resolvers: {
 							Post: {
 								author: {
@@ -230,7 +235,13 @@ describe("Test Apollo Service", () => {
 							},
 							Query: {
 								tags() {
-									return ["tag1", "tag2"];
+									return TAGS;
+								}
+							},
+							Mutation: {
+								addTag(root, args) {
+									TAGS.push(args.tag);
+									return true;
 								}
 							}
 						}
@@ -441,6 +452,19 @@ describe("Test Apollo Service", () => {
 				schema: expect.any(String)
 			});
 			expect(broker.broadcast.mock.calls[1][1]).toMatchSnapshot();
+
+			const res4 = await call(url, {
+				query: 'mutation { addTag(tag: "tag3") }'
+			});
+
+			expect(res4.status).toBe(200);
+
+			const res5 = await call(url, {
+				query: "{ tags }"
+			});
+
+			expect(res5.status).toBe(200);
+			expect(await res5.json()).toEqual({ data: { tags: ["tag1", "tag2", "tag3"] } });
 
 			await broker.stop();
 		});

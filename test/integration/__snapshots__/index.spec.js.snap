@@ -11,6 +11,7 @@ type Query {
 }
 
 type Mutation {
+  addTag(tag: String!): Boolean!
   vote(postID: Int!): Post!
 }
 
