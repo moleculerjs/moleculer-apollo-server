@@ -56,14 +56,9 @@ class ApolloServer extends ApolloServerBase {
 
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
-	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
+	createHandler({ path } = {}) {
 		return async (req, res) => {
 			this.graphqlPath = path || "/graphql";
-
-			// If health checking is enabled, trigger the `onHealthCheck`
-			// function when the health check URL is requested.
-			if (!disableHealthCheck && req.url === "/.well-known/apollo/server-health")
-				return await this.handleHealthCheck({ req, res, onHealthCheck });
 
 			// Handle incoming GraphQL requests using Apollo Server.
 			const context = this.middlewareOptions?.context ?? (async () => ({}));
@@ -101,17 +96,6 @@ class ApolloServer extends ApolloServerBase {
 	// This integration supports subscriptions.
 	supportsSubscriptions() {
 		return false;
-	}
-
-	async handleHealthCheck({ req, res, onHealthCheck }) {
-		onHealthCheck = onHealthCheck || (() => undefined);
-		try {
-			const result = await onHealthCheck(req);
-			return send(req, res, 200, { status: "pass", result }, "application/health+json");
-		} catch (error) {
-			const result = error instanceof Error ? error.toString() : error;
-			return send(req, res, 503, { status: "fail", result }, "application/health+json");
-		}
 	}
 }
 module.exports = {

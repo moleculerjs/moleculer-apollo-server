@@ -23,8 +23,6 @@ declare module "moleculer-apollo-server" {
 
 	export interface ApolloServerOptions {
 		path: string;
-		disableHealthCheck: boolean;
-		onHealthCheck: () => {};
 	}
 
 	export class ApolloServer {
