@@ -61,7 +61,7 @@
     "node": ">= 20.x.x"
   },
   "dependencies": {
-    "@apollo/server": "^4.12.2",
+    "@apollo/server": "^5.0.0",
     "@graphql-tools/schema": "^10.0.24",
     "dataloader": "^2.2.3",
     "lodash": "^4.17.21",
