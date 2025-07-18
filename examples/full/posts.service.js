@@ -162,11 +162,6 @@ module.exports = {
 				post.voters.push(ctx.params.userID);
 				post.votes = post.voters.length;
 
-				await ctx.broadcast("graphql.publish", {
-					tag: "VOTE",
-					payload: { type: "up", userID: ctx.params.userID }
-				});
-
 				return _.cloneDeep(post);
 			}
 		},
@@ -197,33 +192,7 @@ module.exports = {
 				post.voters = post.voters.filter(voter => voter != ctx.params.userID);
 				post.votes = post.voters.length;
 
-				await ctx.broadcast("graphql.publish", {
-					tag: "VOTE",
-					payload: { type: "down", userID: ctx.params.userID }
-				});
-
 				return _.cloneDeep(post);
-			}
-		},
-		vote: {
-			params: { payload: "object" },
-			graphql: {
-				subscription: gql`
-					type Subscription {
-						vote(userID: Int!): String!
-					}
-				`,
-				tags: ["VOTE"],
-				filter: "posts.vote.filter"
-			},
-			handler(ctx) {
-				return ctx.params.payload.type;
-			}
-		},
-		"vote.filter": {
-			params: { userID: "number", payload: "object" },
-			handler(ctx) {
-				return ctx.params.payload.userID === ctx.params.userID;
 			}
 		},
 		error: {

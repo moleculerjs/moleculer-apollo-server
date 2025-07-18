@@ -46,7 +46,7 @@ async function send(req, res, statusCode, data, responseType = "application/json
 class ApolloServer extends ApolloServerBase {
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
-	createHandler(serverOptions, context) {
+	createHandler(context) {
 		return async (req, res) => {
 			// Handle incoming GraphQL requests using Apollo Server.
 			const response = await this.executeHTTPGraphQLRequest({

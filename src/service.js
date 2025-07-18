@@ -568,28 +568,25 @@ module.exports = function (mixinOptions) {
 
 					await this.apolloServer.start();
 
-					this.graphqlHandler = this.apolloServer.createHandler(
-						mixinOptions.serverOptions,
-						args => {
-							const context = {
-								dataLoaders: new Map() // create an empty map to load DataLoader instances into
-							};
-							if (args?.req) {
-								Object.assign(context, {
-									ctx: args.req.$ctx,
-									service: args.req.$service,
-									params: args.req.$params
-								});
-							}
-							if (mixinOptions.serverOptions?.context) {
-								const customContext = mixinOptions.serverOptions.context(context);
-								if (customContext != null) {
-									Object.assign(context, customContext);
-								}
-							}
-							return context;
+					this.graphqlHandler = this.apolloServer.createHandler(args => {
+						const context = {
+							dataLoaders: new Map() // create an empty map to load DataLoader instances into
+						};
+						if (args?.req) {
+							Object.assign(context, {
+								ctx: args.req.$ctx,
+								service: args.req.$service,
+								params: args.req.$params
+							});
 						}
-					);
+						if (mixinOptions.serverOptions?.context) {
+							const customContext = mixinOptions.serverOptions.context(context);
+							if (customContext != null) {
+								Object.assign(context, customContext);
+							}
+						}
+						return context;
+					});
 
 					this.graphqlSchema = schema;
 

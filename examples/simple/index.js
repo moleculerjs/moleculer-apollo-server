@@ -62,15 +62,6 @@ broker.createService({
 				return `Hello ${ctx.params.name}`;
 			}
 		},
-		update: {
-			graphql: {
-				subscription: "update: String!",
-				tags: ["TEST"]
-			},
-			handler(ctx) {
-				return ctx.params.payload;
-			}
-		},
 
 		danger: {
 			graphql: {
@@ -109,13 +100,6 @@ broker.start().then(async () => {
 	const res = await broker.call("api.graphql", {
 		query: "query { hello }"
 	});
-
-	let counter = 1;
-	setInterval(
-		async () =>
-			broker.broadcast("graphql.publish", { tag: "TEST", payload: `test ${counter++}` }),
-		5000
-	);
 
 	if (res.errors && res.errors.length > 0) return res.errors.forEach(broker.logger.error);
 

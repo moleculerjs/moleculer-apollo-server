@@ -26,10 +26,7 @@ declare module "moleculer-apollo-server" {
 	}
 
 	export class ApolloServer {
-		createGraphQLServerOptions(req: any, res: any): Promise<any>;
 		createHandler(options: ApolloServerOptions): void;
-		supportsUploads(): boolean;
-		supportsSubscriptions(): boolean;
 	}
 
 	export interface ActionResolverSchema {
