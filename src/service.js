@@ -7,12 +7,17 @@
 "use strict";
 
 const _ = require("lodash");
+const hash = require("object-hash");
+
 const { MoleculerServerError } = require("moleculer").Errors;
 const { ApolloServer } = require("./ApolloServer");
 const DataLoader = require("dataloader");
 const { makeExecutableSchema } = require("@graphql-tools/schema");
 const GraphQL = require("graphql");
-const hash = require("object-hash");
+
+const { PubSub, withFilter, PubSubEngine } = require("graphql-subscriptions");
+const { WebSocketServer } = require("ws");
+const { useServer } = require("graphql-ws/use/ws");
 
 module.exports = function (mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
@@ -187,7 +192,9 @@ module.exports = function (mixinOptions) {
 								mergedParams = await this.prepareContextParams(
 									mergedParams,
 									actionName,
-									context
+									context,
+									root,
+									args
 								);
 							}
 
@@ -196,10 +203,6 @@ module.exports = function (mixinOptions) {
 					} catch (err) {
 						if (nullIfError) {
 							return null;
-						}
-						/* istanbul ignore next */
-						if (err && err.ctx) {
-							err.ctx = null; // Avoid circular JSON in Moleculer <= 0.13
 						}
 						throw err;
 					}
@@ -264,9 +267,20 @@ module.exports = function (mixinOptions) {
 			 * Create resolver for subscription
 			 *
 			 * @param {String} actionName
+			 * @param {Array?} tags
+			 * @param {String?} filter
 			 */
-			createAsyncIteratorResolver(actionName) {
+			createAsyncIteratorResolver(actionName, tags = [], filter) {
 				return {
+					subscribe: filter
+						? withFilter(
+								() => this.pubsub.asyncIterator(tags),
+								async (payload, params, { ctx }) =>
+									payload !== undefined
+										? ctx.call(filter, { ...params, payload })
+										: false
+							)
+						: () => this.pubsub.asyncIterator(tags),
 					resolve: (payload, params, { ctx }) =>
 						ctx.call(actionName, { ...params, payload })
 				};
@@ -536,6 +550,13 @@ module.exports = function (mixinOptions) {
 			},
 
 			/**
+			 * Create PubSub instance.
+			 */
+			createPubSub() {
+				return new PubSub();
+			},
+
+			/**
 			 * Prepare GraphQL schemas based on Moleculer services.
 			 */
 			async prepareGraphQLSchema() {
@@ -654,6 +675,7 @@ module.exports = function (mixinOptions) {
 			this.shouldUpdateGraphqlSchema = true;
 			this.dataLoaderOptions = new Map();
 			this.dataLoaderBatchParams = new Map();
+			this.pubsub = null;
 
 			// Bind service to onConnect method
 			if (

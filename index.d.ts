@@ -4,6 +4,8 @@ declare module "moleculer-apollo-server" {
 	import { OptionsUrlencoded } from "body-parser";
 	import { SchemaDirectiveVisitor, IResolvers } from "graphql-tools";
 
+	export { GraphQLError } from "graphql";
+
 	export {
 		GraphQLExtension,
 		gql,

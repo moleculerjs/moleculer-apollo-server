@@ -7,11 +7,15 @@
 
 "use strict";
 
+const { GraphQLError } = require("graphql");
+
 const { ApolloServer } = require("./src/ApolloServer");
 const ApolloService = require("./src/service");
 const gql = require("./src/gql");
 
 module.exports = {
+	GraphQLError,
+
 	// Apollo Server
 	ApolloServer,
 

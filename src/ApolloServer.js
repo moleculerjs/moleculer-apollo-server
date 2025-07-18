@@ -71,7 +71,12 @@ class ApolloServer extends ApolloServerBase {
 				);
 			}
 
-			// TODO: Handle chunked response
+			// Handle chunked response
+			res.statusCode = response.status || 200;
+			for await (const chunk of response.body.asyncIterator) {
+				res.write(chunk);
+			}
+			res.end();
 		};
 	}
 }
