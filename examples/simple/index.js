@@ -6,7 +6,15 @@ const { MoleculerClientError } = require("moleculer").Errors;
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
-const broker = new ServiceBroker({ logLevel: "info" });
+const broker = new ServiceBroker({
+	logLevel: "info",
+	tracing: {
+		enabled: true,
+		exporter: {
+			type: "Console"
+		}
+	}
+});
 
 broker.createService({
 	name: "api",
@@ -63,6 +71,33 @@ broker.createService({
 			}
 		},
 
+		update: {
+			graphql: {
+				subscription: "update: Int!",
+				tags: ["TEST"],
+				filter: "greeter.updateFilter"
+			},
+			handler(ctx) {
+				return ctx.params.payload;
+			}
+		},
+
+		delete: {
+			graphql: {
+				subscription: "delete: Int!",
+				tags: ["DELETE"]
+			},
+			handler(ctx) {
+				return ctx.params.payload;
+			}
+		},
+
+		updateFilter: {
+			handler(ctx) {
+				return ctx.params.payload % 2 === 0;
+			}
+		},
+
 		danger: {
 			graphql: {
 				query: "danger: String!"
@@ -108,4 +143,10 @@ broker.start().then(async () => {
 	broker.logger.info("----------------------------------------------------------");
 	broker.logger.info("Open the http://localhost:3000/graphql URL in your browser");
 	broker.logger.info("----------------------------------------------------------");
+
+	let counter = 1;
+	setInterval(
+		async () => broker.broadcast("graphql.publish", { tag: "TEST", payload: counter++ }),
+		2000
+	);
 });

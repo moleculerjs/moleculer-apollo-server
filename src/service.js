@@ -15,7 +15,7 @@ const DataLoader = require("dataloader");
 const { makeExecutableSchema } = require("@graphql-tools/schema");
 const GraphQL = require("graphql");
 
-const { PubSub, withFilter, PubSubEngine } = require("graphql-subscriptions");
+const { PubSub, withFilter } = require("graphql-subscriptions");
 const { WebSocketServer } = require("ws");
 const { useServer } = require("graphql-ws/use/ws");
 
@@ -27,16 +27,51 @@ module.exports = function (mixinOptions) {
 		schema: null,
 		serverOptions: {},
 		createAction: true,
+		subscriptionEventName: "graphql.publish",
 		invalidateEventName: "graphql.invalidate",
 		autoUpdateSchema: true,
 		checkActionVisibility: false
 	});
 
 	const serviceSchema = {
+		actions: {
+			subscription: {
+				timeout: 0,
+				visibility: "private",
+				tracing: {
+					tags: {
+						params: ["req.url"]
+					},
+					spanName: ctx => `SUBSCRIPTION ${ctx.params.req.url}`
+				},
+				handler(ctx) {
+					const { socket, connectionParams, req } = ctx.params;
+					return {
+						$ctx: ctx,
+						$socket: socket,
+						$service: this,
+						$params: { body: connectionParams, query: req.query }
+					};
+				}
+			}
+		},
 		events: {
 			[mixinOptions.invalidateEventName]() {
 				this.invalidateGraphQLSchema();
 			},
+
+			[mixinOptions.subscriptionEventName]: {
+				params: {
+					tag: { type: "string" },
+					payload: { type: "any", optional: true }
+				},
+				handler(event) {
+					if (this.pubsub) {
+						this.pubsub.publish(event.tag, event.payload);
+					}
+				}
+			},
+
 			"$services.changed"() {
 				if (mixinOptions.autoUpdateSchema) {
 					this.invalidateGraphQLSchema();
@@ -274,15 +309,16 @@ module.exports = function (mixinOptions) {
 				return {
 					subscribe: filter
 						? withFilter(
-								() => this.pubsub.asyncIterator(tags),
+								() => this.pubsub.asyncIterableIterator(tags),
 								async (payload, params, { ctx }) =>
 									payload !== undefined
 										? ctx.call(filter, { ...params, payload })
 										: false
 							)
-						: () => this.pubsub.asyncIterator(tags),
-					resolve: (payload, params, { ctx }) =>
-						ctx.call(actionName, { ...params, payload })
+						: () => this.pubsub.asyncIterableIterator(tags),
+					resolve: (payload, params, { ctx }) => {
+						return ctx.call(actionName, { ...params, payload });
+					}
 				};
 			},
 
@@ -550,7 +586,9 @@ module.exports = function (mixinOptions) {
 			},
 
 			/**
-			 * Create PubSub instance.
+			 * Create PubSub instance. If you want to use your own PubSub implementation,
+			 * just overwrite this method in your service file.
+			 * @returns {PubSub} PubSub instance
 			 */
 			createPubSub() {
 				return new PubSub();
@@ -582,32 +620,92 @@ module.exports = function (mixinOptions) {
 						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
 					);
 
-					this.apolloServer = new ApolloServer({
+					const apolloServerOptions = {
 						schema,
 						...(mixinOptions.serverOptions ?? {})
-					});
+					};
+
+					if (mixinOptions.serverOptions?.subscriptions !== false) {
+						if (!this.pubsub) {
+							this.pubsub = await this.createPubSub();
+						}
+
+						if (!this.wsServer) {
+							this.wsServer = new WebSocketServer({
+								server: this.server,
+								path: mixinOptions.routeOptions.path || "/graphql"
+							});
+						}
+
+						// Hand in the schema we just created and have the
+						// WebSocketServer start listening.
+						const serverCleanup = useServer(
+							{
+								...(_.isObject(mixinOptions.serverOptions.subscriptions)
+									? mixinOptions.serverOptions.subscriptions
+									: {}),
+
+								schema,
+
+								onConnect: async ctx => {
+									ctx.$moleculer = await this.actions.subscription({
+										connectionParams: ctx.connectionParams,
+										socket: ctx.extra.socket,
+										req: ctx.extra.request
+									});
+
+									if (mixinOptions.serverOptions.subscriptions?.onConnect) {
+										return mixinOptions.serverOptions.subscriptions.onConnect.apply(
+											this,
+											arguments
+										);
+									}
+
+									return true;
+								},
+
+								context: (ctx /*, id, payload, args*/) => {
+									const newCtx = this.createGraphqlContext({
+										req: ctx.$moleculer
+									});
+
+									if (mixinOptions.serverOptions.subscriptions?.context) {
+										const customContext =
+											mixinOptions.serverOptions.subscriptions.context.apply(
+												this,
+												arguments
+											);
+										if (customContext != null) {
+											Object.assign(newCtx, customContext);
+										}
+									}
+
+									return newCtx;
+								}
+							},
+							this.wsServer
+						);
+
+						if (!apolloServerOptions.plugins) apolloServerOptions.plugins = [];
+						apolloServerOptions.plugins.push({
+							async serverWillStart() {
+								return {
+									async drainServer() {
+										// Proper shutdown for the WebSocket server.
+										await serverCleanup.dispose();
+									}
+								};
+							}
+						});
+					}
+
+					this.apolloServer = new ApolloServer(apolloServerOptions);
 
 					await this.apolloServer.start();
 
-					this.graphqlHandler = this.apolloServer.createHandler(args => {
-						const context = {
-							dataLoaders: new Map() // create an empty map to load DataLoader instances into
-						};
-						if (args?.req) {
-							Object.assign(context, {
-								ctx: args.req.$ctx,
-								service: args.req.$service,
-								params: args.req.$params
-							});
-						}
-						if (mixinOptions.serverOptions?.context) {
-							const customContext = mixinOptions.serverOptions.context(context);
-							if (customContext != null) {
-								Object.assign(context, customContext);
-							}
-						}
-						return context;
-					});
+					this.graphqlHandler = this.apolloServer.createHandler(
+						this.createGraphqlContext
+					);
 
 					this.graphqlSchema = schema;
 
@@ -622,6 +720,30 @@ module.exports = function (mixinOptions) {
 					this.logger.error(err);
 					throw err;
 				}
+			},
+
+			/**
+			 * Create the GraphQL context for each request
+			 *
+			 * @param {*} args
+			 * @returns
+			 */
+			createGraphqlContext(args) {
+				const context = {
+					ctx: args.req.$ctx,
+					service: args.req.$service,
+					params: args.req.$params,
+
+					dataLoaders: new Map() // create an empty map to load DataLoader instances into
+				};
+
+				if (mixinOptions.serverOptions?.context) {
+					const customContext = mixinOptions.serverOptions.context(context);
+					if (customContext != null) {
+						Object.assign(context, customContext);
+					}
+				}
+				return context;
 			},
 
 			/**
@@ -676,6 +798,7 @@ module.exports = function (mixinOptions) {
 			this.dataLoaderOptions = new Map();
 			this.dataLoaderBatchParams = new Map();
 			this.pubsub = null;
+			this.wsServer = null;
 
 			// Bind service to onConnect method
 			if (
