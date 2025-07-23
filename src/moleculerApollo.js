@@ -50,9 +50,19 @@ module.exports = function graphqlMoleculer(options) {
 			}
 
 			res.statusCode = error.statusCode || error.code || 500;
-			res.end(error.message);
+			res.end(escapeHtml(error.message));
 
 			return undefined;
 		}
 	};
 };
+
+// Helper function to escape HTML special characters
+function escapeHtml(unsafe) {
+	return unsafe
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+}
