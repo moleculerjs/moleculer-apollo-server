@@ -1,9 +1,6 @@
 ![Moleculer logo](http://moleculer.services/images/banner.png)
 
-[![CI test](https://github.com/moleculerjs/moleculer-apollo-server/actions/workflows/ci.yml/badge.svg)](https://github.com/moleculerjs/moleculer-apollo-server/actions/workflows/ci.yml)
-
-
-# moleculer-apollo-server [![NPM version](https://img.shields.io/npm/v/moleculer-apollo-server.svg)](https://www.npmjs.com/package/moleculer-apollo-server)
+# moleculer-apollo-server [![CI test](https://github.com/moleculerjs/moleculer-apollo-server/actions/workflows/ci.yml/badge.svg)](https://github.com/moleculerjs/moleculer-apollo-server/actions/workflows/ci.yml) [![NPM version](https://img.shields.io/npm/v/moleculer-apollo-server.svg)](https://www.npmjs.com/package/moleculer-apollo-server)
 
 [Apollo GraphQL server 5](https://www.apollographql.com/docs/apollo-server/) mixin for [Moleculer API Gateway](https://github.com/moleculerjs/moleculer-web)
 
@@ -264,23 +261,23 @@ To activate DataLoader for a resolver, simply add `dataLoader: true` to the reso
 
 ```js
 settings: {
-	graphql: {
-		resolvers: {
-			Post: {
-				author: {
-					action: "users.resolve",
-					dataLoader: true,
-					rootParams: {
-						author: "id",
-					},
-				},
-				voters: {
-					action: "users.resolve",
-					dataLoader: true,
-					rootParams: {
-						voters: "id",
-					},
-				},
+    graphql: {
+        resolvers: {
+            Post: {
+                author: {
+                    action: "users.resolve",
+                    dataLoader: true,
+                    rootParams: {
+                        author: "id",
+                    },
+                },
+                voters: {
+                    action: "users.resolve",
+                    dataLoader: true,
+                    rootParams: {
+                        voters: "id",
+                    },
+                },
                 ...
 ```
 Since DataLoader only expects a single value to be loaded at a time, only one `rootParams` key/value pairing will be utilized, but `params` and GraphQL child arguments work properly.
@@ -289,18 +286,18 @@ You can also specify [options](https://github.com/graphql/dataloader#api) for co
 
 ```js
 resolve: {
-	params: {
-		id: [{ type: "number" }, { type: "array", items: "number" }],
-		graphql: { dataLoaderOptions: { maxBatchSize: 100 } },
-	},
-	handler(ctx) {
-		this.logger.debug("resolve action called.", { params: ctx.params });
-		if (Array.isArray(ctx.params.id)) {
-			return _.cloneDeep(ctx.params.id.map(id => this.findByID(id)));
-		} else {
-			return _.cloneDeep(this.findByID(ctx.params.id));
-		}
-	},
+    params: {
+        id: [{ type: "number" }, { type: "array", items: "number" }],
+        graphql: { dataLoaderOptions: { maxBatchSize: 100 } },
+    },
+    handler(ctx) {
+        this.logger.debug("resolve action called.", { params: ctx.params });
+        if (Array.isArray(ctx.params.id)) {
+            return _.cloneDeep(ctx.params.id.map(id => this.findByID(id)));
+        } else {
+            return _.cloneDeep(this.findByID(ctx.params.id));
+        }
+    },
 },
 ```
 It is unlikely that setting any of the options which accept a function will work properly unless you are running moleculer in a single-node environment.  This is because the functions will not serialize and be run by the moleculer-web Api Gateway.
