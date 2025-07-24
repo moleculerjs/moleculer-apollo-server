@@ -150,7 +150,7 @@ describe("Test Apollo Service", () => {
 	describe("Test schema preparation", () => {
 		it("should generate valid GraphQL schema", async () => {
 			const { broker, url } = await startService(
-				{},
+				{ serverOptions: { subscriptions: false } },
 				{
 					version: 2,
 					settings: {

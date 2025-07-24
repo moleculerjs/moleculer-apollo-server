@@ -73,9 +73,20 @@ broker.createService({
 
 		update: {
 			graphql: {
-				subscription: "update: Int!",
-				tags: ["TEST"],
-				filter: "greeter.updateFilter"
+				mutation: "update(id: Int!): Boolean!"
+			},
+			async handler(ctx) {
+				await ctx.broadcast("graphql.publish", { tag: "UPDATED", payload: ctx.params.id });
+
+				return true;
+			}
+		},
+
+		updated: {
+			graphql: {
+				subscription: "updated: Int!",
+				tags: ["UPDATED"],
+				filter: "greeter.updatedFilter"
 			},
 			handler(ctx) {
 				return ctx.params.payload;
@@ -92,7 +103,7 @@ broker.createService({
 			}
 		},
 
-		updateFilter: {
+		updatedFilter: {
 			handler(ctx) {
 				return ctx.params.payload % 2 === 0;
 			}
@@ -146,7 +157,7 @@ broker.start().then(async () => {
 
 	let counter = 1;
 	setInterval(
-		async () => broker.broadcast("graphql.publish", { tag: "TEST", payload: counter++ }),
+		async () => broker.broadcast("graphql.publish", { tag: "UPDATED", payload: counter++ }),
 		2000
 	);
 });

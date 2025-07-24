@@ -4,6 +4,9 @@ const { MoleculerClientError } = require("moleculer").Errors;
 const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
+const { createClient } = require("graphql-ws");
+const ws = require("ws");
+
 describe("Integration test for greeter service", () => {
 	const broker = new ServiceBroker({ logger: false });
 
@@ -68,15 +71,35 @@ describe("Integration test for greeter service", () => {
 					return `Hello ${ctx.params.name}`;
 				}
 			},
-			/*update: {
+			update: {
 				graphql: {
-					subscription: "update: String!",
-					tags: ["TEST"],
+					mutation: "update(id: Int!): Boolean!"
+				},
+				async handler(ctx) {
+					await ctx.broadcast("graphql.publish", {
+						tag: "UPDATED",
+						payload: ctx.params.id
+					});
+
+					return true;
+				}
+			},
+			updated: {
+				graphql: {
+					subscription: "updated: Int!",
+					tags: ["UPDATED"],
+					filter: "greeter.updatedFilter"
 				},
 				handler(ctx) {
 					return ctx.params.payload;
-				},
-			},*/
+				}
+			},
+
+			updatedFilter: {
+				handler(ctx) {
+					return ctx.params.payload % 2 === 0;
+				}
+			},
 
 			replace: {
 				graphql: {
@@ -272,5 +295,43 @@ describe("Integration test for greeter service", () => {
 				}
 			]
 		});
+	});
+
+	it("should subscribe to the updated subscription", async () => {
+		const client = createClient({
+			url: GQL_URL.replace("http", "ws"),
+			webSocketImpl: ws
+		});
+		const sub = client.iterate({
+			query: "subscription { updated }"
+		});
+
+		// Wait for WS connection & subscription
+		await new Promise(resolve => setTimeout(resolve, 1000));
+
+		const update = id =>
+			fetch(GQL_URL, {
+				method: "post",
+				body: JSON.stringify({
+					query: "mutation Update($id: Int!) { update(id: $id) }",
+					variables: { id }
+				}),
+				headers: { "Content-Type": "application/json" }
+			});
+
+		for (let i = 0; i < 5; i++) {
+			await update(i + 1);
+		}
+
+		const FLOW = [];
+
+		for await (const res of sub) {
+			FLOW.push(res.data.updated);
+			if (FLOW.length === 2) {
+				break;
+			}
+		}
+
+		expect(FLOW).toEqual([2, 4]);
 	});
 });

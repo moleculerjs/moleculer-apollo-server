@@ -613,6 +613,12 @@ module.exports = function (mixinOptions) {
 				);
 
 				try {
+					if (mixinOptions.serverOptions?.subscriptions !== false) {
+						if (!this.pubsub) {
+							this.pubsub = await this.createPubSub();
+						}
+					}
+
 					const services = this.broker.registry.getServiceList({ withActions: true });
 					const schema = this.generateGraphQLSchema(services);
 
@@ -626,10 +632,6 @@ module.exports = function (mixinOptions) {
 					};
 
 					if (mixinOptions.serverOptions?.subscriptions !== false) {
-						if (!this.pubsub) {
-							this.pubsub = await this.createPubSub();
-						}
-
 						if (!this.wsServer) {
 							this.wsServer = new WebSocketServer({
 								server: this.server,
@@ -835,6 +837,12 @@ module.exports = function (mixinOptions) {
 
 		started() {
 			this.logger.info(`🚀 GraphQL server is available at ${mixinOptions.routeOptions.path}`);
+		},
+
+		async stopped() {
+			if (this.apolloServer) {
+				await this.apolloServer.stop();
+			}
 		}
 	};
 
