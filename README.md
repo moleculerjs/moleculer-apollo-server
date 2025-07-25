@@ -44,20 +44,14 @@ module.exports = {
             },
 
             // https://www.apollographql.com/docs/apollo-server/api/apollo-server#options
-            serverOptions: {
-                tracing: true,
-
-                engine: {
-                    apiKey: process.env.APOLLO_ENGINE_KEY
-                }
-            }
+            serverOptions: {}
         })
     ]
 };
 
 ```
 
-Start your Moleculer project, open http://localhost:3000/graphql in your browser to run queries using Apollo Studio or send GraphQL requests directly to the same URL.
+Start your Moleculer project, open http://localhost:3000/graphql in your browser to run queries using Apollo Sandbox or send GraphQL requests directly to the same URL.
 
 
 **Define queries & mutations in service action definitions**
