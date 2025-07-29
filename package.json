@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --inspect examples/index.js",
-    "ci": "jest integration --watch",
-    "test": "jest integration --coverage",
+    "ci": "jest --watch",
+    "test": "jest --coverage",
     "lint": "eslint --ext=.js src test",
     "lint:fix": "eslint --fix --ext=.js src test",
     "deps": "ncu -i --format group",

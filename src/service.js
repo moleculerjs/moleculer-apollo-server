@@ -21,14 +21,19 @@ const { useServer } = require("graphql-ws/use/ws");
 
 module.exports = function (mixinOptions) {
 	mixinOptions = _.defaultsDeep(mixinOptions, {
+		serverOptions: {},
 		routeOptions: {
 			path: "/graphql"
 		},
-		schema: null,
-		serverOptions: {},
-		createAction: true,
+
+		typeDefs: null,
+		resolvers: null,
+		schemaDirectives: null,
+
 		subscriptionEventName: "graphql.publish",
 		invalidateEventName: "graphql.invalidate",
+
+		createAction: true,
 		autoUpdateSchema: true,
 		checkActionVisibility: false
 	});
@@ -333,7 +338,7 @@ module.exports = function (mixinOptions) {
 				try {
 					let typeDefs = [];
 					let resolvers = {};
-					let schemaDirectives = null;
+					// TODO: let schemaDirectives = null;
 
 					if (mixinOptions.typeDefs) {
 						typeDefs = typeDefs.concat(mixinOptions.typeDefs);
@@ -343,9 +348,10 @@ module.exports = function (mixinOptions) {
 						resolvers = _.cloneDeep(mixinOptions.resolvers);
 					}
 
-					if (mixinOptions.schemaDirectives) {
-						schemaDirectives = _.cloneDeep(mixinOptions.schemaDirectives);
-					}
+					// TODO:
+					// if (mixinOptions.schemaDirectives) {
+					// 	schemaDirectives = _.cloneDeep(mixinOptions.schemaDirectives);
+					// }
 
 					let queries = [];
 					let mutations = [];
@@ -564,7 +570,7 @@ module.exports = function (mixinOptions) {
 						typeDefs.push(str);
 					}
 
-					return this.makeExecutableSchema({ typeDefs, resolvers, schemaDirectives });
+					return this.makeExecutableSchema({ typeDefs, resolvers });
 				} catch (err) {
 					throw new MoleculerServerError(
 						"Unable to compile GraphQL schema",
