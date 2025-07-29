@@ -1048,4 +1048,225 @@ describe("Test Apollo Service", () => {
 			await broker.stop();
 		});
 	});
+
+	describe("Test schema interfaces & unions", () => {
+		it("should handle interface and union types", async () => {
+			const { broker, url } = await startService();
+
+			await broker.createService({
+				name: "content",
+				settings: {
+					graphql: {
+						interface: `
+							interface Node {
+								id: ID!
+							}
+						`,
+						union: `
+							union SearchResult = Post | User
+						`,
+						type: `
+							type Post implements Node {
+								id: ID!
+								title: String!
+							}
+							type User implements Node {
+								id: ID!
+								name: String!
+							}
+						`
+					}
+				},
+				actions: {
+					search: {
+						graphql: {
+							query: "search(term: String!): [SearchResult!]!"
+						},
+						handler(ctx) {
+							if (ctx.params.term === "post") {
+								return [{ __typename: "Post", id: "1", title: "Test Post" }];
+							}
+							return [{ __typename: "User", id: "1", name: "Test User" }];
+						}
+					}
+				}
+			});
+
+			const res = await call(url, {
+				query: `{
+					search(term: "post") {
+						... on Post {
+							id
+							title
+						}
+						... on User {
+							id
+							name
+						}
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			expect(await res.json()).toEqual({
+				data: {
+					search: [
+						{
+							id: "1",
+							title: "Test Post"
+						}
+					]
+				}
+			});
+
+			const res2 = await call(url, {
+				query: `{
+					search(term: "user") {
+						... on Post {
+							id
+							title
+						}
+						... on User {
+							id
+							name
+						}
+					}
+				}`
+			});
+
+			expect(res2.status).toBe(200);
+			expect(await res2.json()).toEqual({
+				data: {
+					search: [
+						{
+							id: "1",
+							name: "Test User"
+						}
+					]
+				}
+			});
+
+			await broker.stop();
+		});
+	});
+
+	describe("Test service lifecycle and error handling", () => {
+		it("should not publish private action", async () => {
+			const { broker, url } = await startService({
+				checkActionVisibility: true
+			});
+
+			await broker.createService({
+				name: "visibility-test",
+				actions: {
+					publishedAction: {
+						visibility: "published",
+						graphql: {
+							query: "publishedData: String!"
+						},
+						handler() {
+							return "Published data";
+						}
+					},
+					publicAction: {
+						visibility: "public",
+						graphql: {
+							query: "publicData: String!"
+						},
+						handler() {
+							return "Public data";
+						}
+					},
+					protectedAction: {
+						visibility: "protected",
+						graphql: {
+							query: "protectedData: String!"
+						},
+						handler() {
+							return "Protected data";
+						}
+					}
+				}
+			});
+
+			// Published action should be available
+			const res = await call(url, {
+				query: "{ publishedData }"
+			});
+			expect(res.status).toBe(200);
+
+			// Public action should not be in schema
+			const res2 = await call(url, {
+				query: "{ publicData }"
+			});
+			expect(res2.status).toBe(400); // Should fail validation
+
+			// Protected action should not be in schema
+			const res3 = await call(url, {
+				query: "{ protectedData }"
+			});
+			expect(res3.status).toBe(400); // Should fail validation
+
+			await broker.stop();
+		});
+
+		it("should publish private actions", async () => {
+			const { broker, url } = await startService({
+				checkActionVisibility: false
+			});
+
+			await broker.createService({
+				name: "visibility-test",
+				actions: {
+					publishedAction: {
+						visibility: "published",
+						graphql: {
+							query: "publishedData: String!"
+						},
+						handler() {
+							return "Published data";
+						}
+					},
+					publicAction: {
+						visibility: "public",
+						graphql: {
+							query: "publicData: String!"
+						},
+						handler() {
+							return "Public data";
+						}
+					},
+					protectedAction: {
+						visibility: "protected",
+						graphql: {
+							query: "protectedData: String!"
+						},
+						handler() {
+							return "Protected data";
+						}
+					}
+				}
+			});
+
+			// Published action should be available
+			const res = await call(url, {
+				query: "{ publishedData }"
+			});
+			expect(res.status).toBe(200);
+
+			// Public action should not be in schema
+			const res2 = await call(url, {
+				query: "{ publicData }"
+			});
+			expect(res2.status).toBe(200);
+
+			// Protected action should not be in schema
+			const res3 = await call(url, {
+				query: "{ protectedData }"
+			});
+			expect(res3.status).toBe(200);
+
+			await broker.stop();
+		});
+	});
 });
