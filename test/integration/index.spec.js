@@ -1269,4 +1269,628 @@ describe("Test Apollo Service", () => {
 			await broker.stop();
 		});
 	});
+
+	describe("Test DataLoader functionality", () => {
+		it("should batch requests with DataLoader", async () => {
+			const { broker, url } = await startService();
+
+			const USERS = [
+				{ id: 1, name: "User 1" },
+				{ id: 2, name: "User 2" },
+				{ id: 3, name: "User 3" }
+			];
+
+			await broker.createService({
+				name: "dataloader-test",
+				settings: {
+					graphql: {
+						type: `
+							type Item {
+								id: Int!
+								name: String!
+								owner: User
+							}
+							type User {
+								id: Int!
+								name: String!
+							}
+						`
+					}
+				},
+				actions: {
+					items: {
+						graphql: {
+							query: "items: [Item!]!"
+						},
+						handler() {
+							return [
+								{ id: 1, name: "Item 1", ownerId: 1 },
+								{ id: 2, name: "Item 2", ownerId: 2 },
+								{ id: 3, name: "Item 3", ownerId: 1 },
+								{ id: 4, name: "Item 4", ownerId: 3 }
+							];
+						}
+					},
+					resolveUsers: {
+						params: {
+							id: [{ type: "number" }, { type: "array", items: "number" }]
+						},
+						handler(ctx) {
+							const ids = Array.isArray(ctx.params.id)
+								? ctx.params.id
+								: [ctx.params.id];
+							return ids.map(id => USERS.find(u => u.id === id));
+						}
+					}
+				}
+			});
+
+			// Update the service to add resolver
+			const svc = broker.getLocalService("dataloader-test");
+			svc.settings.graphql.resolvers = {
+				Item: {
+					owner: {
+						action: "dataloader-test.resolveUsers",
+						dataLoader: true,
+						rootParams: {
+							ownerId: "id"
+						}
+					}
+				}
+			};
+
+			// Force schema regeneration
+			await broker.emit("$services.changed");
+			await broker.Promise.delay(100);
+
+			const res = await call(url, {
+				query: `{
+					items {
+						id
+						name
+						owner {
+							id
+							name
+						}
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			const result = await res.json();
+			expect(result.data.items).toHaveLength(4);
+			expect(result.data.items[0].owner.name).toBe("User 1");
+			expect(result.data.items[2].owner.name).toBe("User 1");
+
+			await broker.stop();
+		});
+
+		it("should handle DataLoader with complex keys", async () => {
+			const { broker, url } = await startService();
+
+			await broker.createService({
+				name: "complex-dataloader",
+				settings: {
+					graphql: {
+						type: `
+							type Product {
+								id: Int!
+								name: String!
+								price: Price
+							}
+							type Price {
+								amount: Float!
+								currency: String!
+							}
+						`
+					}
+				},
+				actions: {
+					products: {
+						graphql: {
+							query: "products: [Product!]!"
+						},
+						handler() {
+							return [
+								{ id: 1, name: "Product 1", priceId: 1, currency: "USD" },
+								{ id: 2, name: "Product 2", priceId: 2, currency: "EUR" }
+							];
+						}
+					},
+					resolvePrices: {
+						graphql: {
+							dataLoaderBatchParam: "query",
+							dataLoaderOptions: {
+								cacheKeyFn: key => JSON.stringify(key)
+							}
+						},
+						handler(ctx) {
+							return ctx.params.query.map(q => ({
+								amount: q.priceId * 10,
+								currency: q.currency
+							}));
+						}
+					}
+				}
+			});
+
+			// Update resolver
+			const svc = broker.getLocalService("complex-dataloader");
+			svc.settings.graphql.resolvers = {
+				Product: {
+					price: {
+						action: "complex-dataloader.resolvePrices",
+						dataLoader: true,
+						rootParams: {
+							priceId: "priceId",
+							currency: "currency"
+						}
+					}
+				}
+			};
+
+			await broker.emit("$services.changed");
+			await broker.Promise.delay(100);
+
+			const res = await call(url, {
+				query: `{
+					products {
+						id
+						name
+						price {
+							amount
+							currency
+						}
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			const result = await res.json();
+			expect(result.data.products[0].price).toEqual({ amount: 10, currency: "USD" });
+			expect(result.data.products[1].price).toEqual({ amount: 20, currency: "EUR" });
+
+			await broker.stop();
+		});
+	});
+
+	describe("Test schema directives and custom resolvers", () => {
+		it("should handle custom scalar types", async () => {
+			const { broker, url } = await startService({
+				typeDefs: ["scalar JSON"],
+				resolvers: {
+					JSON: {
+						__parseValue(value) {
+							return value; // value from the client
+						},
+						__serialize(value) {
+							return value; // value sent to the client
+						},
+						__parseLiteral(ast) {
+							if (ast.kind === "ObjectValue") {
+								return parseObject(ast);
+							}
+							return null;
+						}
+					}
+				}
+			});
+
+			function parseObject(ast) {
+				const obj = {};
+				ast.fields.forEach(field => {
+					obj[field.name.value] = parseValue(field.value);
+				});
+				return obj;
+			}
+
+			function parseValue(ast) {
+				switch (ast.kind) {
+					case "StringValue":
+						return ast.value;
+					case "IntValue":
+						return parseInt(ast.value, 10);
+					case "FloatValue":
+						return parseFloat(ast.value);
+					case "BooleanValue":
+						return ast.value;
+					case "ObjectValue":
+						return parseObject(ast);
+					default:
+						return null;
+				}
+			}
+
+			await broker.createService({
+				name: "json-test",
+				settings: {
+					graphql: {
+						type: `
+							type Config {
+								id: ID!
+								data: JSON!
+							}
+						`
+					}
+				},
+				actions: {
+					getConfig: {
+						graphql: {
+							query: "config: Config!"
+						},
+						handler() {
+							return {
+								id: "1",
+								data: {
+									theme: "dark",
+									features: ["feature1", "feature2"],
+									settings: {
+										notifications: true,
+										language: "en"
+									}
+								}
+							};
+						}
+					}
+				}
+			});
+
+			const res = await call(url, {
+				query: `{
+					config {
+						id
+						data
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			const result = await res.json();
+			expect(result.data.config.data).toEqual({
+				theme: "dark",
+				features: ["feature1", "feature2"],
+				settings: {
+					notifications: true,
+					language: "en"
+				}
+			});
+
+			await broker.stop();
+		});
+	});
+
+	describe("Test Input type & prepareContextParams", () => {
+		it("should handle input types", async () => {
+			const { broker, url } = await startService();
+
+			await broker.createService({
+				name: "input-test",
+				settings: {
+					graphql: {
+						type: `
+							input CreateUserInput {
+								name: String!
+								email: String!
+								age: Int
+							}
+
+							type User {
+								id: ID!
+								name: String!
+								email: String!
+								age: Int
+							}
+						`,
+						query: `
+							dummy: String
+						`,
+						resolvers: {
+							Query: {
+								dummy: () => "dummy"
+							}
+						}
+					}
+				},
+				actions: {
+					createUser: {
+						graphql: {
+							mutation: "createUser(input: CreateUserInput!): User!"
+						},
+						handler(ctx) {
+							return {
+								id: "123",
+								...ctx.params.input
+							};
+						}
+					}
+				}
+			});
+
+			await broker.Promise.delay(100);
+
+			const res = await call(url, {
+				query: `mutation {
+					createUser(input: { name: "John", email: "john@example.com", age: 30 }) {
+						id
+						name
+						email
+						age
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			const result = await res.json();
+			expect(result.data.createUser).toEqual({
+				id: "123",
+				name: "John",
+				email: "john@example.com",
+				age: 30
+			});
+
+			await broker.stop();
+		});
+
+		it("should unwrap input with prepareContextParams", async () => {
+			const { broker, url } = await startService(null, {
+				methods: {
+					prepareContextParams(params, actionName) {
+						if (params.input) {
+							return params.input;
+						}
+						return params;
+					}
+				}
+			});
+
+			await broker.createService({
+				name: "input-test",
+				settings: {
+					graphql: {
+						type: `
+							input CreateUserInput {
+								name: String!
+								email: String!
+								age: Int
+							}
+
+							type User {
+								id: ID!
+								name: String!
+								email: String!
+								age: Int
+							}
+						`,
+						query: `
+							dummy: String
+						`,
+						resolvers: {
+							Query: {
+								dummy: () => "dummy"
+							}
+						}
+					}
+				},
+				actions: {
+					createUser: {
+						graphql: {
+							mutation: "createUser(input: CreateUserInput!): User!"
+						},
+						handler(ctx) {
+							return {
+								id: "123",
+								...ctx.params
+							};
+						}
+					}
+				}
+			});
+
+			await broker.Promise.delay(100);
+
+			const res = await call(url, {
+				query: `mutation {
+					createUser(input: { name: "John", email: "john@example.com", age: 30 }) {
+						id
+						name
+						email
+						age
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			const result = await res.json();
+			expect(result.data.createUser).toEqual({
+				id: "123",
+				name: "John",
+				email: "john@example.com",
+				age: 30
+			});
+
+			await broker.stop();
+		});
+	});
+
+	describe("Test error handling edge cases", () => {
+		it("should handle resolver errors with nullIfError option", async () => {
+			const { broker, url } = await startService();
+
+			await broker.createService({
+				name: "error-test",
+				settings: {
+					graphql: {
+						type: `
+							type Data {
+								id: ID!
+								safe: String
+								unsafe: String
+							}
+						`,
+						resolvers: {
+							Data: {
+								safe: {
+									action: "error-test.throwError",
+									nullIfError: true
+								},
+								unsafe: {
+									action: "error-test.throwError"
+								}
+							}
+						}
+					}
+				},
+				actions: {
+					getData: {
+						graphql: {
+							query: "data: Data!"
+						},
+						handler() {
+							return { id: "1" };
+						}
+					},
+					throwError: {
+						handler() {
+							throw new Error("Test error");
+						}
+					}
+				}
+			});
+
+			const res = await call(url, {
+				query: `{
+					data {
+						id
+						safe
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			const result = await res.json();
+			expect(result.data.data.id).toBe("1");
+			expect(result.data.data.safe).toBeNull();
+
+			const res2 = await call(url, {
+				query: `{
+					data {
+						id
+						unsafe
+					}
+				}`
+			});
+
+			expect(res2.status).toBe(200);
+			const result2 = await res2.json();
+			expect(result2.data.data.id).toBe("1");
+			expect(result2.data.data.unsafe).toBeNull();
+			expect(result2.errors).toBeDefined();
+			expect(result2.errors[0].message).toBe("Test error");
+
+			await broker.stop();
+		});
+
+		it("should handle skipNullKeys option", async () => {
+			const { broker, url } = await startService();
+
+			await broker.createService({
+				name: "skip-null-test",
+				settings: {
+					graphql: {
+						type: `
+							type Item {
+								id: ID!
+								details: Details
+							}
+							type Details {
+								info: String
+							}
+						`,
+						resolvers: {
+							Item: {
+								details: {
+									action: "skip-null-test.getDetails",
+									skipNullKeys: true,
+									rootParams: {
+										detailsId: "id"
+									}
+								}
+							}
+						}
+					}
+				},
+				actions: {
+					items: {
+						graphql: {
+							query: "items: [Item!]!"
+						},
+						handler() {
+							return [
+								{ id: "1", detailsId: "d1" },
+								{ id: "2", detailsId: null },
+								{ id: "3" }
+							];
+						}
+					},
+					getDetails: {
+						handler(ctx) {
+							return { info: `Details for ${ctx.params.id}` };
+						}
+					}
+				}
+			});
+
+			const res = await call(url, {
+				query: `{
+					items {
+						id
+						details {
+							info
+						}
+					}
+				}`
+			});
+
+			expect(res.status).toBe(200);
+			const result = await res.json();
+			expect(result.data.items[0].details).toEqual({ info: "Details for d1" });
+			expect(result.data.items[1].details).toBeNull();
+			expect(result.data.items[2].details).toBeNull();
+
+			await broker.stop();
+		});
+	});
+
+	describe("Test autoUpdateSchema disabled", () => {
+		it("should not update schema when autoUpdateSchema is false", async () => {
+			const { broker } = await startService({
+				autoUpdateSchema: false
+			});
+
+			const svc = broker.getLocalService("api");
+			svc.shouldUpdateGraphqlSchema = false;
+
+			await broker.emit("$services.changed");
+			await broker.Promise.delay(100);
+
+			expect(svc.shouldUpdateGraphqlSchema).toBe(false);
+
+			await broker.stop();
+		});
+
+		it("should invalidate schema on demand", async () => {
+			const { broker } = await startService({
+				autoUpdateSchema: false
+			});
+
+			const svc = broker.getLocalService("api");
+			svc.shouldUpdateGraphqlSchema = false;
+
+			await broker.emit("graphql.invalidate");
+
+			expect(svc.shouldUpdateGraphqlSchema).toBe(true);
+
+			await broker.stop();
+		});
+	});
 });
