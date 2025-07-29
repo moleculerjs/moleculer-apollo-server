@@ -6,6 +6,7 @@ import { WebSocketServer } from "ws";
 import { ServiceSchema } from "moleculer";
 import { ApiRouteSchema, GatewayResponse, IncomingRequest } from "moleculer-web";
 import { ApolloServer as ApolloServerBase, BaseContext } from "@apollo/server";
+import { ServerOptions as WsServerOptions } from "graphql-ws";
 
 declare module "moleculer-apollo-server" {
 
@@ -15,11 +16,7 @@ declare module "moleculer-apollo-server" {
 
 	export interface ApolloServerOptions {
 		path: string;
-		subscriptions?: boolean | {
-			onConnect: (connectionParams: any, webSocket: any) => Promise<any>;
-			onDisconnect: (webSocket: any) => Promise<any>;
-			context?: ContextCreator;
-		}
+		subscriptions?: boolean | WsServerOptions;
 	}
 
 	export class ApolloServer extends ApolloServerBase {

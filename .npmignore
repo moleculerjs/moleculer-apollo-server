@@ -7,3 +7,5 @@ examples/
 typings
 test/
 CHANGELOG.md
+prettier.config.js
+eslint.config.js
