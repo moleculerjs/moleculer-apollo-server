@@ -14,6 +14,7 @@
 - **GitHub Actions**: Updated CI workflow to use latest GitHub Actions (v4) and test on Node.js 20.x, 22.x, 24.x
 - **Dependencies**: Updated all dependencies to latest compatible versions
 - **Configuration**: Replaced `.eslintrc.js` and `.prettierrc.js` with modern `eslint.config.js` and `prettier.config.js`
+- **Async Methods**: Made `makeExecutableSchema` and `generateGraphQLSchema` methods async for better async/await support
 
 ## Removed Features
 - Removed file upload examples and documentation

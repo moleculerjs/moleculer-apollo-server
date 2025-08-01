@@ -108,8 +108,8 @@ declare module "moleculer-apollo-server" {
 		buildDataLoader(ctx: any, actionName: string, batchedParamKey: string, staticParams: object, args: object, options?: { hashCacheKey?: boolean }): any;
 		buildLoaderOptionMap(services: ServiceSchema[]): void;
 		createAsyncIteratorResolver(actionName: string, tags?: string[], filter?: string): { subscribe: Function; resolve: Function };
-		generateGraphQLSchema(services: ServiceSchema[]): GraphQLSchema;
-		makeExecutableSchema(schemaDef: IExecutableSchemaDefinition): GraphQLSchema;
+		generateGraphQLSchema(services: ServiceSchema[]): Promise<GraphQLSchema>;
+		makeExecutableSchema(schemaDef: IExecutableSchemaDefinition): Promise<GraphQLSchema>;
 		createPubSub(): PubSub | Promise<PubSub>;
 		prepareGraphQLSchema(): Promise<void>;
 		createGraphqlContext(args: { req: any }): BaseContext;

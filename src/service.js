@@ -333,7 +333,7 @@ module.exports = function (mixinOptions) {
 			 * @param {Object[]} services
 			 * @returns {Object} Generated schema
 			 */
-			generateGraphQLSchema(services) {
+			async generateGraphQLSchema(services) {
 				let str;
 				try {
 					let typeDefs = [];
@@ -570,7 +570,7 @@ module.exports = function (mixinOptions) {
 						typeDefs.push(str);
 					}
 
-					return this.makeExecutableSchema({ typeDefs, resolvers });
+					return await this.makeExecutableSchema({ typeDefs, resolvers });
 				} catch (err) {
 					throw new MoleculerServerError(
 						"Unable to compile GraphQL schema",
@@ -587,7 +587,7 @@ module.exports = function (mixinOptions) {
 			 * just overwrite it in your service file.
 			 * @param {Object} schemaDef
 			 */
-			makeExecutableSchema(schemaDef) {
+			async makeExecutableSchema(schemaDef) {
 				return makeExecutableSchema(schemaDef);
 			},
 
@@ -626,7 +626,7 @@ module.exports = function (mixinOptions) {
 					}
 
 					const services = this.broker.registry.getServiceList({ withActions: true });
-					const schema = this.generateGraphQLSchema(services);
+					const schema = await this.generateGraphQLSchema(services);
 
 					this.logger.debug(
 						"Generated GraphQL schema:\n\n" + GraphQL.printSchema(schema)
