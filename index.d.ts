@@ -12,7 +12,7 @@ import {
 } from "@apollo/server";
 import { ServerOptions as WsServerOptions } from "graphql-ws";
 
-export interface GraphQLActionOptions {
+interface GraphQLActionOptions {
 	query?: string | string[];
 	mutation?: string | string[];
 	subscription?: string | string[];
@@ -25,37 +25,6 @@ export interface GraphQLActionOptions {
 	filter?: string;
 	dataLoaderOptions?: any;
 	dataLoaderBatchParam?: string;
-}
-
-export interface ActionResolverSchema {
-	action: string;
-	rootParams?: {
-		[key: string]: string;
-	};
-	dataLoader?: boolean;
-	nullIfError?: boolean;
-	skipNullKeys?: boolean;
-	params?: { [key: string]: any };
-}
-
-export interface ServiceResolverSchema {
-	[key: string]:
-		| {
-				[key: string]: ActionResolverSchema;
-			}
-		| GraphQLScalarType;
-}
-
-export interface ServiceGraphQLSettings {
-	query?: string | string[];
-	mutation?: string | string[];
-	subscription?: string | string[];
-	type?: string | string[];
-	interface?: string | string[];
-	union?: string | string[];
-	enum?: string | string[];
-	input?: string | string[];
-	resolvers?: ServiceResolverSchema;
 }
 
 declare module "moleculer-apollo-server" {
@@ -75,6 +44,37 @@ declare module "moleculer-apollo-server" {
 		createHandler(
 			context: ContextCreator
 		): (req: IncomingRequest, res: GatewayResponse) => Promise<void>;
+	}
+
+	export interface ActionResolverSchema {
+		action: string;
+		rootParams?: {
+			[key: string]: string;
+		};
+		dataLoader?: boolean;
+		nullIfError?: boolean;
+		skipNullKeys?: boolean;
+		params?: { [key: string]: any };
+	}
+
+	export interface ServiceResolverSchema {
+		[key: string]:
+			| {
+					[key: string]: ActionResolverSchema;
+			  }
+			| GraphQLScalarType;
+	}
+
+	export interface ServiceGraphQLSettings {
+		query?: string | string[];
+		mutation?: string | string[];
+		subscription?: string | string[];
+		type?: string | string[];
+		interface?: string | string[];
+		union?: string | string[];
+		enum?: string | string[];
+		input?: string | string[];
+		resolvers?: ServiceResolverSchema;
 	}
 
 	export interface ApolloMixinOptions {
@@ -146,6 +146,10 @@ declare module "moleculer-apollo-server" {
 		wsServer?: WebSocketServer;
 	}
 
+	export interface ApolloServiceSettings {
+		graphql?: ServiceGraphQLSettings;
+	}
+
 	export function ApolloService(options: ApolloMixinOptions): ServiceSchema;
 
 	export function moleculerGql(
@@ -157,9 +161,5 @@ declare module "moleculer-apollo-server" {
 declare module "moleculer" {
 	interface ActionSchema {
 		graphql?: GraphQLActionOptions;
-	}
-
-	interface ServiceSettingSchema {
-		graphql?: ServiceGraphQLSettings;
 	}
 }
