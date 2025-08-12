@@ -24,6 +24,11 @@
 - Updated README.md to reflect Apollo Server 5 compatibility
 - Improved examples and removed outdated features
 
+## Typescript types
+- Improved Typescript d.ts file
+- Exported helper interfaces `ApolloServiceSettings`, `ApolloServiceMethods`, `ApolloServiceLocalVars` to support Moleculer 0.15 Service generics
+- Augmented Moleculer `ActionSchema` with graphql property.
+
 --------------------------------------------------
 <a name="0.3.8"></a>
 # 0.3.8 (2023-04-23)
