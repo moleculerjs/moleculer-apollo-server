@@ -70,9 +70,9 @@ module.exports = function (mixinOptions) {
 					tag: { type: "string" },
 					payload: { type: "any", optional: true }
 				},
-				handler(event) {
+				handler(ctx) {
 					if (this.pubsub) {
-						this.pubsub.publish(event.tag, event.payload);
+						this.pubsub.publish(ctx.params.tag, ctx.params.payload);
 					}
 				}
 			},
