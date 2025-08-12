@@ -85,9 +85,6 @@ declare module "moleculer-apollo-server" {
 
 		typeDefs?: string | string[];
 		resolvers?: ServiceResolverSchema;
-		// schemaDirectives?: {
-		// 	[name: string]: typeof SchemaDirectiveVisitor;
-		// };
 
 		subscriptionEventName?: string;
 		invalidateEventName?: string;
