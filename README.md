@@ -254,25 +254,31 @@ with the results in the same order as they were provided.
 To activate DataLoader for a resolver, simply add `dataLoader: true` to the resolver's property object in the `resolvers` property of the service's `graphql` property:
 
 ```js
-settings: {
-    graphql: {
-        resolvers: {
-            Post: {
-                author: {
-                    action: "users.resolve",
-                    dataLoader: true,
-                    rootParams: {
-                        author: "id",
+module.exports = {
+    settings: {
+        graphql: {
+            resolvers: {
+                Post: {
+                    author: {
+                        action: "users.resolve",
+                        dataLoader: true,
+                        rootParams: {
+                            author: "id",
+                        },
                     },
-                },
-                voters: {
-                    action: "users.resolve",
-                    dataLoader: true,
-                    rootParams: {
-                        voters: "id",
+                    voters: {
+                        action: "users.resolve",
+                        dataLoader: true,
+                        rootParams: {
+                            voters: "id",
+                        },
                     },
-                },
-                ...
+                    // ...
+                }
+            }
+        }
+    }
+};        
 ```
 Since DataLoader only expects a single value to be loaded at a time, only one `rootParams` key/value pairing will be utilized, but `params` and GraphQL child arguments work properly.
 
@@ -305,6 +311,8 @@ It is unlikely that setting any of the options which accept a function will work
 - [Full With Dataloader](examples/full/index.js)
   - set `DATALOADER` environment variable to `"true"`
   - `npm run dev full`
+- [Typescript](test/typescript/index.ts)
+  - `npm run test:ts`
 
 ## Test
 ```

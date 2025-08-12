@@ -26,8 +26,9 @@
 
 ## Typescript types
 - Improved Typescript d.ts file
-- Exported helper interfaces `ApolloServiceSettings`, `ApolloServiceMethods`, `ApolloServiceLocalVars` to support Moleculer 0.15 Service generics
+- Exported helper interfaces `ApolloServiceSettings`, `ApolloServiceMethods`, `ApolloServiceLocalVars` to support Moleculer 0.15 Service generics.
 - Augmented Moleculer `ActionSchema` with graphql property.
+- Typescript CI tests.
 
 --------------------------------------------------
 <a name="0.3.8"></a>

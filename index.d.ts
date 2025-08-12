@@ -78,7 +78,7 @@ declare module "moleculer-apollo-server" {
 	}
 
 	export interface ApolloMixinOptions {
-		serverOptions?: BaseApolloServerOptions<BaseContext> & {
+		serverOptions?: Partial<BaseApolloServerOptions<BaseContext>> & {
 			subscriptions?: boolean | WsServerOptions;
 		};
 		routeOptions?: ApiRouteSchema;

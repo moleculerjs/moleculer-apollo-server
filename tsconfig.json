@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "lib": ["es2020"],
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipDefaultLibCheck": true,
+    "types": []
+  },
+  "include": [
+    "index.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "examples"
+  ]
+}

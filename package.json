@@ -11,7 +11,9 @@
     "lint": "eslint --ext=.js src test",
     "lint:fix": "eslint --fix --ext=.js src test",
     "deps": "ncu -i --format group",
-    "postdeps": "npm test"
+    "postdeps": "npm test",
+    "typecheck": "tsc --project tsconfig.json",
+    "test:ts": "tsc --project test/typescript/tsconfig.json && tsx test/typescript/index.ts"
   },
   "keywords": [
     "graphql",
@@ -32,19 +34,21 @@
     "moleculer": "^0.14.0 || ^0.15.0-0"
   },
   "devDependencies": {
-    "eslint": "^9.32.0",
+    "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^5.5.3",
+    "eslint-plugin-prettier": "^5.5.4",
     "graphql": "^16.11.0",
     "jest": "^30.0.5",
     "jest-cli": "^30.0.5",
-    "moleculer": "^0.14.35",
+    "moleculer": "github:moleculerjs/moleculer#next",
     "moleculer-repl": "^0.7.4",
-    "moleculer-web": "^0.10.8",
+    "moleculer-web": "github:moleculerjs/moleculer-web#next",
     "nodemon": "^3.1.10",
     "npm-check-updates": "^18.0.2",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
   },
   "jest": {
     "coverageDirectory": "../coverage",

@@ -63,7 +63,7 @@ broker.createService({
 				mappingPolicy: "restrict"
 			},
 
-			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
+			// https://www.apollographql.com/docs/apollo-server/api/apollo-server#options
 			serverOptions: {
 				tracing: false,
 
