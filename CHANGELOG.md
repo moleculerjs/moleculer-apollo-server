@@ -1,5 +1,5 @@
 <a name="0.4.0"></a>
-# 0.4.0 (2025-08-XX)
+# 0.4.0 (2025-09-25)
 
 ## Breaking Changes
 - **Apollo Server 5**: Upgraded from Apollo Server 2 to Apollo Server 5
@@ -15,6 +15,7 @@
 - **Dependencies**: Updated all dependencies to latest compatible versions
 - **Configuration**: Replaced `.eslintrc.js` and `.prettierrc.js` with modern `eslint.config.js` and `prettier.config.js`
 - **Async Methods**: Made `makeExecutableSchema` and `generateGraphQLSchema` methods async for better async/await support
+- **Preparation**: Improved GraphQL schema preparation with promise-based mechanism to prevent multiple concurrent preparations
 
 ## Removed Features
 - Removed file upload examples and documentation
