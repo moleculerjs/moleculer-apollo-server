@@ -1,3 +1,37 @@
+<a name="0.4.0"></a>
+# 0.4.0 (2025-09-25)
+
+## Breaking Changes
+- **Apollo Server 5**: Upgraded from Apollo Server 2 to Apollo Server 5
+- **Node.js Requirements**: Now requires Node.js >= 20.x.x (updated from >= 10.x)
+- **File Upload Removal**: Removed GraphQL file upload support because [Apollo Server 3+ no longer supports it](https://www.apollographql.com/docs/apollo-server/v3/migration#file-uploads).
+- **Healthcheck Removal**: Built-in healthcheck endpoint removed because [Apollo Server 4+ no longer supports it](https://www.apollographql.com/docs/apollo-server/migration-from-v3#health-checks).
+- **WebSocket Subscriptions**: Rewritten subscription function from `graphql-subscriptions` to `graphql-ws`.
+- **Move from GraphQL Playground to Apollo Sandbox**: Apollo Server 3+ removes the GraphQL Playground. [It supports Apollo Sandbox.](https://www.apollographql.com/docs/apollo-server/v3/migration#graphql-playground)
+
+## Major Updates
+- **Modern Tooling**: Migrated from legacy ESLint config to flat config format
+- **GitHub Actions**: Updated CI workflow to use latest GitHub Actions (v4) and test on Node.js 20.x, 22.x, 24.x
+- **Dependencies**: Updated all dependencies to latest compatible versions
+- **Configuration**: Replaced `.eslintrc.js` and `.prettierrc.js` with modern `eslint.config.js` and `prettier.config.js`
+- **Async Methods**: Made `makeExecutableSchema` and `generateGraphQLSchema` methods async for better async/await support
+- **Preparation**: Improved GraphQL schema preparation with promise-based mechanism to prevent multiple concurrent preparations
+
+## Removed Features
+- Removed file upload examples and documentation
+- Removed legacy Apollo Server 2/3 configuration options
+
+## Documentation
+- Updated README.md to reflect Apollo Server 5 compatibility
+- Improved examples and removed outdated features
+
+## Typescript types
+- Improved Typescript d.ts file
+- Exported helper interfaces `ApolloServiceSettings`, `ApolloServiceMethods`, `ApolloServiceLocalVars` to support Moleculer 0.15 Service generics.
+- Augmented Moleculer `ActionSchema` with graphql property.
+- Typescript CI tests.
+
+--------------------------------------------------
 <a name="0.3.8"></a>
 # 0.3.8 (2023-04-23)
 

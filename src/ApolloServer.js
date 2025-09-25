@@ -1,10 +1,30 @@
+/*
+ * moleculer-apollo-server
+ * Copyright (c) 2025 MoleculerJS (https://github.com/moleculerjs/moleculer-apollo-server)
+ * MIT Licensed
+ */
+
 "use strict";
 
-const { ApolloServerBase } = require("apollo-server-core");
-const { processRequest } = require("graphql-upload");
-const { renderPlaygroundPage } = require("@apollographql/graphql-playground-html");
-const accept = require("@hapi/accept");
-const moleculerApollo = require("./moleculerApollo");
+const { ApolloServer: ApolloServerBase, HeaderMap } = require("@apollo/server");
+const url = require("url");
+
+// Utility function used to set multiple headers on a response object.
+function convertHeaderMapToHeaders(res, headers) {
+	for (const [key, value] of headers) {
+		res.setHeader(key, value);
+	}
+}
+
+function convertHeadersToHeaderMap(req) {
+	const headers = new HeaderMap();
+	for (const [key, value] of Object.entries(req.headers)) {
+		if (value !== undefined) {
+			headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+		}
+	}
+	return headers;
+}
 
 async function send(req, res, statusCode, data, responseType = "application/json") {
 	res.statusCode = statusCode;
@@ -24,90 +44,42 @@ async function send(req, res, statusCode, data, responseType = "application/json
 }
 
 class ApolloServer extends ApolloServerBase {
-	// Extract Apollo Server options from the request.
-	createGraphQLServerOptions(req, res) {
-		return super.graphQLServerOptions({ req, res });
-	}
-
 	// Prepares and returns an async function that can be used to handle
 	// GraphQL requests.
-	createHandler({ path, disableHealthCheck, onHealthCheck } = {}) {
-		const promiseWillStart = this.willStart();
-
+	createHandler(context) {
 		return async (req, res) => {
-			this.graphqlPath = path || "/graphql";
-
-			await promiseWillStart;
-
-			// If file uploads are detected, prepare them for easier handling with
-			// the help of `graphql-upload`.
-			if (this.uploadsConfig) {
-				const contentType = req.headers["content-type"];
-				if (contentType && contentType.startsWith("multipart/form-data")) {
-					req.filePayload = await processRequest(req, res, this.uploadsConfig);
-				}
-			}
-
-			// If health checking is enabled, trigger the `onHealthCheck`
-			// function when the health check URL is requested.
-			if (!disableHealthCheck && req.url === "/.well-known/apollo/server-health")
-				return await this.handleHealthCheck({ req, res, onHealthCheck });
-
-			// If the `playgroundOptions` are set, register a `graphql-playground` instance
-			// (not available in production) that is then used to handle all
-			// incoming GraphQL requests.
-			if (this.playgroundOptions && req.method === "GET") {
-				const { mediaTypes } = accept.parseAll(req.headers);
-				const prefersHTML =
-					mediaTypes.find(x => x === "text/html" || x === "application/json") ===
-					"text/html";
-
-				if (prefersHTML) {
-					const middlewareOptions = Object.assign(
-						{
-							endpoint: this.graphqlPath,
-							subscriptionEndpoint: this.subscriptionsPath,
-						},
-						this.playgroundOptions
-					);
-					return send(
-						req,
-						res,
-						200,
-						renderPlaygroundPage(middlewareOptions),
-						"text/html"
-					);
-				}
-			}
-
 			// Handle incoming GraphQL requests using Apollo Server.
-			const graphqlHandler = moleculerApollo(() => this.createGraphQLServerOptions(req, res));
-			const responseData = await graphqlHandler(req, res);
-			return send(req, res, 200, responseData);
+			const response = await this.executeHTTPGraphQLRequest({
+				httpGraphQLRequest: {
+					method: req.method.toUpperCase(),
+					headers: convertHeadersToHeaderMap(req),
+					search: url.parse(req.url, true).query ?? "",
+					body: req.body
+				},
+				context: () => context({ req, res })
+			});
+
+			convertHeaderMapToHeaders(res, response.headers);
+
+			if (response?.body?.kind == "complete") {
+				return send(
+					req,
+					res,
+					response.status ?? 200,
+					response.body.string,
+					response.headers?.get("content-type")
+				);
+			}
+
+			// Handle chunked response
+			res.statusCode = response.status || 200;
+			for await (const chunk of response.body.asyncIterator) {
+				res.write(chunk);
+			}
+			res.end();
 		};
-	}
-
-	// This integration supports file uploads.
-	supportsUploads() {
-		return true;
-	}
-
-	// This integration supports subscriptions.
-	supportsSubscriptions() {
-		return true;
-	}
-
-	async handleHealthCheck({ req, res, onHealthCheck }) {
-		onHealthCheck = onHealthCheck || (() => undefined);
-		try {
-			const result = await onHealthCheck(req);
-			return send(req, res, 200, { status: "pass", result }, "application/health+json");
-		} catch (error) {
-			const result = error instanceof Error ? error.toString() : error;
-			return send(req, res, 503, { status: "fail", result }, "application/health+json");
-		}
 	}
 }
 module.exports = {
-	ApolloServer,
+	ApolloServer
 };

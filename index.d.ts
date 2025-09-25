@@ -1,37 +1,49 @@
+import { IExecutableSchemaDefinition } from "@graphql-tools/schema";
+import { GraphQLSchema, GraphQLScalarType } from "graphql";
+import { PubSub } from "graphql-subscriptions";
+import { WebSocketServer } from "ws";
+
+import { ServiceSchema } from "moleculer";
+import { ApiRouteSchema, GatewayResponse, IncomingRequest } from "moleculer-web";
+import {
+	ApolloServer as ApolloServerBase,
+	BaseContext,
+	ApolloServerOptions as BaseApolloServerOptions
+} from "@apollo/server";
+import { ServerOptions as WsServerOptions } from "graphql-ws";
+
+interface GraphQLActionOptions {
+	query?: string | string[];
+	mutation?: string | string[];
+	subscription?: string | string[];
+	type?: string | string[];
+	interface?: string | string[];
+	union?: string | string[];
+	enum?: string | string[];
+	input?: string | string[];
+	tags?: string[];
+	filter?: string;
+	dataLoaderOptions?: any;
+	dataLoaderBatchParam?: string;
+}
+
 declare module "moleculer-apollo-server" {
-	import { ServiceSchema, Context } from "moleculer";
-	import { Config } from "apollo-server-core";
-	import { OptionsUrlencoded } from "body-parser";
-	import { SchemaDirectiveVisitor, IResolvers } from "graphql-tools";
+	export { GraphQLError } from "graphql";
 
-	export {
-		GraphQLExtension,
-		gql,
-		ApolloError,
-		toApolloError,
-		SyntaxError,
-		ValidationError,
-		AuthenticationError,
-		ForbiddenError,
-		UserInputError,
-		defaultPlaygroundOptions,
-	} from "apollo-server-core";
-
-	export { GraphQLUpload } from "graphql-upload";
-
-	export * from "graphql-tools";
+	export type ContextCreator = (args: {
+		req: IncomingRequest;
+		res: GatewayResponse;
+	}) => BaseContext | Promise<BaseContext>;
 
 	export interface ApolloServerOptions {
 		path: string;
-		disableHealthCheck: boolean;
-		onHealthCheck: () => {};
+		subscriptions?: boolean | WsServerOptions;
 	}
 
-	export class ApolloServer {
-		createGraphQLServerOptions(req: any, res: any): Promise<any>;
-		createHandler(options: ApolloServerOptions): void;
-		supportsUploads(): boolean;
-		supportsSubscriptions(): boolean;
+	export class ApolloServer extends ApolloServerBase {
+		createHandler(
+			context: ContextCreator
+		): (req: IncomingRequest, res: GatewayResponse) => Promise<void>;
 	}
 
 	export interface ActionResolverSchema {
@@ -46,63 +58,105 @@ declare module "moleculer-apollo-server" {
 	}
 
 	export interface ServiceResolverSchema {
-		[key: string]: {
-			[key: string]: ActionResolverSchema;
-		};
+		[key: string]:
+			| {
+					[key: string]: ActionResolverSchema;
+			  }
+			| GraphQLScalarType;
 	}
 
-	type CorsMethods = "GET" | "POST" | "PUT" | "DELETE" | "OPTIONS";
-
-	export interface ServiceRouteCorsOptions {
-		origin?: string | string[];
-		methods?: CorsMethods | CorsMethods[];
-		allowedHeaders?: string[];
-		exposedHeaders?: string[];
-		credentials?: boolean;
-		maxAge?: number;
+	export interface ServiceGraphQLSettings {
+		query?: string | string[];
+		mutation?: string | string[];
+		subscription?: string | string[];
+		type?: string | string[];
+		interface?: string | string[];
+		union?: string | string[];
+		enum?: string | string[];
+		input?: string | string[];
+		resolvers?: ServiceResolverSchema;
 	}
 
-	export interface ServiceRouteOptions {
-		path?: string;
-		use?: any[];
-		etag?: boolean;
-		whitelist?: string[];
-		authorization?: boolean;
-		camelCaseNames?: boolean;
-		aliases?: {
-			[key: string]: any; // Should discuss more on this. string | AliasSchema, ...
+	export interface ApolloMixinOptions {
+		serverOptions?: Partial<BaseApolloServerOptions<BaseContext>> & {
+			subscriptions?: boolean | WsServerOptions;
 		};
-		bodyParsers?: {
-			json: boolean;
-			urlencoded: OptionsUrlencoded;
-		};
-		cors?: boolean | ServiceRouteCorsOptions;
-		mappingPolicy?: "all" | "restrict";
-		authentication?: boolean;
-		callOptions?: {
-			timeout: number;
-			fallbackResponse?: any;
-		};
-		onBeforeCall?: (ctx: Context, route: any, req: any, res: any) => Promise<any>;
-		onAfterCall?: (ctx: Context, route: any, req: any, res: any, data: any) => Promise<any>;
-	}
+		routeOptions?: ApiRouteSchema;
 
-	export interface ApolloServiceOptions {
 		typeDefs?: string | string[];
-		resolvers?: ServiceResolverSchema | IResolvers | Array<IResolvers>;
-		schemaDirectives?: {
-			[name: string]: typeof SchemaDirectiveVisitor;
-		};
-		routeOptions?: ServiceRouteOptions;
-		serverOptions?: Config;
+		resolvers?: ServiceResolverSchema;
+
+		subscriptionEventName?: string;
+		invalidateEventName?: string;
+
+		createAction?: boolean;
 		checkActionVisibility?: boolean;
 		autoUpdateSchema?: boolean;
 	}
 
-	export function ApolloService(options: ApolloServiceOptions): ServiceSchema;
+	export interface ApolloServiceMethods {
+		invalidateGraphQLSchema(): void;
+		getFieldName(declaration: string): string;
+		getResolverActionName(service: string, action: string): string;
+		createServiceResolvers(
+			serviceName: string,
+			resolvers: { [key: string]: ActionResolverSchema }
+		): { [key: string]: Function };
+		createActionResolver(actionName: string, def?: ActionResolverSchema): Function;
+		getDataLoaderMapKey(actionName: string, staticParams: object, args: object): string;
+		buildDataLoader(
+			ctx: any,
+			actionName: string,
+			batchedParamKey: string,
+			staticParams: object,
+			args: object,
+			options?: { hashCacheKey?: boolean }
+		): any;
+		buildLoaderOptionMap(services: ServiceSchema[]): void;
+		createAsyncIteratorResolver(
+			actionName: string,
+			tags?: string[],
+			filter?: string
+		): { subscribe: Function; resolve: Function };
+		generateGraphQLSchema(services: ServiceSchema[]): Promise<GraphQLSchema>;
+		makeExecutableSchema(schemaDef: IExecutableSchemaDefinition): Promise<GraphQLSchema>;
+		createPubSub(): PubSub | Promise<PubSub>;
+		prepareGraphQLSchema(): Promise<void>;
+		createGraphqlContext(args: { req: any }): BaseContext;
+		prepareContextParams?(
+			mergedParams: any,
+			actionName: string,
+			context: BaseContext,
+			root: any,
+			args: any
+		): Promise<any>;
+	}
 
-	export function moleculerGql<T>(
+	export interface ApolloServiceLocalVars {
+		apolloServer?: ApolloServer;
+		graphqlHandler?: Function;
+		graphqlSchema?: GraphQLSchema;
+		shouldUpdateGraphqlSchema: boolean;
+		dataLoaderOptions: Map<string, any>;
+		dataLoaderBatchParams: Map<string, any>;
+		pubsub?: PubSub;
+		wsServer?: WebSocketServer;
+	}
+
+	export interface ApolloServiceSettings {
+		graphql?: ServiceGraphQLSettings;
+	}
+
+	export function ApolloService(options: ApolloMixinOptions): ServiceSchema;
+
+	export function moleculerGql(
 		typeString: TemplateStringsArray | string,
-		...placeholders: T[]
+		...placeholders: any[]
 	): string;
+}
+
+declare module "moleculer" {
+	interface ActionSchema {
+		graphql?: GraphQLActionOptions;
+	}
 }

@@ -7,7 +7,7 @@ const ApiGateway = require("moleculer-web");
 const { ApolloService } = require("../../index");
 
 const broker = new ServiceBroker({
-	logLevel: process.env.LOGLEVEL || "info" /*, transporter: "NATS"*/,
+	logLevel: process.env.LOGLEVEL || "info" /*, transporter: "NATS"*/
 });
 
 broker.createService({
@@ -37,7 +37,7 @@ broker.createService({
 						}
 
 						return null;
-					},
+					}
 				},
 				Timestamp: {
 					__parseValue(value) {
@@ -52,34 +52,34 @@ broker.createService({
 						}
 
 						return null;
-					},
-				},
+					}
+				}
 			},
 
 			// API Gateway route options
 			routeOptions: {
 				path: "/graphql",
 				cors: true,
-				mappingPolicy: "restrict",
+				mappingPolicy: "restrict"
 			},
 
-			// https://www.apollographql.com/docs/apollo-server/v2/api/apollo-server.html
+			// https://www.apollographql.com/docs/apollo-server/api/apollo-server#options
 			serverOptions: {
 				tracing: false,
 
 				engine: {
-					apiKey: process.env.APOLLO_ENGINE_KEY,
-				},
-			},
-		}),
+					apiKey: process.env.APOLLO_ENGINE_KEY
+				}
+			}
+		})
 	],
 
 	events: {
 		"graphql.schema.updated"({ schema }) {
 			fs.writeFileSync(__dirname + "/generated-schema.gql", schema, "utf8");
 			this.logger.info("Generated GraphQL schema:\n\n" + schema);
-		},
-	},
+		}
+	}
 });
 
 broker.loadServices(__dirname);

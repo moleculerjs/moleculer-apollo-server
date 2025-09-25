@@ -1,10 +1,15 @@
 "use strict";
 
-const { ServiceBroker } = require("moleculer");
-const { MoleculerClientError } = require("moleculer").Errors;
-
-const ApiGateway = require("moleculer-web");
-const { ApolloService } = require("../../index");
+import { ExecutionResult } from "graphql";
+import type { GraphQLRequest } from "@apollo/server";
+import { ServiceBroker, Context, ServiceSchema, Errors } from "moleculer";
+import ApiGateway from "moleculer-web";
+import { ApolloService } from "../../";
+import type {
+	ApolloServiceSettings,
+	ApolloServiceMethods,
+	ApolloServiceLocalVars
+} from "../../";
 
 const broker = new ServiceBroker({
 	logLevel: "info",
@@ -16,7 +21,11 @@ const broker = new ServiceBroker({
 	}
 });
 
-broker.createService({
+const ApiService: ServiceSchema<
+	ApolloServiceSettings,
+	ApolloServiceMethods,
+	ApolloServiceLocalVars
+> = {
 	name: "api",
 
 	mixins: [
@@ -40,13 +49,13 @@ broker.createService({
 	],
 
 	events: {
-		"graphql.schema.updated"(ctx) {
+		"graphql.schema.updated"(ctx: Context<{ schema: string }>) {
 			this.logger.info("Generated GraphQL schema:\n\n" + ctx.params.schema);
 		}
 	}
-});
+};
 
-broker.createService({
+const GreeterService: ServiceSchema = {
 	name: "greeter",
 
 	actions: {
@@ -66,7 +75,7 @@ broker.createService({
 					): String!
 				`
 			},
-			handler(ctx) {
+			handler(ctx: Context<{ name: string }>) {
 				return `Hello ${ctx.params.name}`;
 			}
 		},
@@ -75,7 +84,7 @@ broker.createService({
 			graphql: {
 				mutation: "update(id: Int!): Boolean!"
 			},
-			async handler(ctx) {
+			async handler(ctx: Context<{ id: number }>) {
 				await ctx.broadcast("graphql.publish", { tag: "UPDATED", payload: ctx.params.id });
 
 				return true;
@@ -88,23 +97,13 @@ broker.createService({
 				tags: ["UPDATED"],
 				filter: "greeter.updatedFilter"
 			},
-			handler(ctx) {
-				return ctx.params.payload;
-			}
-		},
-
-		delete: {
-			graphql: {
-				subscription: "delete: Int!",
-				tags: ["DELETE"]
-			},
-			handler(ctx) {
+			handler(ctx: Context<{ payload: number }>) {
 				return ctx.params.payload;
 			}
 		},
 
 		updatedFilter: {
-			handler(ctx) {
+			handler(ctx: Context<{ payload: number }>) {
 				return ctx.params.payload % 2 === 0;
 			}
 		},
@@ -114,50 +113,32 @@ broker.createService({
 				query: "danger: String!"
 			},
 			async handler() {
-				throw new MoleculerClientError("I've said it's a danger action!", 422, "DANGER");
-			}
-		},
-
-		secret: {
-			visibility: "protected",
-			graphql: {
-				query: "secret: String!"
-			},
-			async handler() {
-				return "! TOP SECRET !";
-			}
-		},
-
-		visible: {
-			visibility: "published",
-			graphql: {
-				query: "visible: String!"
-			},
-			async handler() {
-				return "Not secret";
+				throw new Errors.MoleculerClientError(
+					"I've said it's a danger action!",
+					422,
+					"DANGER"
+				);
 			}
 		}
 	}
-});
+};
 
-broker.start().then(async () => {
-	broker.repl();
+broker.createService(ApiService);
+broker.createService(GreeterService);
 
-	const res = await broker.call("api.graphql", {
+async function start() {
+	await broker.start();
+
+	const res = await broker.call<ExecutionResult<{ hello: string }>, GraphQLRequest>("api.graphql", {
 		query: "query { hello }"
 	});
 
-	if (res.errors && res.errors.length > 0) return res.errors.forEach(broker.logger.error);
-
 	broker.logger.info(res.data);
+	if (res.data?.hello != "Hello Moleculer!") {
+		throw new Error("Invalid hello response");
+	}
 
-	broker.logger.info("----------------------------------------------------------");
-	broker.logger.info("Open the http://localhost:3000/graphql URL in your browser");
-	broker.logger.info("----------------------------------------------------------");
+	await broker.stop();
+}
 
-	let counter = 1;
-	setInterval(
-		async () => broker.broadcast("graphql.publish", { tag: "UPDATED", payload: counter++ }),
-		2000
-	);
-});
+start();
