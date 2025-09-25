@@ -1893,4 +1893,61 @@ describe("Test Apollo Service", () => {
 			await broker.stop();
 		});
 	});
+
+	describe("Test race-condition in prepareGraphQLSchema", () => {
+		it("should not prepare GQL twice", async () => {
+			const { broker, url } = await startService(null, {
+				actions: {
+					echo: {
+						graphql: {
+							query: "echo(input: String!): String!"
+						},
+						handler(ctx) {
+							return ctx.params.input;
+						}
+					}
+				}
+			});
+
+			const svc = broker.getLocalService("api");
+
+			// Store original method
+			const originalGenerateGraphQLSchema = svc.generateGraphQLSchema.bind(svc);
+
+			// Mock with 2 second delay
+			jest.spyOn(svc, "generateGraphQLSchema").mockImplementation(async function (...args) {
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				return originalGenerateGraphQLSchema(...args);
+			});
+
+			const query = {
+				query: 'query { echo(input: "Hello") }'
+			};
+
+			const res = await call(url, query);
+
+			expect(res.status).toBe(200);
+			expect(await res.json()).toEqual({ data: { echo: "Hello" } });
+			expect(svc.generateGraphQLSchema).toHaveBeenCalledTimes(1);
+
+			// Should prepare
+			svc.shouldUpdateGraphqlSchema = true;
+			svc.generateGraphQLSchema.mockClear();
+
+			const p1 = call(url, query);
+			const p2 = call(url, query);
+			const p3 = call(url, query);
+
+			const results = await Promise.all([p1, p2, p3]);
+
+			for (const r of results) {
+				expect(r.status).toBe(200);
+				expect(await r.json()).toEqual({ data: { echo: "Hello" } });
+			}
+
+			expect(svc.generateGraphQLSchema).toHaveBeenCalledTimes(1);
+
+			await broker.stop();
+		});
+	});
 });

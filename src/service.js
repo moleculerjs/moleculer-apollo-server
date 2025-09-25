@@ -609,6 +609,14 @@ module.exports = function (mixinOptions) {
 					return;
 				}
 
+				if (this.preparePromise) return this.preparePromise.promise;
+
+				this.preparePromise = {};
+				this.preparePromise.promise = new Promise((resolve, reject) => {
+					this.preparePromise.resolve = resolve;
+					this.preparePromise.reject = reject;
+				});
+
 				if (this.apolloServer) {
 					await this.apolloServer.stop();
 				}
@@ -724,8 +732,13 @@ module.exports = function (mixinOptions) {
 					this.broker.broadcast("graphql.schema.updated", {
 						schema: GraphQL.printSchema(schema)
 					});
+
+					this.preparePromise.resolve();
+					this.preparePromise = null;
 				} catch (err) {
 					this.logger.error(err);
+					this.preparePromise.reject(err);
+					this.preparePromise = null;
 					throw err;
 				}
 			},
@@ -807,6 +820,7 @@ module.exports = function (mixinOptions) {
 			this.dataLoaderBatchParams = new Map();
 			this.pubsub = null;
 			this.wsServer = null;
+			this.preparePromise = null;
 
 			// Bind service to onConnect method
 			if (
