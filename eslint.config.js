@@ -1,9 +1,10 @@
-const { defineConfig, globalIgnores } = require("eslint/config");
+const { defineConfig } = require("eslint/config");
+const js = require("@eslint/js");
 const globals = require("globals");
 const eslintPluginPrettierRecommended = require("eslint-plugin-prettier/recommended");
 
-/** @type {import('eslint').Linter.Config[]} */
 module.exports = defineConfig([
+	js.configs.recommended,
 	eslintPluginPrettierRecommended,
 	{
 		files: ["**/*.js", "**/*.mjs"],
