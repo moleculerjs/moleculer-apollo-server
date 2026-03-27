@@ -3,7 +3,7 @@ import { GraphQLSchema, GraphQLScalarType } from "graphql";
 import { PubSub } from "graphql-subscriptions";
 import { WebSocketServer } from "ws";
 
-import { ServiceSchema } from "moleculer";
+import { Context, Service, ServiceSchema } from "moleculer";
 import { ApiRouteSchema, GatewayResponse, IncomingRequest } from "moleculer-web";
 import {
 	ApolloServer as ApolloServerBase,
@@ -94,6 +94,13 @@ declare module "moleculer-apollo-server" {
 		autoUpdateSchema?: boolean;
 	}
 
+	export interface GraphQLContext extends BaseContext {
+		ctx: Context;
+		service: Service;
+		params: any;
+		dataLoaders: Map<string, any>;
+	}
+
 	export interface ApolloServiceMethods {
 		invalidateGraphQLSchema(): void;
 		getFieldName(declaration: string): string;
@@ -105,7 +112,7 @@ declare module "moleculer-apollo-server" {
 		createActionResolver(actionName: string, def?: ActionResolverSchema): Function;
 		getDataLoaderMapKey(actionName: string, staticParams: object, args: object): string;
 		buildDataLoader(
-			ctx: any,
+			ctx: Context,
 			actionName: string,
 			batchedParamKey: string,
 			staticParams: object,
@@ -122,11 +129,11 @@ declare module "moleculer-apollo-server" {
 		makeExecutableSchema(schemaDef: IExecutableSchemaDefinition): Promise<GraphQLSchema>;
 		createPubSub(): PubSub | Promise<PubSub>;
 		prepareGraphQLSchema(): Promise<void>;
-		createGraphqlContext(args: { req: any }): BaseContext;
+		createGraphqlContext(args: { req: any }): GraphQLContext;
 		prepareContextParams?(
 			mergedParams: any,
 			actionName: string,
-			context: BaseContext,
+			context: GraphQLContext,
 			root: any,
 			args: any
 		): Promise<any>;
