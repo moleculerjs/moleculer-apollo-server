@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "module": "commonjs",
+    "module": "node16",
     "lib": ["es2020"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "exactOptionalPropertyTypes": true,
@@ -22,10 +22,9 @@
     "strictPropertyInitialization": true,
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
-    "baseUrl": "../../",
     "paths": {
-      "moleculer-apollo-server": ["./index.d.ts"],
-      "moleculer-apollo-server/*": ["./*"]
+      "moleculer-apollo-server": ["../../index.d.ts"],
+      "moleculer-apollo-server/*": ["../../*"]
     },
     "types": ["node"]
   },
