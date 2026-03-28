@@ -31,7 +31,7 @@
   "license": "MIT",
   "peerDependencies": {
     "graphql": "^16.0.0",
-    "moleculer": "^0.14.0 || ^0.15.0-0"
+    "moleculer": "^0.14.0 || ^0.15.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -42,9 +42,9 @@
     "graphql": "^16.13.2",
     "jest": "^30.3.0",
     "jest-cli": "^30.3.0",
-    "moleculer": "github:moleculerjs/moleculer#next",
-    "moleculer-repl": "^0.7.4",
-    "moleculer-web": "github:moleculerjs/moleculer-web#next",
+    "moleculer": "^0.15.0",
+    "moleculer-repl": "^0.8.0",
+    "moleculer-web": "^0.11.0",
     "nodemon": "^3.1.14",
     "npm-check-updates": "^19.6.6",
     "prettier": "^3.8.1",
