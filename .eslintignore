@@ -1,3 +1,0 @@
-### file include overrides
-# root configuration files (e.g. .eslintrc.js)
-!.*.js

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "module": "commonjs",
+    "module": "node16",
     "lib": ["es2020"],
     "declaration": true,
     "outDir": "./dist",
@@ -9,7 +9,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipDefaultLibCheck": true,
