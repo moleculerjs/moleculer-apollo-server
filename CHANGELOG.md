@@ -1,3 +1,14 @@
+<a name="0.4.1"></a>
+# 0.4.1 (2026-03-28)
+
+## Changes
+- Updated `moleculer`, `moleculer-web`, and `moleculer-repl` to released versions (0.15.0, 0.11.0, 0.8.0)
+- Updated `peerDependencies` to accept `moleculer` ^0.15.0 (stable release)
+- Improved TypeScript definitions: added `GraphQLContext` interface, typed `ctx` parameter as `Context` instead of `any`
+- Upgraded ESLint to v10 with flat config, TypeScript to v6
+- Updated all dev dependencies to latest versions
+
+--------------------------------------------------
 <a name="0.4.0"></a>
 # 0.4.0 (2025-09-25)
 
